@@ -1,56 +1,126 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, Activity } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import type { TradeTicketInput } from './TradeTicketDrawer';
+import { fetchHistory, fetchQuote } from '../api/market';
 
 interface MarketDataCardProps {
   ticker: string;
+  onOpenTradeTicket?: (ticket: TradeTicketInput) => void;
 }
 
-// Mock price data with realistic values for UK stocks
-const stockData: Record<string, { 
+const stockMeta: Record<string, {
   name: string;
-  base: number; 
-  change: number;
   sentiment?: 'Bullish' | 'Bearish' | 'High Volume';
 }> = {
-  'BARC.L': { name: 'Barclays PLC', base: 186.5, change: 2.36, sentiment: 'Bullish' },
-  'LLOY.L': { name: 'Lloyds Banking Group', base: 52.8, change: -2.22, sentiment: 'Bearish' },
-  'VOD.L': { name: 'Vodafone Group', base: 73.2, change: 1.11, sentiment: 'High Volume' },
+  'BARC.L': { name: 'Barclays PLC', sentiment: 'Bullish' },
+  'LLOY.L': { name: 'Lloyds Banking Group', sentiment: 'Bearish' },
+  'VOD.L': { name: 'Vodafone Group', sentiment: 'High Volume' },
 };
 
-// Generate sparkline data
-function generateSparklineData(basePrice: number, isPositive: boolean) {
-  const data = [];
-  let price = basePrice * 0.98;
-  
-  for (let i = 0; i < 20; i++) {
-    const trend = isPositive ? 0.002 : -0.002;
-    const noise = (Math.random() - 0.5) * 0.01;
-    price = price * (1 + trend + noise);
-    data.push({ value: price });
-  }
-  
-  return data;
-}
+const WATCHLIST_STORAGE_KEY = 'tradelink_watchlist';
 
-export function MarketDataCard({ ticker }: MarketDataCardProps) {
-  const stockInfo = stockData[ticker] || { name: 'Unknown', base: 100, change: 0 };
-  const [price, setPrice] = useState(stockInfo.base);
-  const changePercent = stockInfo.change;
+export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProps) {
+  const stockInfo = stockMeta[ticker] || { name: ticker };
+  const [price, setPrice] = useState(0);
+  const [changePercent, setChangePercent] = useState(0);
+  const [sparklineData, setSparklineData] = useState<Array<{ value: number }>>([]);
+  const [isWatched, setIsWatched] = useState(false);
+  const [liveDataError, setLiveDataError] = useState(false);
+
   const isPositive = changePercent >= 0;
-  const [sparklineData] = useState(generateSparklineData(stockInfo.base, isPositive));
 
-  // Simulate small price fluctuations
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPrice((prev) => {
-        const fluctuation = (Math.random() - 0.5) * 0.3;
-        return Number((prev + fluctuation).toFixed(2));
-      });
-    }, 3000);
+    let isMounted = true;
 
-    return () => clearInterval(interval);
-  }, []);
+    const loadData = async () => {
+      try {
+        const [quote, history] = await Promise.all([
+          fetchQuote(ticker),
+          fetchHistory(ticker),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const parsedPercent = Number.parseFloat((quote.change_percent || '0').replace('%', '')) || 0;
+        setPrice(Number.isFinite(quote.price) ? quote.price : 0);
+        setChangePercent(parsedPercent);
+        setSparklineData(
+          history.map((point) => ({
+            value: point.price,
+          })),
+        );
+        setLiveDataError(false);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setLiveDataError(true);
+      }
+    };
+
+    void loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [ticker]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(WATCHLIST_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setIsWatched(Array.isArray(parsed) && parsed.includes(ticker));
+    } catch {
+      setIsWatched(false);
+    }
+  }, [ticker]);
+
+  const updateWatchlist = (nextWatched: boolean) => {
+    try {
+      const raw = localStorage.getItem(WATCHLIST_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      const current = Array.isArray(parsed) ? parsed : [];
+      const next = nextWatched ? Array.from(new Set([...current, ticker])) : current.filter((item) => item !== ticker);
+      localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Keep UI responsive even if storage is unavailable.
+    }
+  };
+
+  const handleBuy = () => {
+    if (onOpenTradeTicket) {
+      onOpenTradeTicket({
+        ticker,
+        company: stockInfo.name,
+        side: 'BUY',
+        price,
+      });
+      return;
+    }
+    console.log(`BUY ${ticker} @ ${price.toFixed(2)}`);
+  };
+
+  const handleSell = () => {
+    if (onOpenTradeTicket) {
+      onOpenTradeTicket({
+        ticker,
+        company: stockInfo.name,
+        side: 'SELL',
+        price,
+      });
+      return;
+    }
+    console.log(`SELL ${ticker} @ ${price.toFixed(2)}`);
+  };
+
+  const handleWatch = () => {
+    const nextWatched = !isWatched;
+    setIsWatched(nextWatched);
+    updateWatchlist(nextWatched);
+  };
 
   const getSentimentColor = (sentiment?: string) => {
     switch (sentiment) {
@@ -103,16 +173,19 @@ export function MarketDataCard({ ticker }: MarketDataCardProps) {
             </span>
             <span className="text-xs text-zinc-500">today</span>
           </div>
+          {liveDataError && (
+            <span className="text-xs text-zinc-500">Live data temporarily unavailable</span>
+          )}
         </div>
 
         {/* Sparkline */}
         <div className="w-24 h-12">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={sparklineData}>
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke={isPositive ? '#34d399' : '#f87171'} 
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke={isPositive ? '#34d399' : '#f87171'}
                 strokeWidth={2}
                 dot={false}
               />
@@ -123,15 +196,24 @@ export function MarketDataCard({ ticker }: MarketDataCardProps) {
 
       {/* Action Buttons */}
       <div className="grid grid-cols-3 gap-2">
-        <button className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors text-sm">
+        <button
+          onClick={handleBuy}
+          className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors text-sm"
+        >
           Buy
         </button>
-        <button className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm">
+        <button
+          onClick={handleSell}
+          className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors text-sm"
+        >
           Sell
         </button>
-        <button className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded transition-colors text-sm flex items-center justify-center gap-1">
+        <button
+          onClick={handleWatch}
+          className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded transition-colors text-sm flex items-center justify-center gap-1"
+        >
           <Activity className="w-3 h-3" />
-          Watch
+          {isWatched ? 'Watching' : 'Watch'}
         </button>
       </div>
     </div>

@@ -1,6 +1,9 @@
 import { AlertTriangle } from 'lucide-react';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
+import { useState } from 'react';
+import { TradeTicketDrawer } from '../TradeTicketDrawer';
+import type { TradeTicketInput } from '../TradeTicketDrawer';
 
 interface Message {
   id: string;
@@ -53,6 +56,24 @@ const mockMessages: Message[] = [
 ];
 
 export function MarketChatChannel() {
+  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [activeTicket, setActiveTicket] = useState<TradeTicketInput | null>(null);
+
+  const handlePlaceOrder = (side: 'BUY' | 'SELL', ticker: string, price: number) => {
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const actionMessage: Message = {
+      id: `trade-${Date.now()}-${ticker}-${side}`,
+      user: 'You',
+      verified: true,
+      content: `${side} order prepared for ${ticker} at ${price.toFixed(2)} GBp.`,
+      timestamp,
+      tickers: [ticker],
+    };
+
+    setMessages((prev) => [...prev, actionMessage]);
+  };
+
   return (
     <>
       {/* Warning Banner */}
@@ -63,13 +84,20 @@ export function MarketChatChannel() {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-zinc-950">
-        {mockMessages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
+        {messages.map((message) => (
+          <ChatMessage key={message.id} message={message} onOpenTradeTicket={setActiveTicket} />
         ))}
       </div>
 
       {/* Message Input */}
       <MessageInput />
+
+      <TradeTicketDrawer
+        isOpen={activeTicket !== null}
+        ticket={activeTicket}
+        onClose={() => setActiveTicket(null)}
+        onPlaceOrder={handlePlaceOrder}
+      />
     </>
   );
 }

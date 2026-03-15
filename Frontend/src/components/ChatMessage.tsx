@@ -1,5 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 import { MarketDataCard } from './MarketDataCard';
+import type { TradeTicketInput } from './TradeTicketDrawer';
 
 interface Message {
   id: string;
@@ -12,9 +13,10 @@ interface Message {
 
 interface ChatMessageProps {
   message: Message;
+  onOpenTradeTicket?: (ticket: TradeTicketInput) => void;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, onOpenTradeTicket }: ChatMessageProps) {
   return (
     <div className="flex gap-3">
       {/* Avatar */}
@@ -40,7 +42,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {message.tickers && message.tickers.length > 0 && (
           <div className="grid gap-3 mt-3 max-w-2xl">
             {message.tickers.map((ticker) => (
-              <MarketDataCard key={ticker} ticker={ticker} />
+              <MarketDataCard key={ticker} ticker={ticker} onOpenTradeTicket={onOpenTradeTicket} />
             ))}
           </div>
         )}

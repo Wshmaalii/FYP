@@ -2,6 +2,8 @@ import { ArrowLeft, Shield, Calendar, MessageSquare, TrendingUp, Star } from 'lu
 
 interface MyProfilePageProps {
   onBack: () => void;
+  userName?: string;
+  userEmail?: string;
 }
 
 const watchlistPreview = [
@@ -10,7 +12,16 @@ const watchlistPreview = [
   { ticker: 'VOD.L', price: 73.2, change: 1.11 },
 ];
 
-export function MyProfilePage({ onBack }: MyProfilePageProps) {
+export function MyProfilePage({ onBack, userName, userEmail }: MyProfilePageProps) {
+  const displayName = userName || 'Alex Morgan';
+  const initials = displayName
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const derivedHandle = userEmail ? `@${userEmail.split('@')[0]}` : '@alexmorgan';
+
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950">
       {/* Header */}
@@ -26,19 +37,19 @@ export function MyProfilePage({ onBack }: MyProfilePageProps) {
         <div className="flex items-start gap-6">
           {/* Profile Picture */}
           <div className="w-32 h-32 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-4xl">AM</span>
+            <span className="text-white text-4xl">{initials}</span>
           </div>
 
           {/* Profile Info */}
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-white text-2xl">Alex Morgan</h1>
+              <h1 className="text-white text-2xl">{displayName}</h1>
               <div className="flex items-center gap-1 px-3 py-1 bg-cyan-950 border border-cyan-800 rounded">
                 <Shield className="w-4 h-4 text-cyan-400" />
                 <span className="text-cyan-400 text-sm">Verified Trader</span>
               </div>
             </div>
-            <p className="text-zinc-400 mb-3">@alexmorgan</p>
+            <p className="text-zinc-400 mb-3">{derivedHandle}</p>
             <p className="text-zinc-300 mb-4 max-w-xl">
               Day Trader • Options Focus • Specializing in UK equities and FTSE 100 constituents. 
               Trading since 2018. Not financial advice.

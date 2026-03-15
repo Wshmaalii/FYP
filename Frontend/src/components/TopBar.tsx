@@ -5,9 +5,11 @@ import { View } from '../App';
 interface TopBarProps {
   currentView: View;
   onNavigate: (view: View) => void;
+  onLogout: () => Promise<void>;
+  userName?: string;
 }
 
-export function TopBar({ currentView, onNavigate }: TopBarProps) {
+export function TopBar({ currentView, onNavigate, onLogout, userName }: TopBarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -25,6 +27,13 @@ export function TopBar({ currentView, onNavigate }: TopBarProps) {
   const isProfileView = currentView === 'My Profile' || currentView === 'Account Settings';
   const displayTitle = isProfileView ? currentView : 'TradeLink';
   const displaySubtitle = !isProfileView ? `#${currentView}` : undefined;
+  const displayName = userName || 'Alex Morgan';
+  const initials = displayName
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="h-16 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6">
@@ -50,9 +59,9 @@ export function TopBar({ currentView, onNavigate }: TopBarProps) {
           className="flex items-center gap-3 px-3 py-2 rounded hover:bg-zinc-800 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="text-zinc-400 text-sm">Alex Morgan</span>
+            <span className="text-zinc-400 text-sm">{displayName}</span>
             <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm">AM</span>
+              <span className="text-white text-sm">{initials}</span>
             </div>
           </div>
         </button>
@@ -62,14 +71,14 @@ export function TopBar({ currentView, onNavigate }: TopBarProps) {
             <div className="p-4 border-b border-zinc-800 bg-zinc-950">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white">AM</span>
+                  <span className="text-white">{initials}</span>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-zinc-100">Alex Morgan</h3>
+                    <h3 className="text-zinc-100">{displayName}</h3>
                     <Shield className="w-4 h-4 text-cyan-400" />
                   </div>
-                  <p className="text-zinc-500 text-sm">@alexmorgan</p>
+                  <p className="text-zinc-500 text-sm">@{displayName.toLowerCase().replace(/\s+/g, '')}</p>
                 </div>
               </div>
             </div>
@@ -106,7 +115,13 @@ export function TopBar({ currentView, onNavigate }: TopBarProps) {
             </div>
 
             <div className="border-t border-zinc-800 py-2">
-              <button className="w-full flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-zinc-800 transition-colors">
+              <button
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  void onLogout();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-red-400 hover:bg-zinc-800 transition-colors"
+              >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Log Out</span>
               </button>

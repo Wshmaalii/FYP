@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { FTSE100Channel } from './components/channels/FTSE100Channel';
@@ -10,11 +10,61 @@ import { AccountSettingsPage } from './components/profile/AccountSettingsPage';
 import { TopMoversPage } from './components/pages/TopMoversPage';
 import { WatchlistPage } from './components/pages/WatchlistPage';
 import { MarketOverviewPage } from './components/pages/MarketOverviewPage';
+import { LoginPage } from './components/auth/LoginPage';
+import { SignupPage } from './components/auth/SignupPage';
+import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
 
 export type View = 'FTSE100' | 'Earnings Watch' | 'Market Chat' | 'Private Rooms' | 'My Profile' | 'Account Settings' | 'Top Movers' | 'Watchlist' | 'Market Overview';
+type AuthView = 'login' | 'signup';
+type AuthStatus = 'loading' | 'guest' | 'authed';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('Market Chat');
+  const [authView, setAuthView] = useState<AuthView>('login');
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const bootstrapAuth = async () => {
+      const token = getStoredToken();
+
+      if (!token) {
+        setAuthStatus('guest');
+        return;
+      }
+
+      try {
+        const user = await getCurrentUser(token);
+        setCurrentUser(user);
+        setAuthStatus('authed');
+      } catch {
+        clearStoredToken();
+        setAuthStatus('guest');
+      }
+    };
+
+    void bootstrapAuth();
+  }, []);
+
+  const handleLogin = async (email: string, password: string) => {
+    const user = await login(email, password);
+    setCurrentUser(user);
+    setAuthStatus('authed');
+  };
+
+  const handleSignup = async (name: string, email: string, password: string) => {
+    const user = await signup(name, email, password);
+    setCurrentUser(user);
+    setAuthStatus('authed');
+  };
+
+  const handleLogout = async () => {
+    await logout(getStoredToken());
+    setCurrentUser(null);
+    setAuthStatus('guest');
+    setAuthView('login');
+    setCurrentView('Market Chat');
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -27,7 +77,13 @@ export default function App() {
       case 'Private Rooms':
         return <PrivateRoomsChannel />;
       case 'My Profile':
-        return <MyProfilePage onBack={() => setCurrentView('Market Chat')} />;
+        return (
+          <MyProfilePage
+            onBack={() => setCurrentView('Market Chat')}
+            userName={currentUser?.name}
+            userEmail={currentUser?.email}
+          />
+        );
       case 'Account Settings':
         return <AccountSettingsPage onBack={() => setCurrentView('Market Chat')} />;
       case 'Top Movers':
@@ -41,11 +97,32 @@ export default function App() {
     }
   };
 
+  if (authStatus === 'loading') {
+    return (
+      <div className="flex h-screen bg-black items-center justify-center">
+        <div className="text-zinc-400 text-sm">Checking session...</div>
+      </div>
+    );
+  }
+
+  if (authStatus === 'guest') {
+    return authView === 'login' ? (
+      <LoginPage onLogin={handleLogin} onSwitchToSignup={() => setAuthView('signup')} />
+    ) : (
+      <SignupPage onSignup={handleSignup} onSwitchToLogin={() => setAuthView('login')} />
+    );
+  }
+
   return (
     <div className="flex h-screen bg-black">
       <Sidebar selectedChannel={currentView} onChannelSelect={setCurrentView} />
       <div className="flex-1 flex flex-col">
-        <TopBar currentView={currentView} onNavigate={setCurrentView} />
+        <TopBar
+          currentView={currentView}
+          onNavigate={setCurrentView}
+          onLogout={handleLogout}
+          userName={currentUser?.name}
+        />
         {renderView()}
       </div>
     </div>
