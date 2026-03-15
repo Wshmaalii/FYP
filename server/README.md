@@ -5,13 +5,13 @@
 Create `server/.env` with:
 
 ```env
-DATABASE_URL=postgresql://postgres:ynLk.#N!hp,i5kb@db.cqhqgmeygtzikfuxowsw.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:ynLk.#N!hp,i5kb@db.cqhqgmeygtzikfuxowsw.supabase.co:5432/postgres?sslmode=require
 SECRET_KEY=tradelink_fyp_secure_key_9f4a1d7c82f3b6e
 FRONTEND_URL=https://tradelink-fyp.vercel.app/
 ALPHA_VANTAGE_API_KEY=
 ```
 
-`DATABASE_URL` is normalized in code so reserved characters in the Supabase password are safely encoded before SQLAlchemy connects.
+`DATABASE_URL` is normalized in code so reserved characters in the Supabase password are safely encoded before SQLAlchemy connects, and the connection is upgraded to the `psycopg` driver automatically.
 
 ## Install
 

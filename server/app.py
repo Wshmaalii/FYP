@@ -50,6 +50,10 @@ def _normalize_database_url(raw_value: str) -> str:
         return value
 
     scheme, rest = value.split("://", 1)
+    if scheme == "postgresql":
+        scheme = "postgresql+psycopg"
+    elif scheme == "postgres":
+        scheme = "postgresql+psycopg"
     credentials, location = rest.rsplit("@", 1)
     if ":" not in credentials:
         return value
