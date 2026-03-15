@@ -1,12 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import json
 import os
+import time
 import uuid
-from typing import Dict, Optional
 from urllib import parse, request as urlrequest
 from urllib.error import HTTPError
-import json
-import time
 
+import jwt
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 try:
@@ -14,8 +14,11 @@ try:
 except ImportError:
     def load_dotenv(*args, **kwargs):
         return False
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
+
+from extensions import db, migrate
+from models import RevokedToken, User
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -23,34 +26,62 @@ load_dotenv(os.path.join(os.path.dirname(BASE_DIR), ".env"))
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = (
-    os.environ.get("FLASK_SECRET_KEY")
-    or os.environ.get("SECRET_KEY")
-    or "dev-secret-change-me"
-)
-serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
-app.config["DATABASE_URL"] = (os.environ.get("DATABASE_URL") or "").strip()
 
-frontend_api_url = (os.environ.get("FRONTEND_API_URL") or "http://localhost:5173").strip()
+def _clean_secret(raw_value: str, fallback: str) -> str:
+    value = (raw_value or "").strip()
+    if value.startswith("SECRET_KEY="):
+        value = value.split("=", 1)[1].strip()
+    return value or fallback
+
+
+def _normalize_database_url(raw_value: str) -> str:
+    value = (raw_value or "").strip()
+    if not value or "://" not in value or "@" not in value:
+        return value
+
+    scheme, rest = value.split("://", 1)
+    credentials, location = rest.rsplit("@", 1)
+    if ":" not in credentials:
+        return value
+
+    username, password = credentials.split(":", 1)
+    encoded_password = parse.quote(password, safe="")
+    return f"{scheme}://{username}:{encoded_password}@{location}"
+
+
+app.config["SECRET_KEY"] = _clean_secret(
+    os.environ.get("SECRET_KEY") or os.environ.get("FLASK_SECRET_KEY"),
+    "dev-secret-change-me",
+)
+app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_database_url(os.environ.get("DATABASE_URL"))
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+migrate.init_app(app, db)
+
+frontend_url = (
+    os.environ.get("FRONTEND_URL")
+    or os.environ.get("FRONTEND_API_URL")
+    or "http://localhost:3000"
+).strip().rstrip("/")
+
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    frontend_url,
+]
 CORS(
     app,
-    origins=[
-        "http://localhost:5173",
-        frontend_api_url,
-        "https://yourdomain.com",
-        "https://www.yourdomain.com",
-    ],
+    origins=[origin for origin in allowed_origins if origin],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# Minimal in-memory storage for Phase 1.
-users_by_email: Dict[str, Dict[str, str]] = {}
-revoked_tokens = set()
-market_cache: Dict[str, Dict[str, object]] = {}
-top_movers_cache: Dict[str, Dict[str, object]] = {}
-stock_quote_cache: Dict[str, Dict[str, object]] = {}
-stock_history_cache: Dict[str, Dict[str, object]] = {}
+JWT_EXPIRATION_DAYS = 7
+market_cache = {}
+top_movers_cache = {}
+stock_quote_cache = {}
+stock_history_cache = {}
 
 ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
 MARKET_CACHE_TTL_SECONDS = 15
@@ -100,22 +131,47 @@ TOP_MOVER_UNIVERSES = {
 
 
 def create_token(user_id: str) -> str:
-    return serializer.dumps({"sub": user_id, "iat": datetime.utcnow().isoformat()})
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": user_id,
+        "jti": str(uuid.uuid4()),
+        "iat": now,
+        "exp": now + timedelta(days=JWT_EXPIRATION_DAYS),
+    }
+    return jwt.encode(payload, app.config["SECRET_KEY"], algorithm="HS256")
 
 
-def verify_token(token: str) -> Optional[str]:
-    if token in revoked_tokens:
+def decode_token(token: str):
+    try:
+        payload = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+
+    jti = payload.get("jti")
+    if not jti:
+        return None
+
+    revoked = db.session.query(RevokedToken.id).filter_by(jti=jti).first()
+    if revoked:
+        return None
+
+    return payload
+
+
+def _get_user_from_payload(payload):
+    subject = payload.get("sub")
+    if not subject:
         return None
 
     try:
-        payload = serializer.loads(token, max_age=60 * 60 * 24 * 7)
-    except (BadSignature, SignatureExpired):
+        user_id = uuid.UUID(str(subject))
+    except (TypeError, ValueError):
         return None
 
-    return payload.get("sub")
+    return User.query.filter_by(id=user_id).first()
 
 
-def get_authorization_token() -> Optional[str]:
+def get_authorization_token() -> str | None:
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         return None
@@ -138,18 +194,6 @@ def _to_float(value, default=0.0):
                 return default
             return float(cleaned)
         return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _to_int(value, default=0):
-    try:
-        if isinstance(value, str):
-            cleaned = value.replace(",", "").strip()
-            if cleaned == "":
-                return default
-            return int(float(cleaned))
-        return int(float(value))
     except (TypeError, ValueError):
         return default
 
@@ -395,8 +439,15 @@ def market_top_movers():
             }
         )
 
-    gainers = sorted((stock for stock in movers if stock["changePercent"] >= 0), key=lambda x: x["changePercent"], reverse=True)[:5]
-    losers = sorted((stock for stock in movers if stock["changePercent"] < 0), key=lambda x: x["changePercent"])[:5]
+    gainers = sorted(
+        (stock for stock in movers if stock["changePercent"] >= 0),
+        key=lambda item: item["changePercent"],
+        reverse=True,
+    )[:5]
+    losers = sorted(
+        (stock for stock in movers if stock["changePercent"] < 0),
+        key=lambda item: item["changePercent"],
+    )[:5]
 
     payload = {
         "gainers": gainers,
@@ -425,24 +476,25 @@ def signup():
     if len(password) < 6:
         return json_error("Password must be at least 6 characters", 400)
 
-    if email in users_by_email:
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
         return json_error("Email is already registered", 409)
 
-    user = {
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "email": email,
-        "password_hash": generate_password_hash(password),
-    }
-    users_by_email[email] = user
-    token = create_token(user["id"])
-
-    return jsonify(
-        {
-            "token": token,
-            "user": {"id": user["id"], "name": user["name"], "email": user["email"]},
-        }
+    user = User(
+        name=name,
+        email=email,
+        password_hash=generate_password_hash(password),
     )
+    db.session.add(user)
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return json_error("Email is already registered", 409)
+
+    token = create_token(str(user.id))
+    return jsonify({"token": token, "user": user.to_dict()}), 201
 
 
 @app.route("/api/auth/login", methods=["POST"])
@@ -454,17 +506,12 @@ def login():
     if not email or not password:
         return json_error("Email and password are required", 400)
 
-    user = users_by_email.get(email)
-    if not user or not check_password_hash(user["password_hash"], password):
+    user = User.query.filter_by(email=email).first()
+    if not user or not check_password_hash(user.password_hash, password):
         return json_error("Invalid credentials", 401)
 
-    token = create_token(user["id"])
-    return jsonify(
-        {
-            "token": token,
-            "user": {"id": user["id"], "name": user["name"], "email": user["email"]},
-        }
-    )
+    token = create_token(str(user.id))
+    return jsonify({"token": token, "user": user.to_dict()})
 
 
 @app.route("/api/auth/me", methods=["GET"])
@@ -473,22 +520,32 @@ def me():
     if not token:
         return json_error("Missing token", 401)
 
-    user_id = verify_token(token)
-    if not user_id:
+    payload = decode_token(token)
+    if not payload:
         return json_error("Invalid token", 401)
 
-    user = next((candidate for candidate in users_by_email.values() if candidate["id"] == user_id), None)
+    user = _get_user_from_payload(payload)
     if not user:
         return json_error("User not found", 404)
 
-    return jsonify({"user": {"id": user["id"], "name": user["name"], "email": user["email"]}})
+    return jsonify({"user": user.to_dict()})
 
 
 @app.route("/api/auth/logout", methods=["POST"])
 def logout():
     token = get_authorization_token()
-    if token:
-        revoked_tokens.add(token)
+    if not token:
+        return jsonify({"message": "Logged out"})
+
+    payload = decode_token(token)
+    if payload:
+        revoked_token = RevokedToken(jti=payload["jti"])
+        db.session.add(revoked_token)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+
     return jsonify({"message": "Logged out"})
 
 
