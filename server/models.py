@@ -3,7 +3,10 @@ import uuid
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
 
-from extensions import db
+try:
+    from .extensions import db
+except ImportError:
+    from extensions import db
 
 
 class User(db.Model):

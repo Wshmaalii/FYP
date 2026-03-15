@@ -17,8 +17,12 @@ except ImportError:
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from extensions import db, migrate
-from models import RevokedToken, User
+try:
+    from .extensions import db, migrate
+    from .models import RevokedToken, User
+except ImportError:
+    from extensions import db, migrate
+    from models import RevokedToken, User
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
