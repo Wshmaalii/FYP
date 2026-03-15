@@ -1,4 +1,8 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const DEFAULT_PROD_API_URL = 'https://fyp-mnrg.onrender.com';
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? DEFAULT_PROD_API_URL : '')
+).replace(/\/$/, '');
 
 export interface MarketQuote {
   price: number;
@@ -35,8 +39,19 @@ export interface StockHistoryPoint {
 }
 
 async function parseError(response: Response) {
-  const data = await response.json().catch(() => ({}));
-  throw new Error(data.error || 'Failed to fetch market data');
+  const contentType = response.headers.get('content-type') || '';
+  const rawBody = await response.text();
+
+  if (contentType.includes('application/json')) {
+    const data = rawBody ? JSON.parse(rawBody) : {};
+    throw new Error(data.error || 'Failed to fetch market data');
+  }
+
+  if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
+    throw new Error('Market API returned HTML. Check VITE_API_URL / deployed API URL.');
+  }
+
+  throw new Error(rawBody || 'Failed to fetch market data');
 }
 
 export async function fetchQuote(symbol: string): Promise<StockQuoteResponse> {
@@ -87,7 +102,17 @@ export async function getQuotes(tickers: string[]): Promise<Record<string, Marke
 export async function getTopMovers(index: string): Promise<TopMoversResponse> {
   const query = encodeURIComponent(index);
   const response = await fetch(`${API_BASE_URL}/api/market/top-movers?index=${query}`);
-  const data = await response.json();
+  const contentType = response.headers.get('content-type') || '';
+  const rawBody = await response.text();
+
+  if (!contentType.includes('application/json')) {
+    if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
+      throw new Error('Market API returned HTML. Check VITE_API_URL / deployed API URL.');
+    }
+    throw new Error(rawBody || 'Failed to fetch top movers');
+  }
+
+  const data = rawBody ? JSON.parse(rawBody) : {};
 
   if (!response.ok) {
     throw new Error(data.error || 'Failed to fetch top movers');

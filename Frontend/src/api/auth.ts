@@ -1,4 +1,8 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const DEFAULT_PROD_API_URL = 'https://fyp-mnrg.onrender.com';
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? DEFAULT_PROD_API_URL : '')
+).replace(/\/$/, '');
 const TOKEN_KEY = 'tradelink_auth_token';
 
 export interface AuthUser {
@@ -21,13 +25,28 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     },
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get('content-type') || '';
+  const rawBody = await response.text();
+  const isJson = contentType.includes('application/json');
+  const data = isJson && rawBody ? JSON.parse(rawBody) : null;
 
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed');
+    if (data && typeof data === 'object' && 'error' in data) {
+      throw new Error(String(data.error));
+    }
+
+    if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
+      throw new Error('Auth API returned HTML. Check VITE_API_URL / deployed API URL.');
+    }
+
+    throw new Error(rawBody || 'Request failed');
   }
 
-  return data;
+  if (!isJson) {
+    throw new Error('Auth API did not return JSON.');
+  }
+
+  return data as T;
 }
 
 export function getStoredToken(): string | null {
