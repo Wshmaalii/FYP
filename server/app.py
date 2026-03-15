@@ -29,6 +29,8 @@ app = Flask(__name__)
 
 def _clean_secret(raw_value: str, fallback: str) -> str:
     value = (raw_value or "").strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        value = value[1:-1].strip()
     if value.startswith("SECRET_KEY="):
         value = value.split("=", 1)[1].strip()
     return value or fallback
@@ -36,6 +38,10 @@ def _clean_secret(raw_value: str, fallback: str) -> str:
 
 def _normalize_database_url(raw_value: str) -> str:
     value = (raw_value or "").strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        value = value[1:-1].strip()
+    if value.startswith("DATABASE_URL="):
+        value = value.split("=", 1)[1].strip()
     if not value or "://" not in value or "@" not in value:
         return value
 
