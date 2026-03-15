@@ -1,8 +1,6 @@
-const DEFAULT_PROD_API_URL = 'https://fyp-mnrg.onrender.com';
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD ? DEFAULT_PROD_API_URL : '')
-).replace(/\/$/, '');
+import { getApiBaseUrl } from './config';
+
+const API_BASE_URL = getApiBaseUrl();
 const TOKEN_KEY = 'tradelink_auth_token';
 
 export interface AuthUser {
