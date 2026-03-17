@@ -31,6 +31,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 load_dotenv(os.path.join(os.path.dirname(BASE_DIR), ".env"))
 
 app = Flask(__name__)
+schema_initialized = False
 
 
 def _clean_secret(raw_value: str, fallback: str) -> str:
@@ -198,6 +199,16 @@ def json_error(message: str, status: int):
     return jsonify({"error": message}), status
 
 
+def ensure_database_schema():
+    global schema_initialized
+
+    if schema_initialized:
+        return
+
+    db.create_all()
+    schema_initialized = True
+
+
 @app.errorhandler(HTTPException)
 def handle_http_exception(exc: HTTPException):
     return json_error(exc.description or "Request failed", exc.code or 500)
@@ -344,6 +355,7 @@ def root():
 @app.route("/api/health", methods=["GET"])
 def health():
     try:
+        ensure_database_schema()
         db.session.execute(text("SELECT 1"))
     except SQLAlchemyError:
         db.session.rollback()
@@ -508,6 +520,7 @@ def market_top_movers():
 
 @app.route("/api/auth/signup", methods=["POST"])
 def signup():
+    ensure_database_schema()
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
@@ -542,6 +555,7 @@ def signup():
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():
+    ensure_database_schema()
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
@@ -559,6 +573,7 @@ def login():
 
 @app.route("/api/auth/me", methods=["GET"])
 def me():
+    ensure_database_schema()
     token = get_authorization_token()
     if not token:
         return json_error("Missing token", 401)
@@ -576,6 +591,7 @@ def me():
 
 @app.route("/api/auth/logout", methods=["POST"])
 def logout():
+    ensure_database_schema()
     token = get_authorization_token()
     if not token:
         return jsonify({"message": "Logged out"})
