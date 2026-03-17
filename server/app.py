@@ -14,7 +14,9 @@ try:
 except ImportError:
     def load_dotenv(*args, **kwargs):
         return False
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
@@ -196,6 +198,22 @@ def json_error(message: str, status: int):
     return jsonify({"error": message}), status
 
 
+@app.errorhandler(HTTPException)
+def handle_http_exception(exc: HTTPException):
+    return json_error(exc.description or "Request failed", exc.code or 500)
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_exception(exc: Exception):
+    if isinstance(exc, SQLAlchemyError):
+        db.session.rollback()
+        app.logger.exception("Database error")
+        return json_error("Database error", 500)
+
+    app.logger.exception("Unhandled error")
+    return json_error("Internal server error", 500)
+
+
 def get_alpha_vantage_api_key() -> str:
     return (os.getenv("ALPHA_VANTAGE_API_KEY") or "").strip()
 
@@ -318,9 +336,20 @@ def fetch_alpha_vantage_history(symbol: str, api_key: str):
     return latest_points
 
 
+@app.route("/", methods=["GET"])
+def root():
+    return jsonify({"status": "ok", "service": "TradeLink API"})
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    try:
+        db.session.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"status": "error", "database": "unreachable"}), 503
+
+    return jsonify({"status": "ok", "database": "ok"})
 
 
 @app.route("/api/stocks/quote/<symbol>", methods=["GET"])
