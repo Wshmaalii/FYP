@@ -7,13 +7,26 @@ interface Message {
   user: string;
   verified: boolean;
   content: string;
-  timestamp: string;
+  timestamp: string | null;
   tickers?: string[];
 }
 
 interface ChatMessageProps {
   message: Message;
   onOpenTradeTicket?: (ticket: TradeTicketInput) => void;
+}
+
+function formatTimestamp(value: string) {
+  if (!value.includes('T')) {
+    return value;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function ChatMessage({ message, onOpenTradeTicket }: ChatMessageProps) {
@@ -31,7 +44,7 @@ export function ChatMessage({ message, onOpenTradeTicket }: ChatMessageProps) {
           {message.verified && (
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
           )}
-          <span className="text-zinc-600 text-xs">{message.timestamp}</span>
+          <span className="text-zinc-600 text-xs">{formatTimestamp(message.timestamp)}</span>
         </div>
 
         <div className="bg-zinc-900 rounded-2xl rounded-tl-sm px-4 py-3 border border-zinc-800 inline-block max-w-2xl">

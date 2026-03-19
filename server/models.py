@@ -20,6 +20,7 @@ class User(db.Model):
 
     profile = db.relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     settings = db.relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     watchlist_items = db.relationship("WatchlistItem", back_populates="user", cascade="all, delete-orphan")
     activities = db.relationship("UserActivity", back_populates="user", cascade="all, delete-orphan")
 
@@ -94,6 +95,37 @@ class UserSettings(db.Model):
             "message_notifications": self.message_notifications,
             "profile_visibility": self.profile_visibility,
             "dark_mode": self.dark_mode,
+        }
+
+
+class ChatMessage(db.Model):
+    __tablename__ = "chat_messages"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    channel = db.Column(String(32), nullable=False, index=True)
+    content = db.Column(Text, nullable=False)
+    ticker_symbols = db.Column(Text, nullable=False, default="")
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+
+    user = db.relationship("User", back_populates="messages")
+
+    def ticker_list(self):
+        return [ticker for ticker in (self.ticker_symbols or "").split(",") if ticker]
+
+    def to_dict(self):
+        profile = self.user.profile if self.user else None
+        display_name = profile.full_name if profile else (self.user.name if self.user else "Trader")
+        verified = profile.verified_trader if profile else False
+        return {
+            "id": str(self.id),
+            "user_id": str(self.user_id),
+            "user": display_name,
+            "verified": verified,
+            "content": self.content,
+            "timestamp": self.created_at.isoformat() if self.created_at else None,
+            "tickers": self.ticker_list(),
+            "channel": self.channel,
         }
 
 

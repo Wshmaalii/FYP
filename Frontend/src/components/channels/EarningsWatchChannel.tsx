@@ -1,15 +1,8 @@
-import { AlertTriangle, TrendingUp, TrendingDown, Clock, Calendar } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { fetchMessages, sendMessage, type ChannelMessage } from '../../api/messages';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
-
-interface Message {
-  id: string;
-  user: string;
-  verified: boolean;
-  content: string;
-  timestamp: string;
-  tickers?: string[];
-}
 
 interface EarningsReport {
   ticker: string;
@@ -31,7 +24,7 @@ const upcomingEarnings: EarningsReport[] = [
     countdown: '2h 15m',
     eps: { expected: 12.5, actual: 13.2 },
     revenue: { expected: '15.2B', actual: '15.8B' },
-    tags: ['EPS Beat', 'Revenue Beat', 'Guidance Raised']
+    tags: ['EPS Beat', 'Revenue Beat', 'Guidance Raised'],
   },
   {
     ticker: 'BARC.L',
@@ -41,7 +34,7 @@ const upcomingEarnings: EarningsReport[] = [
     countdown: '2h 45m',
     eps: { expected: 8.3 },
     revenue: { expected: '6.2B' },
-    tags: []
+    tags: [],
   },
   {
     ticker: 'ULVR.L',
@@ -51,32 +44,7 @@ const upcomingEarnings: EarningsReport[] = [
     countdown: '1d 2h',
     eps: { expected: 45.2 },
     revenue: { expected: '13.8B' },
-    tags: []
-  },
-];
-
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    user: 'Emma Thompson',
-    verified: true,
-    content: 'TSCO.L earnings just dropped. Strong beat on both EPS and revenue. Guidance raised for Q4.',
-    timestamp: '07:05',
-    tickers: []
-  },
-  {
-    id: '2',
-    user: 'James Fletcher',
-    verified: true,
-    content: 'Impressive results from Tesco. Digital sales up 18% YoY. Looking strong going into the holiday season.',
-    timestamp: '07:12',
-  },
-  {
-    id: '3',
-    user: 'Michael Roberts',
-    verified: false,
-    content: 'Analyst commentary from Barclays suggests BARC.L could surprise to the upside. Strong investment banking activity.',
-    timestamp: '08:20',
+    tags: [],
   },
 ];
 
@@ -106,7 +74,6 @@ function EarningsCard({ report }: { report: EarningsReport }) {
         </div>
       </div>
 
-      {/* Metrics */}
       <div className="grid grid-cols-2 gap-4 mb-3">
         <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
           <p className="text-zinc-500 text-xs mb-1">EPS</p>
@@ -132,7 +99,6 @@ function EarningsCard({ report }: { report: EarningsReport }) {
         </div>
       </div>
 
-      {/* Tags */}
       {report.tags.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {report.tags.map((tag) => {
@@ -157,16 +123,64 @@ function EarningsCard({ report }: { report: EarningsReport }) {
 }
 
 export function EarningsWatchChannel() {
+  const [messages, setMessages] = useState<ChannelMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMessages = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const messageData = await fetchMessages('earnings');
+        if (isMounted) {
+          setMessages(messageData);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load commentary');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadMessages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSend = async (content: string) => {
+    setIsSending(true);
+    setError(null);
+
+    try {
+      const createdMessage = await sendMessage('earnings', content);
+      setMessages((current) => [...current, createdMessage]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send commentary');
+      throw err;
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <>
-      {/* Warning Banner */}
       <div className="bg-amber-950 border-b border-amber-900 px-6 py-3 flex items-center gap-2">
         <AlertTriangle className="w-4 h-4 text-amber-400" />
         <span className="text-amber-300 text-sm">Earnings data is subject to company reporting schedules and may change.</span>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-zinc-950">
-        {/* Upcoming Earnings */}
         <div className="border-b border-zinc-800 p-6">
           <div className="flex items-center gap-2 mb-4">
             <Calendar className="w-5 h-5 text-cyan-400" />
@@ -179,17 +193,28 @@ export function EarningsWatchChannel() {
           </div>
         </div>
 
-        {/* Chat Messages */}
         <div className="p-6 space-y-4">
           <h2 className="text-zinc-100 mb-4">Analyst Commentary</h2>
-          {mockMessages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))}
+          {error && (
+            <div className="bg-zinc-900 border border-red-900 rounded-lg p-4 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="text-zinc-400 text-sm">Loading commentary...</div>
+          ) : messages.length === 0 ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">
+              No commentary yet. Share the first earnings update.
+            </div>
+          ) : (
+            messages.map((message) => (
+              <ChatMessage key={message.id} message={message} />
+            ))
+          )}
         </div>
       </div>
 
-      {/* Message Input */}
-      <MessageInput />
+      <MessageInput onSend={handleSend} isSending={isSending} placeholder="Share earnings commentary..." />
     </>
   );
 }

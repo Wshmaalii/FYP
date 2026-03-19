@@ -22,10 +22,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
     from .extensions import db, migrate
-    from .models import RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
+    from .models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 except ImportError:
     from extensions import db, migrate
-    from models import RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
+    from models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -91,7 +91,7 @@ allowed_origins = [
 CORS(
     app,
     origins=[origin for origin in allowed_origins if origin],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -223,6 +223,14 @@ def _initials_from_name(name: str) -> str:
     return "".join(part[0] for part in parts[:2]).upper()
 
 
+def _extract_tickers(content: str):
+    tickers = []
+    for match in re.findall(r"\b[A-Z]{2,5}(?:\.[A-Z]{1,3})?\b", content or ""):
+        if match not in tickers:
+            tickers.append(match)
+    return tickers[:5]
+
+
 def _generate_unique_username(base_value: str, excluded_user_id=None) -> str:
     base = _username_seed(base_value)
     candidate = base
@@ -333,9 +341,15 @@ def build_settings_payload(user: User):
 def build_profile_stats_payload(user: User):
     profile = ensure_user_profile(user)
     watchlist_count = WatchlistItem.query.filter_by(user_id=user.id).count()
+    messages_sent_count = ChatMessage.query.filter_by(user_id=user.id).count()
+    tickers_shared_count = sum(len(message.ticker_list()) for message in ChatMessage.query.filter_by(user_id=user.id).all())
+
+    profile.messages_sent_count = messages_sent_count
+    profile.tickers_shared_count = tickers_shared_count
+    db.session.flush()
     return {
-        "messages_sent_count": profile.messages_sent_count,
-        "tickers_shared_count": profile.tickers_shared_count,
+        "messages_sent_count": messages_sent_count,
+        "tickers_shared_count": tickers_shared_count,
         "watchlist_items_count": watchlist_count,
         "trust_score": profile.trust_score,
     }
@@ -821,6 +835,71 @@ def settings_me():
     db.session.commit()
 
     return jsonify({"settings": build_settings_payload(user)})
+
+
+@app.route("/api/messages", methods=["GET", "POST"])
+def messages():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    valid_channels = {"market", "private", "earnings"}
+
+    if request.method == "GET":
+        channel = (request.args.get("channel") or "").strip().lower()
+        if channel not in valid_channels:
+            return json_error("Invalid message channel", 400)
+
+        try:
+            requested_limit = int(request.args.get("limit", 50))
+        except (TypeError, ValueError):
+            requested_limit = 50
+
+        limit = min(max(requested_limit, 1), 100)
+        messages_query = (
+            ChatMessage.query
+            .filter_by(channel=channel)
+            .order_by(ChatMessage.created_at.asc())
+            .limit(limit)
+            .all()
+        )
+        return jsonify({"messages": [message.to_dict() for message in messages_query]})
+
+    data = request.get_json(silent=True) or {}
+    channel = (data.get("channel") or "").strip().lower()
+    content = (data.get("content") or "").strip()
+
+    if channel not in valid_channels:
+        return json_error("Invalid message channel", 400)
+
+    if not content:
+        return json_error("Message content is required", 400)
+
+    tickers = _extract_tickers(content.upper())
+    message = ChatMessage(
+        user_id=user.id,
+        channel=channel,
+        content=content,
+        ticker_symbols=",".join(tickers),
+    )
+    db.session.add(message)
+
+    profile = ensure_user_profile(user)
+    profile.messages_sent_count += 1
+    profile.tickers_shared_count += len(tickers)
+
+    activity_description = f"Sent a message in {channel} chat"
+    activity_type = "message_sent"
+    activity_ticker = tickers[0] if tickers else None
+
+    if tickers:
+        activity_description = f"Shared {', '.join(tickers)} in {channel} chat"
+        activity_type = "ticker_shared"
+
+    _create_activity(user.id, activity_type, activity_description, ticker=activity_ticker)
+    db.session.commit()
+
+    return jsonify({"message": message.to_dict()}), 201
 
 
 @app.route("/api/watchlist", methods=["GET", "POST"])

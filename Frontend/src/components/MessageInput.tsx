@@ -1,21 +1,27 @@
 import { Send, Paperclip, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
-export function MessageInput() {
+interface MessageInputProps {
+  onSend?: (message: string) => Promise<void> | void;
+  isSending?: boolean;
+  placeholder?: string;
+}
+
+export function MessageInput({ onSend, isSending = false, placeholder = 'Type a message... Use @ to mention, # for tickers' }: MessageInputProps) {
   const [message, setMessage] = useState('');
 
-  const handleSend = () => {
-    if (message.trim()) {
-      // In a real app, this would send the message
-      console.log('Sending:', message);
+  const handleSend = async () => {
+    if (message.trim() && onSend) {
+      const value = message.trim();
+      await onSend(value);
       setMessage('');
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
@@ -43,8 +49,8 @@ export function MessageInput() {
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type a message... Use @ to mention, # for tickers"
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
             className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             rows={1}
             style={{ minHeight: '44px', maxHeight: '120px' }}
@@ -53,8 +59,8 @@ export function MessageInput() {
 
         {/* Send Button */}
         <button
-          onClick={handleSend}
-          disabled={!message.trim()}
+          onClick={() => void handleSend()}
+          disabled={!message.trim() || isSending}
           className="w-11 h-11 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:bg-zinc-800 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
         >
           <Send className="w-5 h-5 text-white" />

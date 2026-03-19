@@ -53,7 +53,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              placeholder="Alex Morgan"
+              placeholder="Full name"
               required
             />
           </div>
