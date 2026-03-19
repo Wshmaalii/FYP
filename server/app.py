@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import json
 import os
+import re
 import time
 import uuid
 from urllib import parse, request as urlrequest
@@ -21,10 +22,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
     from .extensions import db, migrate
-    from .models import RevokedToken, User
+    from .models import RevokedToken, User, UserActivity, UserProfile, WatchlistItem
 except ImportError:
     from extensions import db, migrate
-    from models import RevokedToken, User
+    from models import RevokedToken, User, UserActivity, UserProfile, WatchlistItem
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -207,6 +208,106 @@ def ensure_database_schema():
 
     db.create_all()
     schema_initialized = True
+
+
+def _username_seed(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9_]", "", value.lower().replace(" ", "_"))
+    normalized = normalized.strip("_")
+    return normalized[:24] or f"user{uuid.uuid4().hex[:6]}"
+
+
+def _initials_from_name(name: str) -> str:
+    parts = [part for part in (name or "").split() if part]
+    if not parts:
+        return "TL"
+    return "".join(part[0] for part in parts[:2]).upper()
+
+
+def _generate_unique_username(base_value: str, excluded_user_id=None) -> str:
+    base = _username_seed(base_value)
+    candidate = base
+    suffix = 1
+
+    while True:
+        existing = UserProfile.query.filter_by(username=candidate).first()
+        if not existing or existing.user_id == excluded_user_id:
+            return candidate
+        suffix += 1
+        candidate = f"{base[:20]}{suffix}"
+
+
+def _create_activity(user_id, activity_type: str, description: str, ticker: str | None = None):
+    activity = UserActivity(
+        user_id=user_id,
+        activity_type=activity_type,
+        description=description,
+        ticker=ticker,
+    )
+    db.session.add(activity)
+    return activity
+
+
+def ensure_user_profile(user: User) -> UserProfile:
+    profile = user.profile
+    if profile:
+        return profile
+
+    profile = UserProfile(
+        user_id=user.id,
+        full_name=user.name,
+        username=_generate_unique_username(user.email.split("@")[0] or user.name),
+        bio="",
+        avatar_seed=_initials_from_name(user.name),
+        joined_at=user.created_at,
+        verified_trader=False,
+        trust_score=50,
+        messages_sent_count=0,
+        tickers_shared_count=0,
+    )
+    db.session.add(profile)
+    db.session.flush()
+    return profile
+
+
+def get_authenticated_user():
+    ensure_database_schema()
+    token = get_authorization_token()
+    if not token:
+        return None, json_error("Missing token", 401)
+
+    payload = decode_token(token)
+    if not payload:
+        return None, json_error("Invalid token", 401)
+
+    user = _get_user_from_payload(payload)
+    if not user:
+        return None, json_error("User not found", 404)
+
+    created_profile = user.profile is None
+    ensure_user_profile(user)
+    if created_profile:
+        db.session.commit()
+    return user, None
+
+
+def build_profile_payload(user: User):
+    profile = ensure_user_profile(user)
+    return {
+        "user_id": str(user.id),
+        "email": user.email,
+        **profile.to_dict(),
+    }
+
+
+def build_profile_stats_payload(user: User):
+    profile = ensure_user_profile(user)
+    watchlist_count = WatchlistItem.query.filter_by(user_id=user.id).count()
+    return {
+        "messages_sent_count": profile.messages_sent_count,
+        "tickers_shared_count": profile.tickers_shared_count,
+        "watchlist_items_count": watchlist_count,
+        "trust_score": profile.trust_score,
+    }
 
 
 @app.errorhandler(HTTPException)
@@ -549,6 +650,10 @@ def signup():
         db.session.rollback()
         return json_error("Email is already registered", 409)
 
+    ensure_user_profile(user)
+    _create_activity(user.id, "account_created", "Created account")
+    db.session.commit()
+
     token = create_token(str(user.id))
     return jsonify({"token": token, "user": user.to_dict()}), 201
 
@@ -567,26 +672,156 @@ def login():
     if not user or not check_password_hash(user.password_hash, password):
         return json_error("Invalid credentials", 401)
 
+    ensure_user_profile(user)
+    db.session.commit()
     token = create_token(str(user.id))
     return jsonify({"token": token, "user": user.to_dict()})
 
 
 @app.route("/api/auth/me", methods=["GET"])
 def me():
-    ensure_database_schema()
-    token = get_authorization_token()
-    if not token:
-        return json_error("Missing token", 401)
-
-    payload = decode_token(token)
-    if not payload:
-        return json_error("Invalid token", 401)
-
-    user = _get_user_from_payload(payload)
-    if not user:
-        return json_error("User not found", 404)
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
 
     return jsonify({"user": user.to_dict()})
+
+
+@app.route("/api/profile/me", methods=["GET", "PATCH", "PUT"])
+def profile_me():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    profile = ensure_user_profile(user)
+
+    if request.method == "GET":
+        return jsonify({"profile": build_profile_payload(user)})
+
+    data = request.get_json(silent=True) or {}
+    full_name = (data.get("full_name") or "").strip()
+    username = (data.get("username") or "").strip().lower()
+    bio = (data.get("bio") or "").strip()
+    avatar_url = (data.get("avatar_url") or "").strip() or None
+
+    if not full_name:
+        return json_error("Full name is required", 400)
+
+    if not username:
+        return json_error("Username is required", 400)
+
+    if not re.fullmatch(r"[a-z0-9_]{3,24}", username):
+        return json_error("Username must be 3-24 characters using lowercase letters, numbers, or underscores", 400)
+
+    existing_username = UserProfile.query.filter_by(username=username).first()
+    if existing_username and existing_username.user_id != user.id:
+        return json_error("Username is already taken", 409)
+
+    profile.full_name = full_name
+    profile.username = username
+    profile.bio = bio[:280]
+    profile.avatar_url = avatar_url
+    profile.avatar_seed = _initials_from_name(full_name)
+    user.name = full_name
+
+    _create_activity(user.id, "profile_updated", "Updated profile")
+    db.session.commit()
+
+    return jsonify({"profile": build_profile_payload(user)})
+
+
+@app.route("/api/profile/stats", methods=["GET"])
+def profile_stats():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    return jsonify({"stats": build_profile_stats_payload(user)})
+
+
+@app.route("/api/profile/activity", methods=["GET"])
+def profile_activity():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    try:
+        requested_limit = int(request.args.get("limit", 10))
+    except (TypeError, ValueError):
+        requested_limit = 10
+
+    limit = min(max(requested_limit, 1), 25)
+    activities = (
+        UserActivity.query
+        .filter_by(user_id=user.id)
+        .order_by(UserActivity.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    return jsonify({"activities": [activity.to_dict() for activity in activities]})
+
+
+@app.route("/api/watchlist", methods=["GET", "POST"])
+def watchlist():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    if request.method == "GET":
+        items = (
+            WatchlistItem.query
+            .filter_by(user_id=user.id)
+            .order_by(WatchlistItem.created_at.desc())
+            .all()
+        )
+        return jsonify({"items": [item.to_dict() for item in items]})
+
+    data = request.get_json(silent=True) or {}
+    ticker = (data.get("ticker") or "").strip().upper()
+    company_name = (data.get("company_name") or "").strip() or None
+
+    if not ticker:
+        return json_error("Ticker is required", 400)
+
+    existing_item = WatchlistItem.query.filter_by(user_id=user.id, ticker=ticker).first()
+    if existing_item:
+        return json_error("Ticker is already in your watchlist", 409)
+
+    item = WatchlistItem(user_id=user.id, ticker=ticker, company_name=company_name)
+    db.session.add(item)
+    _create_activity(
+        user.id,
+        "watchlist_added",
+        f"Added {ticker} to watchlist",
+        ticker=ticker,
+    )
+    db.session.commit()
+
+    return jsonify({"item": item.to_dict()}), 201
+
+
+@app.route("/api/watchlist/<ticker>", methods=["DELETE"])
+def delete_watchlist_item(ticker):
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    normalized_ticker = (ticker or "").strip().upper()
+    item = WatchlistItem.query.filter_by(user_id=user.id, ticker=normalized_ticker).first()
+    if not item:
+        return json_error("Watchlist item not found", 404)
+
+    db.session.delete(item)
+    _create_activity(
+        user.id,
+        "watchlist_removed",
+        f"Removed {normalized_ticker} from watchlist",
+        ticker=normalized_ticker,
+    )
+    db.session.commit()
+
+    return jsonify({"message": "Watchlist item removed"})
 
 
 @app.route("/api/auth/logout", methods=["POST"])

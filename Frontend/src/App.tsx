@@ -13,6 +13,7 @@ import { MarketOverviewPage } from './components/pages/MarketOverviewPage';
 import { LoginPage } from './components/auth/LoginPage';
 import { SignupPage } from './components/auth/SignupPage';
 import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
+import { fetchMyProfile, type UserProfile } from './api/profile';
 
 export type View = 'FTSE100' | 'Earnings Watch' | 'Market Chat' | 'Private Rooms' | 'My Profile' | 'Account Settings' | 'Top Movers' | 'Watchlist' | 'Market Overview';
 type AuthView = 'login' | 'signup';
@@ -23,6 +24,7 @@ export default function App() {
   const [authView, setAuthView] = useState<AuthView>('login');
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const bootstrapAuth = async () => {
@@ -36,6 +38,8 @@ export default function App() {
       try {
         const user = await getCurrentUser(token);
         setCurrentUser(user);
+        const profile = await fetchMyProfile();
+        setCurrentProfile(profile);
         setAuthStatus('authed');
       } catch {
         clearStoredToken();
@@ -48,19 +52,24 @@ export default function App() {
 
   const handleLogin = async (email: string, password: string) => {
     const user = await login(email, password);
+    const profile = await fetchMyProfile();
     setCurrentUser(user);
+    setCurrentProfile(profile);
     setAuthStatus('authed');
   };
 
   const handleSignup = async (name: string, email: string, password: string) => {
     const user = await signup(name, email, password);
+    const profile = await fetchMyProfile();
     setCurrentUser(user);
+    setCurrentProfile(profile);
     setAuthStatus('authed');
   };
 
   const handleLogout = async () => {
     await logout(getStoredToken());
     setCurrentUser(null);
+    setCurrentProfile(null);
     setAuthStatus('guest');
     setAuthView('login');
     setCurrentView('Market Chat');
@@ -80,8 +89,8 @@ export default function App() {
         return (
           <MyProfilePage
             onBack={() => setCurrentView('Market Chat')}
-            userName={currentUser?.name}
-            userEmail={currentUser?.email}
+            onViewWatchlist={() => setCurrentView('Watchlist')}
+            onProfileUpdated={setCurrentProfile}
           />
         );
       case 'Account Settings':
@@ -121,7 +130,10 @@ export default function App() {
           currentView={currentView}
           onNavigate={setCurrentView}
           onLogout={handleLogout}
-          userName={currentUser?.name}
+          userName={currentProfile?.full_name || currentUser?.name}
+          userHandle={currentProfile?.username}
+          avatarUrl={currentProfile?.avatar_url || undefined}
+          avatarSeed={currentProfile?.avatar_seed}
         />
         {renderView()}
       </div>

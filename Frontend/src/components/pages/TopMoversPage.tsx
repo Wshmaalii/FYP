@@ -2,6 +2,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { getTopMovers, TopMoverItem } from '../../api/market';
+import { addWatchlistItem } from '../../api/watchlist';
 
 interface TopMoversPageProps {
   onBack: () => void;
@@ -152,6 +153,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
   const [losers, setLosers] = useState<Stock[]>(fallbackLosers);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [watchlistMessage, setWatchlistMessage] = useState<string | null>(null);
 
   const formatVolume = (volume: number) => {
     if (volume >= 1_000_000_000) {
@@ -220,9 +222,15 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
     setExpandedTicker((current) => (current === ticker ? null : ticker));
   };
 
-  const handleAddToWatchlist = (ticker: string) => {
-    console.log('Adding to watchlist:', ticker);
-    // In a real app, this would update the watchlist
+  const handleAddToWatchlist = async (ticker: string) => {
+    const stock = [...gainers, ...losers].find((item) => item.ticker === ticker);
+
+    try {
+      await addWatchlistItem(ticker, stock?.name);
+      setWatchlistMessage(`${ticker} added to your watchlist.`);
+    } catch (err) {
+      setWatchlistMessage(err instanceof Error ? err.message : 'Failed to add watchlist item');
+    }
   };
 
   return (
@@ -263,6 +271,11 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
       </div>
 
       <div className="p-6 space-y-6">
+        {watchlistMessage && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-300">
+            {watchlistMessage}
+          </div>
+        )}
         {/* Gainers */}
         <div>
           <div className="flex items-center gap-2 mb-4">

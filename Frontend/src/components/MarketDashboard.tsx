@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
 import { getQuotes, MarketQuote } from '../api/market';
+import { fetchWatchlist } from '../api/watchlist';
 
 interface Stock {
   ticker: string;
@@ -25,18 +26,6 @@ const topMovers: Stock[] = [
   { ticker: 'BARC.L', name: 'Barclays', price: 186.5, change: 4.3, changePercent: 2.36 },
   { ticker: 'LLOY.L', name: 'Lloyds', price: 52.8, change: -1.2, changePercent: -2.22 },
   { ticker: 'BP.L', name: 'BP PLC', price: 445.6, change: 8.9, changePercent: 2.04 },
-];
-
-const watchlist: Stock[] = [
-  { ticker: 'VOD.L', name: 'Vodafone', price: 73.2, change: 0.8, changePercent: 1.11 },
-  { ticker: 'HSBA.L', name: 'HSBC', price: 658.4, change: -2.1, changePercent: -0.32 },
-  { ticker: 'GSK.L', name: 'GSK', price: 1542.0, change: 15.5, changePercent: 1.01 },
-];
-
-const sidebarTickers = [
-  ...marketIndices.map((stock) => stock.ticker),
-  ...topMovers.map((stock) => stock.ticker),
-  ...watchlist.map((stock) => stock.ticker),
 ];
 
 function StockItem({ stock }: { stock: Stock }) {
@@ -69,6 +58,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [liveQuotes, setLiveQuotes] = useState<Record<string, MarketQuote>>({});
   const [liveDataError, setLiveDataError] = useState(false);
+  const [watchlist, setWatchlist] = useState<Stock[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -83,8 +73,29 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
 
     const loadQuotes = async () => {
       try {
+        const watchlistItems = await fetchWatchlist().catch(() => []);
+        const watchlistStocks: Stock[] = watchlistItems.slice(0, 3).map((item) => ({
+          ticker: item.ticker,
+          name: item.company_name || item.ticker,
+          price: 0,
+          change: 0,
+          changePercent: 0,
+        }));
+        const sidebarTickers = [
+          ...marketIndices.map((stock) => stock.ticker),
+          ...topMovers.map((stock) => stock.ticker),
+          ...watchlistStocks.map((stock) => stock.ticker),
+        ];
         const quotes = await getQuotes(sidebarTickers);
         if (isMounted) {
+          setWatchlist(
+            watchlistStocks.map((stock) => ({
+              ...stock,
+              price: quotes[stock.ticker]?.price ?? 0,
+              change: quotes[stock.ticker]?.change ?? 0,
+              changePercent: quotes[stock.ticker]?.changePercent ?? 0,
+            })),
+          );
           setLiveQuotes(quotes);
           setLiveDataError(false);
         }
@@ -182,9 +193,13 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           </div>
         </button>
         <div className="space-y-1">
-          {watchlist.map((stock) => (
-            <StockItem key={stock.ticker} stock={withLiveQuote(stock)} />
-          ))}
+          {watchlist.length === 0 ? (
+            <p className="text-zinc-500 text-xs">No watchlist items yet</p>
+          ) : (
+            watchlist.map((stock) => (
+              <StockItem key={stock.ticker} stock={withLiveQuote(stock)} />
+            ))
+          )}
         </div>
       </div>
     </div>

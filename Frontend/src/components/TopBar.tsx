@@ -7,9 +7,12 @@ interface TopBarProps {
   onNavigate: (view: View) => void;
   onLogout: () => Promise<void>;
   userName?: string;
+  userHandle?: string;
+  avatarUrl?: string;
+  avatarSeed?: string;
 }
 
-export function TopBar({ currentView, onNavigate, onLogout, userName }: TopBarProps) {
+export function TopBar({ currentView, onNavigate, onLogout, userName, userHandle, avatarUrl, avatarSeed }: TopBarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -27,8 +30,8 @@ export function TopBar({ currentView, onNavigate, onLogout, userName }: TopBarPr
   const isProfileView = currentView === 'My Profile' || currentView === 'Account Settings';
   const displayTitle = isProfileView ? currentView : 'TradeLink';
   const displaySubtitle = !isProfileView ? `#${currentView}` : undefined;
-  const displayName = userName || 'Alex Morgan';
-  const initials = displayName
+  const displayName = userName || 'Trader';
+  const initials = avatarSeed || displayName
     .split(' ')
     .map((part) => part[0])
     .join('')
@@ -61,7 +64,11 @@ export function TopBar({ currentView, onNavigate, onLogout, userName }: TopBarPr
           <div className="flex items-center gap-2">
             <span className="text-zinc-400 text-sm">{displayName}</span>
             <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm">{initials}</span>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <span className="text-white text-sm">{initials}</span>
+              )}
             </div>
           </div>
         </button>
@@ -71,14 +78,18 @@ export function TopBar({ currentView, onNavigate, onLogout, userName }: TopBarPr
             <div className="p-4 border-b border-zinc-800 bg-zinc-950">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white">{initials}</span>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span className="text-white">{initials}</span>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-zinc-100">{displayName}</h3>
                     <Shield className="w-4 h-4 text-cyan-400" />
                   </div>
-                  <p className="text-zinc-500 text-sm">@{displayName.toLowerCase().replace(/\s+/g, '')}</p>
+                  <p className="text-zinc-500 text-sm">@{userHandle || displayName.toLowerCase().replace(/\s+/g, '')}</p>
                 </div>
               </div>
             </div>
