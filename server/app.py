@@ -22,10 +22,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
     from .extensions import db, migrate
-    from .models import RevokedToken, User, UserActivity, UserProfile, WatchlistItem
+    from .models import RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 except ImportError:
     from extensions import db, migrate
-    from models import RevokedToken, User, UserActivity, UserProfile, WatchlistItem
+    from models import RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -269,6 +269,24 @@ def ensure_user_profile(user: User) -> UserProfile:
     return profile
 
 
+def ensure_user_settings(user: User) -> UserSettings:
+    settings = user.settings
+    if settings:
+        return settings
+
+    settings = UserSettings(
+        user_id=user.id,
+        email_notifications=True,
+        push_notifications=True,
+        message_notifications=True,
+        profile_visibility="public",
+        dark_mode=True,
+    )
+    db.session.add(settings)
+    db.session.flush()
+    return settings
+
+
 def get_authenticated_user():
     ensure_database_schema()
     token = get_authorization_token()
@@ -284,8 +302,10 @@ def get_authenticated_user():
         return None, json_error("User not found", 404)
 
     created_profile = user.profile is None
+    created_settings = user.settings is None
     ensure_user_profile(user)
-    if created_profile:
+    ensure_user_settings(user)
+    if created_profile or created_settings:
         db.session.commit()
     return user, None
 
@@ -296,6 +316,17 @@ def build_profile_payload(user: User):
         "user_id": str(user.id),
         "email": user.email,
         **profile.to_dict(),
+    }
+
+
+def build_settings_payload(user: User):
+    settings = ensure_user_settings(user)
+    profile = ensure_user_profile(user)
+    return {
+        "email": user.email,
+        "full_name": profile.full_name,
+        "username": profile.username,
+        **settings.to_dict(),
     }
 
 
@@ -673,6 +704,7 @@ def login():
         return json_error("Invalid credentials", 401)
 
     ensure_user_profile(user)
+    ensure_user_settings(user)
     db.session.commit()
     token = create_token(str(user.id))
     return jsonify({"token": token, "user": user.to_dict()})
@@ -762,6 +794,35 @@ def profile_activity():
     return jsonify({"activities": [activity.to_dict() for activity in activities]})
 
 
+@app.route("/api/settings/me", methods=["GET", "PATCH"])
+def settings_me():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    settings = ensure_user_settings(user)
+
+    if request.method == "GET":
+        return jsonify({"settings": build_settings_payload(user)})
+
+    data = request.get_json(silent=True) or {}
+    profile_visibility = (data.get("profile_visibility") or settings.profile_visibility).strip().lower()
+
+    if profile_visibility not in {"public", "members", "private"}:
+        return json_error("Invalid profile visibility setting", 400)
+
+    settings.email_notifications = bool(data.get("email_notifications", settings.email_notifications))
+    settings.push_notifications = bool(data.get("push_notifications", settings.push_notifications))
+    settings.message_notifications = bool(data.get("message_notifications", settings.message_notifications))
+    settings.profile_visibility = profile_visibility
+    settings.dark_mode = bool(data.get("dark_mode", settings.dark_mode))
+
+    _create_activity(user.id, "settings_updated", "Updated account settings")
+    db.session.commit()
+
+    return jsonify({"settings": build_settings_payload(user)})
+
+
 @app.route("/api/watchlist", methods=["GET", "POST"])
 def watchlist():
     user, error_response = get_authenticated_user()
@@ -841,6 +902,39 @@ def logout():
             db.session.rollback()
 
     return jsonify({"message": "Logged out"})
+
+
+@app.route("/api/auth/password", methods=["PATCH"])
+def change_password():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    data = request.get_json(silent=True) or {}
+    current_password = data.get("current_password") or ""
+    new_password = data.get("new_password") or ""
+    confirm_password = data.get("confirm_password") or ""
+
+    if not current_password or not new_password or not confirm_password:
+        return json_error("All password fields are required", 400)
+
+    if not check_password_hash(user.password_hash, current_password):
+        return json_error("Current password is incorrect", 401)
+
+    if len(new_password) < 6:
+        return json_error("New password must be at least 6 characters", 400)
+
+    if new_password != confirm_password:
+        return json_error("New password confirmation does not match", 400)
+
+    if current_password == new_password:
+        return json_error("New password must be different from current password", 400)
+
+    user.password_hash = generate_password_hash(new_password)
+    _create_activity(user.id, "password_updated", "Updated password")
+    db.session.commit()
+
+    return jsonify({"message": "Password updated"})
 
 
 if __name__ == "__main__":

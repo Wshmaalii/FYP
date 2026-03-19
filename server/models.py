@@ -19,6 +19,7 @@ class User(db.Model):
     created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     profile = db.relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    settings = db.relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
     watchlist_items = db.relationship("WatchlistItem", back_populates="user", cascade="all, delete-orphan")
     activities = db.relationship("UserActivity", back_populates="user", cascade="all, delete-orphan")
 
@@ -68,6 +69,31 @@ class UserProfile(db.Model):
             "joined_at": self.joined_at.isoformat() if self.joined_at else None,
             "verified_trader": self.verified_trader,
             "trust_score": self.trust_score,
+        }
+
+
+class UserSettings(db.Model):
+    __tablename__ = "user_settings"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    email_notifications = db.Column(Boolean, nullable=False, default=True)
+    push_notifications = db.Column(Boolean, nullable=False, default=True)
+    message_notifications = db.Column(Boolean, nullable=False, default=True)
+    profile_visibility = db.Column(String(32), nullable=False, default="public")
+    dark_mode = db.Column(Boolean, nullable=False, default=True)
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+    user = db.relationship("User", back_populates="settings")
+
+    def to_dict(self):
+        return {
+            "email_notifications": self.email_notifications,
+            "push_notifications": self.push_notifications,
+            "message_notifications": self.message_notifications,
+            "profile_visibility": self.profile_visibility,
+            "dark_mode": self.dark_mode,
         }
 
 
