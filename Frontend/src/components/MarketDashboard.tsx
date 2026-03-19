@@ -1,53 +1,42 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
-import { getQuotes, MarketQuote } from '../api/market';
+import { getMarketOverview, getTopMovers, type MarketOverviewIndex, type MarketQuote, type TopMoverItem } from '../api/market';
 import { fetchWatchlist } from '../api/watchlist';
+import { getQuotes } from '../api/market';
 
 interface Stock {
   ticker: string;
   name: string;
-  price: number;
-  change: number;
-  changePercent: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
 }
 
 interface MarketDashboardProps {
   onNavigate: (view: View) => void;
 }
 
-const marketIndices: Stock[] = [
-  { ticker: 'FTSE 100', name: 'FTSE 100', price: 7523.45, change: 45.23, changePercent: 0.61 },
-  { ticker: 'DAX', name: 'DAX', price: 16834.32, change: -23.12, changePercent: -0.14 },
-  { ticker: 'CAC 40', name: 'CAC 40', price: 7456.89, change: 12.45, changePercent: 0.17 },
-];
-
-const topMovers: Stock[] = [
-  { ticker: 'BARC.L', name: 'Barclays', price: 186.5, change: 4.3, changePercent: 2.36 },
-  { ticker: 'LLOY.L', name: 'Lloyds', price: 52.8, change: -1.2, changePercent: -2.22 },
-  { ticker: 'BP.L', name: 'BP PLC', price: 445.6, change: 8.9, changePercent: 2.04 },
-];
-
 function StockItem({ stock }: { stock: Stock }) {
-  const isPositive = stock.change >= 0;
-  
+  const isPositive = (stock.change ?? 0) >= 0;
+
   return (
     <div className="flex items-center justify-between py-2 px-3 hover:bg-zinc-900 rounded transition-colors cursor-pointer">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-zinc-100 text-sm">{stock.ticker}</span>
-          {isPositive ? (
+          {stock.change !== null && (isPositive ? (
             <TrendingUp className="w-3 h-3 text-emerald-400" />
           ) : (
             <TrendingDown className="w-3 h-3 text-red-400" />
-          )}
+          ))}
         </div>
         <p className="text-zinc-500 text-xs truncate">{stock.name}</p>
       </div>
       <div className="text-right">
-        <p className="text-zinc-100 text-sm">{stock.price.toFixed(2)}</p>
+        <p className="text-zinc-100 text-sm">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
         <p className={`text-xs ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-          {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
+          {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
         </p>
       </div>
     </div>
@@ -56,9 +45,10 @@ function StockItem({ stock }: { stock: Stock }) {
 
 export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [liveQuotes, setLiveQuotes] = useState<Record<string, MarketQuote>>({});
-  const [liveDataError, setLiveDataError] = useState(false);
+  const [marketIndices, setMarketIndices] = useState<Stock[]>([]);
+  const [topMovers, setTopMovers] = useState<Stock[]>([]);
   const [watchlist, setWatchlist] = useState<Stock[]>([]);
+  const [liveDataError, setLiveDataError] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -71,45 +61,74 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
   useEffect(() => {
     let isMounted = true;
 
-    const loadQuotes = async () => {
+    const loadDashboardData = async () => {
       try {
-        const watchlistItems = await fetchWatchlist().catch(() => []);
+        const [overview, movers, watchlistItems] = await Promise.all([
+          getMarketOverview(),
+          getTopMovers('FTSE100'),
+          fetchWatchlist().catch(() => []),
+        ]);
+
         const watchlistStocks: Stock[] = watchlistItems.slice(0, 3).map((item) => ({
           ticker: item.ticker,
           name: item.company_name || item.ticker,
-          price: 0,
-          change: 0,
-          changePercent: 0,
+          price: null,
+          change: null,
+          changePercent: null,
         }));
-        const sidebarTickers = [
-          ...marketIndices.map((stock) => stock.ticker),
-          ...topMovers.map((stock) => stock.ticker),
-          ...watchlistStocks.map((stock) => stock.ticker),
-        ];
-        const quotes = await getQuotes(sidebarTickers);
-        if (isMounted) {
-          setWatchlist(
-            watchlistStocks.map((stock) => ({
-              ...stock,
-              price: quotes[stock.ticker]?.price ?? 0,
-              change: quotes[stock.ticker]?.change ?? 0,
-              changePercent: quotes[stock.ticker]?.changePercent ?? 0,
-            })),
-          );
-          setLiveQuotes(quotes);
-          setLiveDataError(false);
+
+        const quotes = watchlistStocks.length > 0 ? await getQuotes(watchlistStocks.map((item) => item.ticker)) : {};
+
+        if (!isMounted) {
+          return;
         }
+
+        setMarketIndices(
+          overview.indices
+            .filter((index) => ['FTSE 100', 'DAX', 'CAC 40'].includes(index.name))
+            .map((index: MarketOverviewIndex) => ({
+              ticker: index.ticker,
+              name: index.name,
+              price: index.price,
+              change: index.change,
+              changePercent: index.changePercent,
+            })),
+        );
+
+        const combinedMovers = [...movers.gainers, ...movers.losers]
+          .slice(0, 3)
+          .map((stock: TopMoverItem) => ({
+            ticker: stock.ticker,
+            name: stock.name,
+            price: stock.price,
+            change: stock.change,
+            changePercent: stock.changePercent,
+          }));
+        setTopMovers(combinedMovers);
+
+        setWatchlist(
+          watchlistStocks.map((stock) => ({
+            ...stock,
+            price: quotes[stock.ticker]?.price ?? null,
+            change: quotes[stock.ticker]?.change ?? null,
+            changePercent: quotes[stock.ticker]?.changePercent ?? null,
+          })),
+        );
+
+        setLiveDataError(false);
       } catch {
         if (isMounted) {
           setLiveDataError(true);
+          setMarketIndices([]);
+          setTopMovers([]);
         }
       }
     };
 
-    void loadQuotes();
+    void loadDashboardData();
     const interval = setInterval(() => {
-      void loadQuotes();
-    }, 15000);
+      void loadDashboardData();
+    }, 60000);
 
     return () => {
       isMounted = false;
@@ -117,28 +136,10 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
     };
   }, []);
 
-  const withLiveQuote = (stock: Stock): Stock => {
-    const quote = liveQuotes[stock.ticker];
-    if (!quote) {
-      return stock;
-    }
-
-    return {
-      ...stock,
-      price: quote.price,
-      change: quote.change,
-      changePercent: quote.changePercent,
-    };
-  };
-
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Live Market Prices */}
       <div className="p-4">
-        <button
-          onClick={() => onNavigate('Market Overview')}
-          className="w-full group"
-        >
+        <button onClick={() => onNavigate('Market Overview')} className="w-full group">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-zinc-400 text-xs uppercase tracking-wider group-hover:text-cyan-400 transition-colors">Market Overview</h3>
             <div className="flex items-center gap-1">
@@ -147,22 +148,18 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
             </div>
           </div>
         </button>
-        {liveDataError && (
-          <p className="text-zinc-500 text-xs mb-2">Live data temporarily unavailable</p>
-        )}
+        {liveDataError && <p className="text-zinc-500 text-xs mb-2">Live data temporarily unavailable</p>}
         <div className="space-y-1">
-          {marketIndices.map((stock) => (
-            <StockItem key={stock.ticker} stock={withLiveQuote(stock)} />
-          ))}
+          {marketIndices.length === 0 && !liveDataError ? (
+            <p className="text-zinc-500 text-xs">Loading market overview...</p>
+          ) : (
+            marketIndices.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
+          )}
         </div>
       </div>
 
-      {/* Top Movers */}
       <div className="p-4 border-t border-zinc-800">
-        <button
-          onClick={() => onNavigate('Top Movers')}
-          className="w-full group"
-        >
+        <button onClick={() => onNavigate('Top Movers')} className="w-full group">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
@@ -172,18 +169,16 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           </div>
         </button>
         <div className="space-y-1">
-          {topMovers.map((stock) => (
-            <StockItem key={stock.ticker} stock={withLiveQuote(stock)} />
-          ))}
+          {topMovers.length === 0 && !liveDataError ? (
+            <p className="text-zinc-500 text-xs">Loading top movers...</p>
+          ) : (
+            topMovers.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
+          )}
         </div>
       </div>
 
-      {/* Watchlist */}
       <div className="p-4 border-t border-zinc-800">
-        <button
-          onClick={() => onNavigate('Watchlist')}
-          className="w-full group"
-        >
+        <button onClick={() => onNavigate('Watchlist')} className="w-full group">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-cyan-400" />
@@ -196,9 +191,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           {watchlist.length === 0 ? (
             <p className="text-zinc-500 text-xs">No watchlist items yet</p>
           ) : (
-            watchlist.map((stock) => (
-              <StockItem key={stock.ticker} stock={withLiveQuote(stock)} />
-            ))
+            watchlist.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
           )}
         </div>
       </div>

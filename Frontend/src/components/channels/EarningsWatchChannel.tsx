@@ -1,131 +1,62 @@
 import { AlertTriangle, Clock, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getUpcomingEarnings, type EarningsCalendarItem } from '../../api/market';
 import { fetchMessages, sendMessage, type ChannelMessage } from '../../api/messages';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
 
-interface EarningsReport {
-  ticker: string;
-  company: string;
-  date: string;
-  time: string;
-  countdown: string;
-  eps: { expected: number; actual?: number };
-  revenue: { expected: string; actual?: string };
-  tags: Array<'EPS Beat' | 'Revenue Miss' | 'Guidance Raised' | 'EPS Miss' | 'Revenue Beat'>;
+function formatReportDate(value: string) {
+  if (!value) {
+    return 'Date unavailable';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const upcomingEarnings: EarningsReport[] = [
-  {
-    ticker: 'TSCO.L',
-    company: 'Tesco PLC',
-    date: 'Today',
-    time: '07:00',
-    countdown: '2h 15m',
-    eps: { expected: 12.5, actual: 13.2 },
-    revenue: { expected: '15.2B', actual: '15.8B' },
-    tags: ['EPS Beat', 'Revenue Beat', 'Guidance Raised'],
-  },
-  {
-    ticker: 'BARC.L',
-    company: 'Barclays PLC',
-    date: 'Today',
-    time: '07:30',
-    countdown: '2h 45m',
-    eps: { expected: 8.3 },
-    revenue: { expected: '6.2B' },
-    tags: [],
-  },
-  {
-    ticker: 'ULVR.L',
-    company: 'Unilever',
-    date: 'Tomorrow',
-    time: '07:00',
-    countdown: '1d 2h',
-    eps: { expected: 45.2 },
-    revenue: { expected: '13.8B' },
-    tags: [],
-  },
-];
-
-function EarningsCard({ report }: { report: EarningsReport }) {
-  const hasReported = report.eps.actual !== undefined;
-
+function EarningsCard({ report }: { report: EarningsCalendarItem }) {
+  
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:border-cyan-600 transition-colors">
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-zinc-100">{report.ticker}</h3>
-            {hasReported && (
-              <span className="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
-                REPORTED
-              </span>
-            )}
           </div>
           <p className="text-zinc-500 text-sm">{report.company}</p>
         </div>
         <div className="text-right">
           <div className="flex items-center gap-1 text-cyan-400">
             <Clock className="w-3 h-3" />
-            <span className="text-sm">{report.countdown}</span>
+            <span className="text-sm">{formatReportDate(report.report_date)}</span>
           </div>
-          <p className="text-zinc-500 text-xs mt-1">{report.date} • {report.time}</p>
+          <p className="text-zinc-500 text-xs mt-1">Estimated earnings date</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-3">
+      <div className="grid grid-cols-1 gap-4 mb-3">
         <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
-          <p className="text-zinc-500 text-xs mb-1">EPS</p>
-          {hasReported ? (
-            <div className="flex items-baseline gap-2">
-              <span className="text-zinc-100">{report.eps.actual}p</span>
-              <span className="text-emerald-400 text-sm">vs {report.eps.expected}p</span>
-            </div>
-          ) : (
-            <span className="text-zinc-100">{report.eps.expected}p exp.</span>
-          )}
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
-          <p className="text-zinc-500 text-xs mb-1">Revenue</p>
-          {hasReported ? (
-            <div className="flex items-baseline gap-2">
-              <span className="text-zinc-100">£{report.revenue.actual}</span>
-              <span className="text-emerald-400 text-sm">vs £{report.revenue.expected}</span>
-            </div>
-          ) : (
-            <span className="text-zinc-100">£{report.revenue.expected} exp.</span>
-          )}
+          <p className="text-zinc-500 text-xs mb-1">Estimated EPS</p>
+          <span className="text-zinc-100">
+            {report.estimate !== null ? `${report.estimate} ${report.currency || ''}`.trim() : 'Unavailable'}
+          </span>
         </div>
       </div>
-
-      {report.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {report.tags.map((tag) => {
-            const isBeat = tag.includes('Beat') || tag.includes('Raised');
-            return (
-              <span
-                key={tag}
-                className={`text-xs px-2 py-1 rounded ${
-                  isBeat
-                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                    : 'bg-red-950 text-red-400 border border-red-800'
-                }`}
-              >
-                {tag}
-              </span>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
 
 export function EarningsWatchChannel() {
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
+  const [earnings, setEarnings] = useState<EarningsCalendarItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [earningsLoading, setEarningsLoading] = useState(true);
+  const [earningsError, setEarningsError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
@@ -152,6 +83,36 @@ export function EarningsWatchChannel() {
     };
 
     void loadMessages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEarnings = async () => {
+      setEarningsLoading(true);
+      setEarningsError(null);
+
+      try {
+        const data = await getUpcomingEarnings();
+        if (isMounted) {
+          setEarnings(data.items.slice(0, 6));
+        }
+      } catch (err) {
+        if (isMounted) {
+          setEarningsError(err instanceof Error ? err.message : 'Failed to load earnings calendar');
+        }
+      } finally {
+        if (isMounted) {
+          setEarningsLoading(false);
+        }
+      }
+    };
+
+    void loadEarnings();
 
     return () => {
       isMounted = false;
@@ -186,11 +147,25 @@ export function EarningsWatchChannel() {
             <Calendar className="w-5 h-5 text-cyan-400" />
             <h2 className="text-zinc-100">Upcoming Earnings Reports</h2>
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            {upcomingEarnings.map((report) => (
-              <EarningsCard key={report.ticker} report={report} />
-            ))}
-          </div>
+          {earningsError ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm">
+              {earningsError}
+            </div>
+          ) : earningsLoading ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm">
+              Loading earnings calendar...
+            </div>
+          ) : earnings.length === 0 ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm">
+              Upcoming earnings data is unavailable right now.
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              {earnings.map((report) => (
+                <EarningsCard key={`${report.ticker}-${report.report_date}`} report={report} />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="p-6 space-y-4">

@@ -1,11 +1,8 @@
 from datetime import datetime, timedelta, timezone
-import json
 import os
 import re
-import time
 import uuid
-from urllib import parse, request as urlrequest
-from urllib.error import HTTPError
+from urllib import parse
 
 import jwt
 from flask import Flask, jsonify, request
@@ -22,9 +19,29 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
     from .extensions import db, migrate
+    from .market_service import (
+        RateLimitError,
+        fetch_bulk_quotes,
+        fetch_history,
+        fetch_market_overview,
+        fetch_quote,
+        fetch_top_movers,
+        fetch_upcoming_earnings,
+        get_alpha_vantage_api_key,
+    )
     from .models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 except ImportError:
     from extensions import db, migrate
+    from market_service import (
+        RateLimitError,
+        fetch_bulk_quotes,
+        fetch_history,
+        fetch_market_overview,
+        fetch_quote,
+        fetch_top_movers,
+        fetch_upcoming_earnings,
+        get_alpha_vantage_api_key,
+    )
     from models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -96,56 +113,6 @@ CORS(
 )
 
 JWT_EXPIRATION_DAYS = 7
-market_cache = {}
-top_movers_cache = {}
-stock_quote_cache = {}
-stock_history_cache = {}
-
-ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
-MARKET_CACHE_TTL_SECONDS = 15
-STOCK_QUOTE_CACHE_TTL_SECONDS = 30
-STOCK_HISTORY_CACHE_TTL_SECONDS = 60
-
-TICKER_PROVIDER_MAP = {
-    "FTSE 100": "^FTSE",
-    "DAX": "^GDAXI",
-    "CAC 40": "^FCHI",
-}
-
-TOP_MOVER_UNIVERSES = {
-    "FTSE100": [
-        {"ticker": "BARC.L", "name": "Barclays PLC", "volume": 45200000},
-        {"ticker": "BP.L", "name": "BP PLC", "volume": 32800000},
-        {"ticker": "GSK.L", "name": "GSK", "volume": 12400000},
-        {"ticker": "HSBA.L", "name": "HSBC Holdings", "volume": 28100000},
-        {"ticker": "RIO.L", "name": "Rio Tinto", "volume": 8300000},
-        {"ticker": "LLOY.L", "name": "Lloyds Banking Group", "volume": 67300000},
-        {"ticker": "VOD.L", "name": "Vodafone Group", "volume": 89100000},
-        {"ticker": "BT.L", "name": "BT Group", "volume": 42500000},
-        {"ticker": "TSCO.L", "name": "Tesco PLC", "volume": 35700000},
-        {"ticker": "IAG.L", "name": "IAG", "volume": 52800000},
-    ],
-    "FTSE250": [
-        {"ticker": "EZJ.L", "name": "easyJet", "volume": 8100000},
-        {"ticker": "ITRK.L", "name": "Intertek Group", "volume": 1200000},
-        {"ticker": "BAB.L", "name": "Babcock International", "volume": 3900000},
-        {"ticker": "CINE.L", "name": "Cineworld Group", "volume": 7200000},
-        {"ticker": "AO.L", "name": "AO World", "volume": 2600000},
-        {"ticker": "TBCG.L", "name": "TBC Bank Group", "volume": 1800000},
-        {"ticker": "HOC.L", "name": "Hochschild Mining", "volume": 4300000},
-        {"ticker": "PNN.L", "name": "Pennon Group", "volume": 1700000},
-    ],
-    "Global": [
-        {"ticker": "AAPL", "name": "Apple Inc.", "volume": 56400000},
-        {"ticker": "MSFT", "name": "Microsoft Corp.", "volume": 24200000},
-        {"ticker": "NVDA", "name": "NVIDIA Corp.", "volume": 45100000},
-        {"ticker": "AMZN", "name": "Amazon.com Inc.", "volume": 38700000},
-        {"ticker": "TSLA", "name": "Tesla Inc.", "volume": 93600000},
-        {"ticker": "META", "name": "Meta Platforms Inc.", "volume": 22800000},
-        {"ticker": "GOOGL", "name": "Alphabet Inc.", "volume": 21100000},
-        {"ticker": "NFLX", "name": "Netflix Inc.", "volume": 8200000},
-    ],
-}
 
 
 def create_token(user_id: str) -> str:
@@ -371,128 +338,6 @@ def handle_unexpected_exception(exc: Exception):
     return json_error("Internal server error", 500)
 
 
-def get_alpha_vantage_api_key() -> str:
-    return (os.getenv("ALPHA_VANTAGE_API_KEY") or "").strip()
-
-
-def _to_float(value, default=0.0):
-    try:
-        if isinstance(value, str):
-            cleaned = value.replace(",", "").replace("%", "").strip()
-            if cleaned == "":
-                return default
-            return float(cleaned)
-        return float(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _alpha_vantage_request(params):
-    query = parse.urlencode(params)
-    url = f"{ALPHA_VANTAGE_BASE_URL}?{query}"
-    req = urlrequest.Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "TradeLink/1.0 (+local-dev)",
-        },
-    )
-
-    try:
-        with urlrequest.urlopen(req, timeout=8) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        raw_body = exc.read().decode("utf-8", errors="ignore")
-        try:
-            error_payload = json.loads(raw_body) if raw_body else {}
-            message = error_payload.get("message") or error_payload.get("error")
-        except Exception:
-            message = None
-        raise RuntimeError(message or f"HTTP Error {exc.code}: {exc.reason}") from exc
-
-    if payload.get("Note"):
-        raise RuntimeError("rate limit exceeded")
-    if payload.get("Error Message"):
-        raise RuntimeError(payload.get("Error Message"))
-    if payload.get("Information"):
-        raise RuntimeError(payload.get("Information"))
-
-    return payload
-
-
-def fetch_alpha_vantage_quote(symbol: str, api_key: str):
-    now = time.time()
-    cache_key = symbol.upper()
-    cache_entry = stock_quote_cache.get(cache_key)
-    if cache_entry and cache_entry["expiresAt"] > now:
-        return cache_entry["data"]
-
-    payload = _alpha_vantage_request(
-        {
-            "function": "GLOBAL_QUOTE",
-            "symbol": symbol,
-            "apikey": api_key,
-        }
-    )
-    quote = payload.get("Global Quote") or {}
-    if not isinstance(quote, dict) or not quote:
-        raise RuntimeError("No quote data available")
-
-    parsed_symbol = (quote.get("01. symbol") or symbol).upper()
-    price = _to_float(quote.get("05. price"))
-    change = _to_float(quote.get("09. change"))
-    change_percent = (quote.get("10. change percent") or "0.00%").strip()
-    if change_percent and not change_percent.endswith("%"):
-        change_percent = f"{change_percent}%"
-
-    data = {
-        "symbol": parsed_symbol,
-        "price": price,
-        "change": change,
-        "change_percent": change_percent,
-    }
-    stock_quote_cache[cache_key] = {
-        "data": data,
-        "expiresAt": now + STOCK_QUOTE_CACHE_TTL_SECONDS,
-    }
-    return data
-
-
-def fetch_alpha_vantage_history(symbol: str, api_key: str):
-    now = time.time()
-    cache_key = symbol.upper()
-    cache_entry = stock_history_cache.get(cache_key)
-    if cache_entry and cache_entry["expiresAt"] > now:
-        return cache_entry["data"]
-
-    payload = _alpha_vantage_request(
-        {
-            "function": "TIME_SERIES_INTRADAY",
-            "symbol": symbol,
-            "interval": "5min",
-            "apikey": api_key,
-        }
-    )
-    series = payload.get("Time Series (5min)") or {}
-    if not isinstance(series, dict) or not series:
-        raise RuntimeError("No historical data available")
-
-    points = []
-    for timestamp, values in series.items():
-        if not isinstance(values, dict):
-            continue
-        price = _to_float(values.get("4. close"))
-        points.append({"time": timestamp, "price": price})
-
-    points.sort(key=lambda item: item["time"])
-    latest_points = points[-50:]
-    stock_history_cache[cache_key] = {
-        "data": latest_points,
-        "expiresAt": now + STOCK_HISTORY_CACHE_TTL_SECONDS,
-    }
-    return latest_points
-
-
 @app.route("/", methods=["GET"])
 def root():
     return jsonify({"status": "ok", "service": "TradeLink API"})
@@ -521,13 +366,45 @@ def stock_quote(symbol):
         return json_error("symbol is required", 400)
 
     try:
-        quote = fetch_alpha_vantage_quote(normalized_symbol, api_key)
+        quote = fetch_quote(api_key, normalized_symbol)
+    except RateLimitError:
+        return json_error("rate limit exceeded", 429)
     except Exception as exc:
-        if str(exc) == "rate limit exceeded":
-            return json_error("rate limit exceeded", 429)
         return json_error(str(exc), 502)
 
     return jsonify(quote)
+
+
+@app.route("/api/market/overview", methods=["GET"])
+def market_overview():
+    api_key = get_alpha_vantage_api_key()
+    if not api_key:
+        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
+
+    try:
+        payload = fetch_market_overview(api_key)
+    except RateLimitError:
+        return json_error("rate limit exceeded", 429)
+    except Exception as exc:
+        return json_error(str(exc), 502)
+
+    return jsonify(payload)
+
+
+@app.route("/api/earnings/upcoming", methods=["GET"])
+def earnings_upcoming():
+    api_key = get_alpha_vantage_api_key()
+    if not api_key:
+        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
+
+    try:
+        payload = fetch_upcoming_earnings(api_key)
+    except RateLimitError:
+        return json_error("rate limit exceeded", 429)
+    except Exception as exc:
+        return json_error(str(exc), 502)
+
+    return jsonify(payload)
 
 
 @app.route("/api/stocks/history/<symbol>", methods=["GET"])
@@ -541,13 +418,13 @@ def stock_history(symbol):
         return json_error("symbol is required", 400)
 
     try:
-        history = fetch_alpha_vantage_history(normalized_symbol, api_key)
+        history = fetch_history(api_key, normalized_symbol)
+    except RateLimitError:
+        return json_error("rate limit exceeded", 429)
     except Exception as exc:
-        if str(exc) == "rate limit exceeded":
-            return json_error("rate limit exceeded", 429)
         return json_error(str(exc), 502)
 
-    return jsonify(history)
+    return jsonify([{"time": point["time"], "price": point["price"]} for point in history])
 
 
 @app.route("/api/market/quotes", methods=["GET"])
@@ -560,43 +437,16 @@ def market_quotes():
     if not tickers_param:
         return json_error("tickers query parameter is required", 400)
 
-    requested_tickers = []
-    for ticker in tickers_param.split(","):
-        normalized = ticker.strip()
-        if normalized and normalized not in requested_tickers:
-            requested_tickers.append(normalized)
-
+    requested_tickers = [ticker.strip() for ticker in tickers_param.split(",") if ticker.strip()]
     if not requested_tickers:
         return json_error("No valid tickers provided", 400)
 
-    cache_key = ",".join(sorted(requested_tickers))
-    now = time.time()
-    cache_entry = market_cache.get(cache_key)
-
-    if cache_entry and cache_entry["expiresAt"] > now:
-        return jsonify({"quotes": cache_entry["data"]})
-
-    quotes = {}
-    for ticker in requested_tickers:
-        provider_symbol = TICKER_PROVIDER_MAP.get(ticker, ticker).upper()
-        try:
-            quote = fetch_alpha_vantage_quote(provider_symbol, api_key)
-        except Exception as exc:
-            if str(exc) == "rate limit exceeded":
-                return json_error("rate limit exceeded", 429)
-            continue
-
-        quotes[ticker] = {
-            "price": quote["price"],
-            "change": quote["change"],
-            "changePercent": _to_float(quote["change_percent"]),
-            "updatedAt": datetime.utcnow().isoformat() + "Z",
-        }
-
-    market_cache[cache_key] = {
-        "data": quotes,
-        "expiresAt": now + MARKET_CACHE_TTL_SECONDS,
-    }
+    try:
+        quotes = fetch_bulk_quotes(api_key, requested_tickers)
+    except RateLimitError:
+        return json_error("rate limit exceeded", 429)
+    except Exception as exc:
+        return json_error(str(exc), 502)
 
     return jsonify({"quotes": quotes})
 
@@ -608,58 +458,15 @@ def market_top_movers():
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
 
     index = (request.args.get("index") or "FTSE100").strip()
-    if index not in TOP_MOVER_UNIVERSES:
-        return json_error("Unsupported index", 400)
 
-    now = time.time()
-    cache_entry = top_movers_cache.get(index)
-    if cache_entry and cache_entry["expiresAt"] > now:
-        return jsonify(cache_entry["data"])
-
-    universe = TOP_MOVER_UNIVERSES[index]
-    movers = []
-
-    for stock in universe:
-        try:
-            quote = fetch_alpha_vantage_quote(stock["ticker"], api_key)
-        except Exception as exc:
-            if str(exc) == "rate limit exceeded":
-                if not movers:
-                    return json_error("rate limit exceeded", 429)
-                break
-            continue
-
-        movers.append(
-            {
-                "ticker": stock["ticker"],
-                "name": stock["name"],
-                "price": quote["price"],
-                "change": quote["change"],
-                "changePercent": _to_float(quote["change_percent"]),
-                "volume": stock["volume"],
-            }
-        )
-
-    gainers = sorted(
-        (stock for stock in movers if stock["changePercent"] >= 0),
-        key=lambda item: item["changePercent"],
-        reverse=True,
-    )[:5]
-    losers = sorted(
-        (stock for stock in movers if stock["changePercent"] < 0),
-        key=lambda item: item["changePercent"],
-    )[:5]
-
-    payload = {
-        "gainers": gainers,
-        "losers": losers,
-        "updatedAt": datetime.utcnow().isoformat() + "Z",
-    }
-
-    top_movers_cache[index] = {
-        "data": payload,
-        "expiresAt": now + MARKET_CACHE_TTL_SECONDS,
-    }
+    try:
+        payload = fetch_top_movers(api_key, index)
+    except ValueError as exc:
+        return json_error(str(exc), 400)
+    except RateLimitError:
+        return json_error("rate limit exceeded", 429)
+    except Exception as exc:
+        return json_error(str(exc), 502)
 
     return jsonify(payload)
 

@@ -9,6 +9,37 @@ export interface MarketQuote {
   updatedAt: string;
 }
 
+export interface MarketOverviewIndex {
+  name: string;
+  ticker: string;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  volume: number | null;
+  region: 'Europe' | 'US' | 'Asia';
+  status: string;
+  history: StockHistoryPoint[];
+  available: boolean;
+}
+
+export interface MarketOverviewResponse {
+  indices: MarketOverviewIndex[];
+  updatedAt: string;
+  sectors_available: boolean;
+  sectors: Array<{ sector: string; change: number }>;
+}
+
+export interface EarningsCalendarItem {
+  ticker: string;
+  company: string;
+  report_date: string;
+  estimate: number | null;
+  currency: string;
+}
+
 export interface TopMoverItem {
   ticker: string;
   name: string;
@@ -77,24 +108,25 @@ export async function getQuotes(tickers: string[]): Promise<Record<string, Marke
     return {};
   }
 
-  const entries = await Promise.all(
-    uniqueTickers.map(async (ticker) => {
-      const quote = await fetchQuote(ticker);
-      const changePercent = Number.parseFloat((quote.change_percent || '0').replace('%', '')) || 0;
+  const query = encodeURIComponent(uniqueTickers.join(','));
+  const response = await fetch(`${API_BASE_URL}/api/market/quotes?tickers=${query}`);
+  const contentType = response.headers.get('content-type') || '';
+  const rawBody = await response.text();
 
-      return [
-        ticker,
-        {
-          price: quote.price,
-          change: typeof quote.change === 'number' && Number.isFinite(quote.change) ? quote.change : 0,
-          changePercent,
-          updatedAt: new Date().toISOString(),
-        },
-      ] as const;
-    }),
-  );
+  if (!contentType.includes('application/json')) {
+    if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
+      throw new Error('Market API returned HTML. Check VITE_API_URL / deployed API URL.');
+    }
+    throw new Error(rawBody || 'Failed to fetch market quotes');
+  }
 
-  return Object.fromEntries(entries);
+  const data = rawBody ? JSON.parse(rawBody) : {};
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to fetch market quotes');
+  }
+
+  return data.quotes || {};
 }
 
 export async function getTopMovers(index: string): Promise<TopMoversResponse> {
@@ -117,4 +149,20 @@ export async function getTopMovers(index: string): Promise<TopMoversResponse> {
   }
 
   return data;
+}
+
+export async function getMarketOverview(): Promise<MarketOverviewResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/market/overview`);
+  if (!response.ok) {
+    await parseError(response);
+  }
+  return response.json();
+}
+
+export async function getUpcomingEarnings(): Promise<{ items: EarningsCalendarItem[]; updatedAt: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/earnings/upcoming`);
+  if (!response.ok) {
+    await parseError(response);
+  }
+  return response.json();
 }

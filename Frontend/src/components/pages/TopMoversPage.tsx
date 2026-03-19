@@ -30,22 +30,6 @@ const generateSparkline = (baseValue: number, trend: 'up' | 'down') => {
   return data;
 };
 
-const fallbackGainers: Stock[] = [
-  { ticker: 'BARC.L', name: 'Barclays PLC', price: 186.5, change: 4.3, changePercent: 2.36, volume: '45.2M', volumeValue: 45200000, sparkline: generateSparkline(186.5, 'up') },
-  { ticker: 'BP.L', name: 'BP PLC', price: 445.6, change: 8.9, changePercent: 2.04, volume: '32.8M', volumeValue: 32800000, sparkline: generateSparkline(445.6, 'up') },
-  { ticker: 'GSK.L', name: 'GSK', price: 1542.0, change: 15.5, changePercent: 1.01, volume: '12.4M', volumeValue: 12400000, sparkline: generateSparkline(1542.0, 'up') },
-  { ticker: 'HSBA.L', name: 'HSBC Holdings', price: 658.4, change: 6.2, changePercent: 0.95, volume: '28.1M', volumeValue: 28100000, sparkline: generateSparkline(658.4, 'up') },
-  { ticker: 'RIO.L', name: 'Rio Tinto', price: 5234.0, change: 47.8, changePercent: 0.92, volume: '8.3M', volumeValue: 8300000, sparkline: generateSparkline(5234.0, 'up') },
-];
-
-const fallbackLosers: Stock[] = [
-  { ticker: 'LLOY.L', name: 'Lloyds Banking Group', price: 52.8, change: -1.2, changePercent: -2.22, volume: '67.3M', volumeValue: 67300000, sparkline: generateSparkline(52.8, 'down') },
-  { ticker: 'VOD.L', name: 'Vodafone Group', price: 73.2, change: -1.6, changePercent: -2.14, volume: '89.1M', volumeValue: 89100000, sparkline: generateSparkline(73.2, 'down') },
-  { ticker: 'BT.L', name: 'BT Group', price: 142.8, change: -2.8, changePercent: -1.92, volume: '42.5M', volumeValue: 42500000, sparkline: generateSparkline(142.8, 'down') },
-  { ticker: 'TESCO.L', name: 'Tesco PLC', price: 298.4, change: -4.2, changePercent: -1.39, volume: '35.7M', volumeValue: 35700000, sparkline: generateSparkline(298.4, 'down') },
-  { ticker: 'IAG.L', name: 'IAG', price: 168.5, change: -1.8, changePercent: -1.06, volume: '52.8M', volumeValue: 52800000, sparkline: generateSparkline(168.5, 'down') },
-];
-
 function StockRow({
   stock,
   onAddToWatchlist,
@@ -149,11 +133,13 @@ function StockRow({
 
 export function TopMoversPage({ onBack }: TopMoversPageProps) {
   const [selectedFilter, setSelectedFilter] = useState<'FTSE100' | 'FTSE250' | 'Global'>('FTSE100');
-  const [gainers, setGainers] = useState<Stock[]>(fallbackGainers);
-  const [losers, setLosers] = useState<Stock[]>(fallbackLosers);
+  const [gainers, setGainers] = useState<Stock[]>([]);
+  const [losers, setLosers] = useState<Stock[]>([]);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [watchlistMessage, setWatchlistMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const formatVolume = (volume: number) => {
     if (volume >= 1_000_000_000) {
@@ -183,27 +169,33 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
     let isMounted = true;
 
     const loadTopMovers = async () => {
+      if (isMounted) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
         const data = await getTopMovers(selectedFilter);
         if (!isMounted) {
           return;
         }
 
-        if (data.gainers.length > 0) {
-          setGainers(data.gainers.map(mapMoverToStock));
-        }
-        if (data.losers.length > 0) {
-          setLosers(data.losers.map(mapMoverToStock));
-        }
+        setGainers(data.gainers.map(mapMoverToStock));
+        setLosers(data.losers.map(mapMoverToStock));
         setLastUpdatedAt(data.updatedAt);
-      } catch {
+      } catch (err) {
         if (!isMounted) {
           return;
         }
 
-        setGainers(fallbackGainers);
-        setLosers(fallbackLosers);
+        setGainers([]);
+        setLosers([]);
         setLastUpdatedAt(null);
+        setError(err instanceof Error ? err.message : 'Failed to load top movers');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -276,6 +268,11 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
             {watchlistMessage}
           </div>
         )}
+        {error && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-400">
+            {error}
+          </div>
+        )}
         {/* Gainers */}
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -284,16 +281,26 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
             <span className="text-zinc-500 text-sm">({gainers.length} stocks)</span>
           </div>
           <div className="space-y-3">
-            {gainers.map((stock) => (
-              <StockRow
-                key={stock.ticker}
-                stock={stock}
-                onAddToWatchlist={handleAddToWatchlist}
-                onToggleExpand={toggleExpanded}
-                isExpanded={expandedTicker === stock.ticker}
-                updatedAt={lastUpdatedAt || undefined}
-              />
-            ))}
+            {loading ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
+                Loading top gainers...
+              </div>
+            ) : gainers.length === 0 ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
+                No gainers available right now.
+              </div>
+            ) : (
+              gainers.map((stock) => (
+                <StockRow
+                  key={stock.ticker}
+                  stock={stock}
+                  onAddToWatchlist={handleAddToWatchlist}
+                  onToggleExpand={toggleExpanded}
+                  isExpanded={expandedTicker === stock.ticker}
+                  updatedAt={lastUpdatedAt || undefined}
+                />
+              ))
+            )}
           </div>
         </div>
 
@@ -305,16 +312,26 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
             <span className="text-zinc-500 text-sm">({losers.length} stocks)</span>
           </div>
           <div className="space-y-3">
-            {losers.map((stock) => (
-              <StockRow
-                key={stock.ticker}
-                stock={stock}
-                onAddToWatchlist={handleAddToWatchlist}
-                onToggleExpand={toggleExpanded}
-                isExpanded={expandedTicker === stock.ticker}
-                updatedAt={lastUpdatedAt || undefined}
-              />
-            ))}
+            {loading ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
+                Loading top losers...
+              </div>
+            ) : losers.length === 0 ? (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
+                No losers available right now.
+              </div>
+            ) : (
+              losers.map((stock) => (
+                <StockRow
+                  key={stock.ticker}
+                  stock={stock}
+                  onAddToWatchlist={handleAddToWatchlist}
+                  onToggleExpand={toggleExpanded}
+                  isExpanded={expandedTicker === stock.ticker}
+                  updatedAt={lastUpdatedAt || undefined}
+                />
+              ))
+            )}
           </div>
         </div>
       </div>
