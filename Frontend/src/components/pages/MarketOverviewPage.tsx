@@ -36,6 +36,7 @@ function IndexCard({ index }: { index: MarketOverviewIndex }) {
             </span>
           </div>
           <p className="text-zinc-500 text-sm">{index.ticker}</p>
+          {index.sourceLabel && <p className="text-zinc-600 text-xs mt-1">Source: {index.sourceLabel}</p>}
         </div>
         <Globe className={`w-4 h-4 ${
           index.region === 'Europe' ? 'text-blue-400' :
@@ -198,6 +199,8 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
           <h2 className="text-zinc-100 mb-4">Global Indices</h2>
           {loading && indices.length === 0 ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">Loading market overview...</div>
+          ) : filteredIndices.length === 0 ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">No market indices available for this filter.</div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
               {filteredIndices.map((index) => (

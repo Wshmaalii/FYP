@@ -140,6 +140,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
   const [watchlistMessage, setWatchlistMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [providerMessage, setProviderMessage] = useState<string | null>(null);
 
   const formatVolume = (volume: number) => {
     if (volume >= 1_000_000_000) {
@@ -183,6 +184,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
         setGainers(data.gainers.map(mapMoverToStock));
         setLosers(data.losers.map(mapMoverToStock));
         setLastUpdatedAt(data.updatedAt);
+        setProviderMessage(data.message);
       } catch (err) {
         if (!isMounted) {
           return;
@@ -192,6 +194,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
         setLosers([]);
         setLastUpdatedAt(null);
         setError(err instanceof Error ? err.message : 'Failed to load top movers');
+        setProviderMessage(null);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -271,6 +274,11 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
         {error && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-400">
             {error}
+          </div>
+        )}
+        {providerMessage && !error && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
+            {providerMessage}
           </div>
         )}
         {/* Gainers */}

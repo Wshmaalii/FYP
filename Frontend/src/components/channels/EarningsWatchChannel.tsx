@@ -63,8 +63,10 @@ export function EarningsWatchChannel() {
     let isMounted = true;
 
     const loadMessages = async () => {
-      setLoading(true);
-      setError(null);
+      if (isMounted) {
+        setLoading((current) => current && messages.length === 0);
+        setError(null);
+      }
 
       try {
         const messageData = await fetchMessages('earnings');
@@ -83,11 +85,15 @@ export function EarningsWatchChannel() {
     };
 
     void loadMessages();
+    const interval = setInterval(() => {
+      void loadMessages();
+    }, 10000);
 
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
-  }, []);
+  }, [messages.length]);
 
   useEffect(() => {
     let isMounted = true;

@@ -1,25 +1,13 @@
 import { Lock, Shield, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchMessages, sendMessage, type ChannelMessage } from '../../api/messages';
+import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
 
 interface Member {
   name: string;
   status: 'online' | 'offline';
   verified: boolean;
-}
-
-function formatTimestamp(value: string | null) {
-  if (!value) {
-    return '--';
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return parsed.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function PrivateRoomsChannel() {
@@ -33,8 +21,10 @@ export function PrivateRoomsChannel() {
     let isMounted = true;
 
     const loadMessages = async () => {
-      setLoading(true);
-      setError(null);
+      if (isMounted) {
+        setLoading((current) => current && messages.length === 0);
+        setError(null);
+      }
 
       try {
         const messageData = await fetchMessages('private');
@@ -53,11 +43,15 @@ export function PrivateRoomsChannel() {
     };
 
     void loadMessages();
+    const interval = setInterval(() => {
+      void loadMessages();
+    }, 10000);
 
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
-  }, []);
+  }, [messages.length]);
 
   const handleSend = async (content: string) => {
     setIsSending(true);
@@ -130,22 +124,11 @@ export function PrivateRoomsChannel() {
             </div>
           ) : (
             messages.map((message) => (
-              <div key={message.id} className="flex gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-sm">{message.user.split(' ').map((n) => n[0]).join('')}</span>
+              <div key={message.id} className="relative">
+                <div className="absolute left-12 top-1 z-10">
+                  <Lock className="w-3 h-3 text-cyan-400" />
                 </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-zinc-100">{message.user}</span>
-                    <Lock className="w-3 h-3 text-cyan-400" />
-                    <span className="text-zinc-600 text-xs">{formatTimestamp(message.timestamp)}</span>
-                  </div>
-
-                  <div className="bg-zinc-900 rounded-2xl rounded-tl-sm px-4 py-3 border border-cyan-900/30 inline-block max-w-2xl">
-                    <p className="text-zinc-300">{message.content}</p>
-                  </div>
-                </div>
+                <ChatMessage message={message} />
               </div>
             ))
           )}

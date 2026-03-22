@@ -192,9 +192,10 @@ def _initials_from_name(name: str) -> str:
 
 def _extract_tickers(content: str):
     tickers = []
-    for match in re.findall(r"\b[A-Z]{2,5}(?:\.[A-Z]{1,3})?\b", content or ""):
-        if match not in tickers:
-            tickers.append(match)
+    for match in re.finditer(r"(?<!\w)[$#]([A-Za-z]{1,5}(?:\.[A-Za-z]{1,3})?)\b", content or ""):
+        symbol = match.group(1).upper()
+        if symbol not in tickers:
+            tickers.append(symbol)
     return tickers[:5]
 
 
@@ -682,7 +683,7 @@ def messages():
     if not content:
         return json_error("Message content is required", 400)
 
-    tickers = _extract_tickers(content.upper())
+    tickers = _extract_tickers(content)
     message = ChatMessage(
         user_id=user.id,
         channel=channel,

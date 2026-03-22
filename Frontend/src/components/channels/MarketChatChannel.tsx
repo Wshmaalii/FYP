@@ -17,8 +17,10 @@ export function MarketChatChannel() {
     let isMounted = true;
 
     const loadMessages = async () => {
-      setLoading(true);
-      setError(null);
+      if (isMounted) {
+        setLoading((current) => current && messages.length === 0);
+        setError(null);
+      }
 
       try {
         const messageData = await fetchMessages('market');
@@ -37,11 +39,15 @@ export function MarketChatChannel() {
     };
 
     void loadMessages();
+    const interval = setInterval(() => {
+      void loadMessages();
+    }, 10000);
 
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
-  }, []);
+  }, [messages.length]);
 
   const handleSend = async (content: string) => {
     setIsSending(true);

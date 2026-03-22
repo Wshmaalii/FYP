@@ -3,32 +3,23 @@ import { TrendingUp, TrendingDown, Star, Activity } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import type { TradeTicketInput } from './TradeTicketDrawer';
 import { fetchHistory, fetchQuote } from '../api/market';
+import { addWatchlistItem, fetchWatchlist, removeWatchlistItem } from '../api/watchlist';
 
 interface MarketDataCardProps {
   ticker: string;
   onOpenTradeTicket?: (ticket: TradeTicketInput) => void;
 }
 
-const stockMeta: Record<string, {
-  name: string;
-  sentiment?: 'Bullish' | 'Bearish' | 'High Volume';
-}> = {
-  'BARC.L': { name: 'Barclays PLC', sentiment: 'Bullish' },
-  'LLOY.L': { name: 'Lloyds Banking Group', sentiment: 'Bearish' },
-  'VOD.L': { name: 'Vodafone Group', sentiment: 'High Volume' },
-};
-
-const WATCHLIST_STORAGE_KEY = 'tradelink_watchlist';
-
 export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProps) {
-  const stockInfo = stockMeta[ticker] || { name: ticker };
-  const [price, setPrice] = useState(0);
-  const [changePercent, setChangePercent] = useState(0);
+  const [companyName, setCompanyName] = useState(ticker);
+  const [price, setPrice] = useState<number | null>(null);
+  const [changePercent, setChangePercent] = useState<number | null>(null);
   const [sparklineData, setSparklineData] = useState<Array<{ value: number }>>([]);
   const [isWatched, setIsWatched] = useState(false);
   const [liveDataError, setLiveDataError] = useState(false);
+  const [watchError, setWatchError] = useState<string | null>(null);
 
-  const isPositive = changePercent >= 0;
+  const isPositive = (changePercent ?? 0) >= 0;
 
   useEffect(() => {
     let isMounted = true;
@@ -45,7 +36,7 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
         }
 
         const parsedPercent = Number.parseFloat((quote.change_percent || '0').replace('%', '')) || 0;
-        setPrice(Number.isFinite(quote.price) ? quote.price : 0);
+        setPrice(Number.isFinite(quote.price) ? quote.price : null);
         setChangePercent(parsedPercent);
         setSparklineData(
           history.map((point) => ({
@@ -57,6 +48,9 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
         if (!isMounted) {
           return;
         }
+        setPrice(null);
+        setChangePercent(null);
+        setSparklineData([]);
         setLiveDataError(true);
       }
     };
@@ -69,69 +63,70 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
   }, [ticker]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(WATCHLIST_STORAGE_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      setIsWatched(Array.isArray(parsed) && parsed.includes(ticker));
-    } catch {
-      setIsWatched(false);
-    }
-  }, [ticker]);
+    let isMounted = true;
 
-  const updateWatchlist = (nextWatched: boolean) => {
-    try {
-      const raw = localStorage.getItem(WATCHLIST_STORAGE_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      const current = Array.isArray(parsed) ? parsed : [];
-      const next = nextWatched ? Array.from(new Set([...current, ticker])) : current.filter((item) => item !== ticker);
-      localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // Keep UI responsive even if storage is unavailable.
-    }
-  };
+    const loadWatchlistState = async () => {
+      try {
+        const items = await fetchWatchlist();
+        if (!isMounted) {
+          return;
+        }
+        const existingItem = items.find((item) => item.ticker === ticker);
+        setIsWatched(Boolean(existingItem));
+        if (existingItem?.company_name) {
+          setCompanyName(existingItem.company_name);
+        }
+      } catch {
+        if (isMounted) {
+          setIsWatched(false);
+        }
+      }
+    };
+
+    void loadWatchlistState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [ticker]);
 
   const handleBuy = () => {
     if (onOpenTradeTicket) {
       onOpenTradeTicket({
         ticker,
-        company: stockInfo.name,
+        company: companyName,
         side: 'BUY',
-        price,
+        price: price ?? 0,
       });
       return;
     }
-    console.log(`BUY ${ticker} @ ${price.toFixed(2)}`);
   };
 
   const handleSell = () => {
     if (onOpenTradeTicket) {
       onOpenTradeTicket({
         ticker,
-        company: stockInfo.name,
+        company: companyName,
         side: 'SELL',
-        price,
+        price: price ?? 0,
       });
       return;
     }
-    console.log(`SELL ${ticker} @ ${price.toFixed(2)}`);
   };
 
-  const handleWatch = () => {
-    const nextWatched = !isWatched;
-    setIsWatched(nextWatched);
-    updateWatchlist(nextWatched);
-  };
+  const handleWatch = async () => {
+    setWatchError(null);
 
-  const getSentimentColor = (sentiment?: string) => {
-    switch (sentiment) {
-      case 'Bullish':
-        return 'bg-emerald-950 text-emerald-400 border-emerald-800';
-      case 'Bearish':
-        return 'bg-red-950 text-red-400 border-red-800';
-      case 'High Volume':
-        return 'bg-cyan-950 text-cyan-400 border-cyan-800';
-      default:
-        return 'bg-zinc-800 text-zinc-400 border-zinc-700';
+    try {
+      if (isWatched) {
+        await removeWatchlistItem(ticker);
+        setIsWatched(false);
+      } else {
+        await addWatchlistItem(ticker, companyName);
+        setIsWatched(true);
+      }
+    } catch (err) {
+      setWatchError(err instanceof Error ? err.message : 'Failed to update watchlist');
     }
   };
 
@@ -142,13 +137,8 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h4 className="text-zinc-100">{ticker}</h4>
-            {stockInfo.sentiment && (
-              <span className={`text-xs px-2 py-0.5 rounded border ${getSentimentColor(stockInfo.sentiment)}`}>
-                {stockInfo.sentiment}
-              </span>
-            )}
           </div>
-          <p className="text-zinc-500 text-sm">{stockInfo.name}</p>
+          <p className="text-zinc-500 text-sm">{companyName}</p>
         </div>
         <button className="text-zinc-500 hover:text-cyan-400 transition-colors">
           <Star className="w-4 h-4" />
@@ -159,7 +149,7 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
       <div className="flex items-end justify-between mb-4">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-zinc-100 text-2xl">{price.toFixed(2)}</span>
+            <span className="text-zinc-100 text-2xl">{price !== null ? price.toFixed(2) : '--'}</span>
             <span className="text-zinc-500 text-sm">GBp</span>
           </div>
           <div className={`flex items-center gap-1 mt-1 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -169,12 +159,15 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
               <TrendingDown className="w-4 h-4" />
             )}
             <span className="text-sm">
-              {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
+              {changePercent !== null ? `${isPositive ? '+' : ''}${changePercent.toFixed(2)}%` : 'Unavailable'}
             </span>
             <span className="text-xs text-zinc-500">today</span>
           </div>
           {liveDataError && (
             <span className="text-xs text-zinc-500">Live data temporarily unavailable</span>
+          )}
+          {watchError && (
+            <span className="text-xs text-red-400">{watchError}</span>
           )}
         </div>
 

@@ -7,7 +7,7 @@ interface MessageInputProps {
   placeholder?: string;
 }
 
-export function MessageInput({ onSend, isSending = false, placeholder = 'Type a message... Use @ to mention, # for tickers' }: MessageInputProps) {
+export function MessageInput({ onSend, isSending = false, placeholder = 'Type a message... Use $AAPL or #BARC.L for tickers' }: MessageInputProps) {
   const [message, setMessage] = useState('');
 
   const handleSend = async () => {
@@ -69,7 +69,7 @@ export function MessageInput({ onSend, isSending = false, placeholder = 'Type a 
 
       {/* Help Text */}
       <div className="mt-2 text-xs text-zinc-600 px-1">
-        Press Enter to send, Shift+Enter for new line
+        Press Enter to send, Shift+Enter for new line. Use $AAPL or #BARC.L for ticker cards.
       </div>
     </div>
   );

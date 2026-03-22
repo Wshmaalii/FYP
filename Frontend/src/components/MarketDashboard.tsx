@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
-import { getMarketOverview, getTopMovers, type MarketOverviewIndex, type MarketQuote, type TopMoverItem } from '../api/market';
+import { getMarketOverview, getTopMovers, type MarketOverviewIndex, type TopMoverItem } from '../api/market';
 import { fetchWatchlist } from '../api/watchlist';
 import { getQuotes } from '../api/market';
 
@@ -65,7 +65,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
       try {
         const [overview, movers, watchlistItems] = await Promise.all([
           getMarketOverview(),
-          getTopMovers('FTSE100'),
+          getTopMovers('Global'),
           fetchWatchlist().catch(() => []),
         ]);
 
@@ -88,7 +88,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
             .filter((index) => ['FTSE 100', 'DAX', 'CAC 40'].includes(index.name))
             .map((index: MarketOverviewIndex) => ({
               ticker: index.ticker,
-              name: index.name,
+              name: index.sourceType === 'proxy_etf' ? `${index.name} (proxy)` : index.name,
               price: index.price,
               change: index.change,
               changePercent: index.changePercent,

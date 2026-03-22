@@ -23,6 +23,9 @@ export interface MarketOverviewIndex {
   status: string;
   history: StockHistoryPoint[];
   available: boolean;
+  sourceSymbol: string | null;
+  sourceType: 'proxy_etf' | 'direct' | null;
+  sourceLabel: string | null;
 }
 
 export interface MarketOverviewResponse {
@@ -53,6 +56,8 @@ export interface TopMoversResponse {
   gainers: TopMoverItem[];
   losers: TopMoverItem[];
   updatedAt: string;
+  supported: boolean;
+  message: string | null;
 }
 
 export interface StockQuoteResponse {

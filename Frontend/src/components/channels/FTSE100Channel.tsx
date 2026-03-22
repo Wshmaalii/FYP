@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { getMarketOverview, getTopMovers, type MarketOverviewIndex, type TopMoverItem } from '../../api/market';
+import { fetchHistory, getMarketOverview, getTopMovers, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
 
 interface TopMoverView extends TopMoverItem {
   volumeLabel: string;
@@ -20,8 +20,10 @@ function formatVolume(volume: number | null) {
 export function FTSE100Channel() {
   const [ftseIndex, setFtseIndex] = useState<MarketOverviewIndex | null>(null);
   const [topMovers, setTopMovers] = useState<TopMoverView[]>([]);
+  const [history, setHistory] = useState<StockHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [topMoversMessage, setTopMoversMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,16 +42,27 @@ export function FTSE100Channel() {
           return;
         }
 
-        setFtseIndex(overview.indices.find((index) => index.name === 'FTSE 100') || null);
+        const nextFtseIndex = overview.indices.find((index) => index.name === 'FTSE 100') || null;
+        setFtseIndex(nextFtseIndex);
+        setTopMoversMessage(movers.message);
         setTopMovers(
           [...movers.gainers, ...movers.losers].map((stock) => ({
             ...stock,
             volumeLabel: formatVolume(stock.volume),
           })),
         );
+        if (nextFtseIndex?.sourceSymbol) {
+          const historyData = await fetchHistory(nextFtseIndex.sourceSymbol);
+          if (isMounted) {
+            setHistory(historyData);
+          }
+        } else {
+          setHistory([]);
+        }
       } catch (err) {
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'Failed to load FTSE data');
+          setHistory([]);
         }
       } finally {
         if (isMounted) {
@@ -70,7 +83,7 @@ export function FTSE100Channel() {
   }, []);
 
   const isPositive = (ftseIndex?.change ?? 0) >= 0;
-  const chartValues = ftseIndex?.history || [];
+  const chartValues = history;
   const availableChartPrices = chartValues.map((point) => point.price);
   const minPrice = availableChartPrices.length > 0 ? Math.min(...availableChartPrices) * 0.995 : 0;
   const maxPrice = availableChartPrices.length > 0 ? Math.max(...availableChartPrices) * 1.005 : 1;
@@ -95,6 +108,9 @@ export function FTSE100Channel() {
                 </div>
               </div>
               <p className="text-zinc-500 text-sm mt-2">Status: {ftseIndex.status}</p>
+              {ftseIndex.sourceLabel && (
+                <p className="text-zinc-500 text-xs mt-1">Source: {ftseIndex.sourceLabel}</p>
+              )}
             </div>
             <div className="flex gap-6 pb-2">
               <div>
@@ -160,7 +176,7 @@ export function FTSE100Channel() {
         <div className="col-span-3 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <h3 className="text-zinc-100 mb-4">Top Movers</h3>
           {topMovers.length === 0 ? (
-            <div className="text-zinc-500 text-sm">Top movers unavailable right now.</div>
+            <div className="text-zinc-500 text-sm">{topMoversMessage || 'Top movers unavailable right now.'}</div>
           ) : (
             <div className="space-y-3">
               {topMovers.map((stock) => {

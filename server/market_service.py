@@ -8,64 +8,19 @@ from urllib.error import HTTPError
 
 
 ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
-MARKET_CACHE_TTL_SECONDS = 15
-STOCK_QUOTE_CACHE_TTL_SECONDS = 30
-STOCK_HISTORY_CACHE_TTL_SECONDS = 60
+MARKET_CACHE_TTL_SECONDS = 300
+STOCK_QUOTE_CACHE_TTL_SECONDS = 300
+STOCK_HISTORY_CACHE_TTL_SECONDS = 900
 EARNINGS_CACHE_TTL_SECONDS = 3600
 
-TICKER_PROVIDER_MAP = {
-    "FTSE 100": "^FTSE",
-    "DAX": "^GDAXI",
-    "CAC 40": "^FCHI",
-    "S&P 500": "^GSPC",
-    "Dow Jones": "^DJI",
-    "Nikkei 225": "^N225",
-    "Hang Seng": "^HSI",
-}
-
-TOP_MOVER_UNIVERSES = {
-    "FTSE100": [
-        {"ticker": "BARC.L", "name": "Barclays PLC", "volume": 45200000},
-        {"ticker": "BP.L", "name": "BP PLC", "volume": 32800000},
-        {"ticker": "GSK.L", "name": "GSK", "volume": 12400000},
-        {"ticker": "HSBA.L", "name": "HSBC Holdings", "volume": 28100000},
-        {"ticker": "RIO.L", "name": "Rio Tinto", "volume": 8300000},
-        {"ticker": "LLOY.L", "name": "Lloyds Banking Group", "volume": 67300000},
-        {"ticker": "VOD.L", "name": "Vodafone Group", "volume": 89100000},
-        {"ticker": "BT.L", "name": "BT Group", "volume": 42500000},
-        {"ticker": "TSCO.L", "name": "Tesco PLC", "volume": 35700000},
-        {"ticker": "IAG.L", "name": "IAG", "volume": 52800000},
-    ],
-    "FTSE250": [
-        {"ticker": "EZJ.L", "name": "easyJet", "volume": 8100000},
-        {"ticker": "ITRK.L", "name": "Intertek Group", "volume": 1200000},
-        {"ticker": "BAB.L", "name": "Babcock International", "volume": 3900000},
-        {"ticker": "CINE.L", "name": "Cineworld Group", "volume": 7200000},
-        {"ticker": "AO.L", "name": "AO World", "volume": 2600000},
-        {"ticker": "TBCG.L", "name": "TBC Bank Group", "volume": 1800000},
-        {"ticker": "HOC.L", "name": "Hochschild Mining", "volume": 4300000},
-        {"ticker": "PNN.L", "name": "Pennon Group", "volume": 1700000},
-    ],
-    "Global": [
-        {"ticker": "AAPL", "name": "Apple Inc.", "volume": 56400000},
-        {"ticker": "MSFT", "name": "Microsoft Corp.", "volume": 24200000},
-        {"ticker": "NVDA", "name": "NVIDIA Corp.", "volume": 45100000},
-        {"ticker": "AMZN", "name": "Amazon.com Inc.", "volume": 38700000},
-        {"ticker": "TSLA", "name": "Tesla Inc.", "volume": 93600000},
-        {"ticker": "META", "name": "Meta Platforms Inc.", "volume": 22800000},
-        {"ticker": "GOOGL", "name": "Alphabet Inc.", "volume": 21100000},
-        {"ticker": "NFLX", "name": "Netflix Inc.", "volume": 8200000},
-    ],
-}
-
 MARKET_OVERVIEW_INDICES = [
-    {"name": "FTSE 100", "ticker": "FTSE 100", "region": "Europe"},
-    {"name": "DAX", "ticker": "DAX", "region": "Europe"},
-    {"name": "CAC 40", "ticker": "CAC 40", "region": "Europe"},
-    {"name": "S&P 500", "ticker": "S&P 500", "region": "US"},
-    {"name": "Dow Jones", "ticker": "Dow Jones", "region": "US"},
-    {"name": "Nikkei 225", "ticker": "Nikkei 225", "region": "Asia"},
-    {"name": "Hang Seng", "ticker": "Hang Seng", "region": "Asia"},
+    {"name": "FTSE 100", "ticker": "FTSE 100", "region": "Europe", "source_symbol": "EWU", "source_type": "proxy_etf", "source_label": "iShares MSCI United Kingdom ETF proxy"},
+    {"name": "DAX", "ticker": "DAX", "region": "Europe", "source_symbol": "EWG", "source_type": "proxy_etf", "source_label": "iShares MSCI Germany ETF proxy"},
+    {"name": "CAC 40", "ticker": "CAC 40", "region": "Europe", "source_symbol": "EWQ", "source_type": "proxy_etf", "source_label": "iShares MSCI France ETF proxy"},
+    {"name": "S&P 500", "ticker": "S&P 500", "region": "US", "source_symbol": "SPY", "source_type": "proxy_etf", "source_label": "SPDR S&P 500 ETF Trust proxy"},
+    {"name": "Dow Jones", "ticker": "Dow Jones", "region": "US", "source_symbol": "DIA", "source_type": "proxy_etf", "source_label": "SPDR Dow Jones Industrial Average ETF proxy"},
+    {"name": "Nikkei 225", "ticker": "Nikkei 225", "region": "Asia", "source_symbol": "EWJ", "source_type": "proxy_etf", "source_label": "iShares MSCI Japan ETF proxy"},
+    {"name": "Hang Seng", "ticker": "Hang Seng", "region": "Asia", "source_symbol": "EWH", "source_type": "proxy_etf", "source_label": "iShares MSCI Hong Kong ETF proxy"},
 ]
 
 market_cache = {}
@@ -85,8 +40,7 @@ def get_alpha_vantage_api_key():
 
 
 def normalize_symbol(symbol: str) -> str:
-    normalized = (symbol or "").strip()
-    return TICKER_PROVIDER_MAP.get(normalized, normalized).upper()
+    return (symbol or "").strip().upper()
 
 
 def _to_float(value, default=0.0):
@@ -145,21 +99,50 @@ def fetch_quote(api_key: str, symbol: str):
     if cache_entry and cache_entry["expires_at"] > now:
         return cache_entry["data"]
 
-    payload = _alpha_vantage_request(
-        {"function": "GLOBAL_QUOTE", "symbol": normalized, "apikey": api_key}
-    )
-    quote = payload.get("Global Quote") or {}
-    if not isinstance(quote, dict) or not quote:
-        raise RuntimeError("No quote data available")
+    try:
+        payload = _alpha_vantage_request(
+            {"function": "GLOBAL_QUOTE", "symbol": normalized, "apikey": api_key}
+        )
+        quote = payload.get("Global Quote") or {}
+        if not isinstance(quote, dict) or not quote:
+            raise RuntimeError("No quote data available")
 
-    data = {
-        "symbol": (quote.get("01. symbol") or normalized).upper(),
-        "price": _to_float(quote.get("05. price")),
-        "change": _to_float(quote.get("09. change")),
-        "change_percent": (quote.get("10. change percent") or "0.00%").strip(),
-    }
-    if data["change_percent"] and not data["change_percent"].endswith("%"):
-        data["change_percent"] = f"{data['change_percent']}%"
+        data = {
+            "symbol": (quote.get("01. symbol") or normalized).upper(),
+            "price": _to_float(quote.get("05. price")),
+            "change": _to_float(quote.get("09. change")),
+            "change_percent": (quote.get("10. change percent") or "0.00%").strip(),
+        }
+        if data["change_percent"] and not data["change_percent"].endswith("%"):
+            data["change_percent"] = f"{data['change_percent']}%"
+    except RateLimitError:
+        raise
+    except Exception:
+        payload = _alpha_vantage_request(
+            {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": normalized,
+                "outputsize": "compact",
+                "apikey": api_key,
+            }
+        )
+        series = payload.get("Time Series (Daily)") or {}
+        if not isinstance(series, dict) or len(series) < 2:
+            raise RuntimeError("No quote data available")
+
+        sorted_points = sorted(series.items(), key=lambda item: item[0], reverse=True)
+        latest = sorted_points[0][1]
+        previous = sorted_points[1][1]
+        latest_close = _to_float(latest.get("4. close"))
+        previous_close = _to_float(previous.get("4. close"))
+        change = latest_close - previous_close
+        change_percent = ((change / previous_close) * 100) if previous_close else 0.0
+        data = {
+            "symbol": normalized,
+            "price": latest_close,
+            "change": change,
+            "change_percent": f"{change_percent:.2f}%",
+        }
 
     stock_quote_cache[normalized] = {
         "data": data,
@@ -175,32 +158,61 @@ def fetch_history(api_key: str, symbol: str):
     if cache_entry and cache_entry["expires_at"] > now:
         return cache_entry["data"]
 
-    payload = _alpha_vantage_request(
-        {
-            "function": "TIME_SERIES_INTRADAY",
-            "symbol": normalized,
-            "interval": "5min",
-            "apikey": api_key,
-        }
-    )
-    series = payload.get("Time Series (5min)") or {}
-    if not isinstance(series, dict) or not series:
-        raise RuntimeError("No historical data available")
-
     points = []
-    for timestamp, values in series.items():
-        if not isinstance(values, dict):
-            continue
-        points.append(
+    try:
+        payload = _alpha_vantage_request(
             {
-                "time": timestamp,
-                "price": _to_float(values.get("4. close")),
-                "open": _to_float(values.get("1. open")),
-                "high": _to_float(values.get("2. high")),
-                "low": _to_float(values.get("3. low")),
-                "volume": _to_float(values.get("5. volume")),
+                "function": "TIME_SERIES_INTRADAY",
+                "symbol": normalized,
+                "interval": "5min",
+                "apikey": api_key,
             }
         )
+        series = payload.get("Time Series (5min)") or {}
+        if not isinstance(series, dict) or not series:
+            raise RuntimeError("No historical data available")
+
+        for timestamp, values in series.items():
+            if not isinstance(values, dict):
+                continue
+            points.append(
+                {
+                    "time": timestamp,
+                    "price": _to_float(values.get("4. close")),
+                    "open": _to_float(values.get("1. open")),
+                    "high": _to_float(values.get("2. high")),
+                    "low": _to_float(values.get("3. low")),
+                    "volume": _to_float(values.get("5. volume")),
+                }
+            )
+    except RateLimitError:
+        raise
+    except Exception:
+        payload = _alpha_vantage_request(
+            {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": normalized,
+                "outputsize": "compact",
+                "apikey": api_key,
+            }
+        )
+        series = payload.get("Time Series (Daily)") or {}
+        if not isinstance(series, dict) or not series:
+            raise RuntimeError("No historical data available")
+
+        for timestamp, values in series.items():
+            if not isinstance(values, dict):
+                continue
+            points.append(
+                {
+                    "time": timestamp,
+                    "price": _to_float(values.get("4. close")),
+                    "open": _to_float(values.get("1. open")),
+                    "high": _to_float(values.get("2. high")),
+                    "low": _to_float(values.get("3. low")),
+                    "volume": _to_float(values.get("5. volume")),
+                }
+            )
 
     points.sort(key=lambda item: item["time"])
     latest_points = points[-50:]
@@ -242,7 +254,7 @@ def fetch_bulk_quotes(api_key: str, tickers):
 
 
 def fetch_top_movers(api_key: str, index: str):
-    if index not in TOP_MOVER_UNIVERSES:
+    if index not in {"FTSE100", "FTSE250", "Global"}:
         raise ValueError("Unsupported index")
 
     now = time.time()
@@ -250,39 +262,43 @@ def fetch_top_movers(api_key: str, index: str):
     if cache_entry and cache_entry["expires_at"] > now:
         return cache_entry["data"]
 
-    movers = []
-    for stock in TOP_MOVER_UNIVERSES[index]:
-        try:
-            quote = fetch_quote(api_key, stock["ticker"])
-        except RateLimitError:
-            if not movers:
-                raise
-            break
-        except Exception:
-            continue
+    if index != "Global":
+        payload = {
+            "gainers": [],
+            "losers": [],
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
+            "supported": False,
+            "message": "Top movers are only supported for the US market by the current Alpha Vantage endpoint.",
+        }
+        top_movers_cache[index] = {
+            "data": payload,
+            "expires_at": now + MARKET_CACHE_TTL_SECONDS,
+        }
+        return payload
 
-        movers.append(
-            {
-                "ticker": stock["ticker"],
-                "name": stock["name"],
-                "price": quote["price"],
-                "change": quote["change"],
-                "changePercent": _to_float(quote["change_percent"]),
-                "volume": stock["volume"],
-            }
-        )
+    payload = _alpha_vantage_request({"function": "TOP_GAINERS_LOSERS", "apikey": api_key})
+
+    def _normalize_movers(entries):
+        normalized_entries = []
+        for entry in entries[:5]:
+            normalized_entries.append(
+                {
+                    "ticker": entry.get("ticker") or "",
+                    "name": entry.get("ticker") or "",
+                    "price": _to_float(entry.get("price")),
+                    "change": _to_float(entry.get("change_amount")),
+                    "changePercent": _to_float(entry.get("change_percentage")),
+                    "volume": int(_to_float(entry.get("volume"), 0)),
+                }
+            )
+        return normalized_entries
 
     payload = {
-        "gainers": sorted(
-            [stock for stock in movers if stock["changePercent"] >= 0],
-            key=lambda item: item["changePercent"],
-            reverse=True,
-        )[:5],
-        "losers": sorted(
-            [stock for stock in movers if stock["changePercent"] < 0],
-            key=lambda item: item["changePercent"],
-        )[:5],
+        "gainers": _normalize_movers(payload.get("top_gainers") or []),
+        "losers": _normalize_movers(payload.get("top_losers") or []),
         "updatedAt": datetime.now(timezone.utc).isoformat(),
+        "supported": True,
+        "message": None,
     }
 
     top_movers_cache[index] = {
@@ -311,13 +327,7 @@ def fetch_market_overview(api_key: str):
     indices = []
     for item in MARKET_OVERVIEW_INDICES:
         try:
-            quote = fetch_quote(api_key, item["ticker"])
-            history = fetch_history(api_key, item["ticker"])
-            day_open = history[0]["open"] if history else None
-            day_high = max((point["high"] for point in history), default=None)
-            day_low = min((point["low"] for point in history), default=None)
-            day_volume = sum(point["volume"] for point in history) if history else None
-            history_points = [{"time": point["time"], "price": point["price"]} for point in history]
+            quote = fetch_quote(api_key, item["source_symbol"])
             indices.append(
                 {
                     "name": item["name"],
@@ -325,14 +335,17 @@ def fetch_market_overview(api_key: str):
                     "price": quote["price"],
                     "change": quote["change"],
                     "changePercent": _to_float(quote["change_percent"]),
-                    "open": day_open,
-                    "high": day_high,
-                    "low": day_low,
-                    "volume": day_volume,
+                    "open": None,
+                    "high": None,
+                    "low": None,
+                    "volume": None,
                     "region": item["region"],
                     "status": _market_status(item["region"]),
-                    "history": history_points,
+                    "history": [],
                     "available": True,
+                    "sourceSymbol": item["source_symbol"],
+                    "sourceType": item["source_type"],
+                    "sourceLabel": item["source_label"],
                 }
             )
         except Exception:
@@ -351,6 +364,9 @@ def fetch_market_overview(api_key: str):
                     "status": "Unavailable",
                     "history": [],
                     "available": False,
+                    "sourceSymbol": item["source_symbol"],
+                    "sourceType": item["source_type"],
+                    "sourceLabel": item["source_label"],
                 }
             )
 
