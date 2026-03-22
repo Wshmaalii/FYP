@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import os
 import re
 import uuid
+from collections import Counter
 from urllib import parse
 
 import jwt
@@ -27,6 +28,8 @@ try:
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
+        get_supported_symbol_name,
+        is_supported_symbol,
         get_alpha_vantage_api_key,
     )
     from .models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
@@ -40,6 +43,8 @@ except ImportError:
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
+        get_supported_symbol_name,
+        is_supported_symbol,
         get_alpha_vantage_api_key,
     )
     from models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
@@ -194,7 +199,7 @@ def _extract_tickers(content: str):
     tickers = []
     for match in re.finditer(r"(?<!\w)[$#]([A-Za-z]{1,5}(?:\.[A-Za-z]{1,3})?)\b", content or ""):
         symbol = match.group(1).upper()
-        if symbol not in tickers:
+        if is_supported_symbol(symbol) and symbol not in tickers:
             tickers.append(symbol)
     return tickers[:5]
 
@@ -368,6 +373,8 @@ def stock_quote(symbol):
 
     try:
         quote = fetch_quote(api_key, normalized_symbol)
+    except ValueError as exc:
+        return json_error(str(exc), 400)
     except RateLimitError:
         return json_error("rate limit exceeded", 429)
     except Exception as exc:
@@ -420,6 +427,8 @@ def stock_history(symbol):
 
     try:
         history = fetch_history(api_key, normalized_symbol)
+    except ValueError as exc:
+        return json_error(str(exc), 400)
     except RateLimitError:
         return json_error("rate limit exceeded", 429)
     except Exception as exc:
@@ -444,6 +453,8 @@ def market_quotes():
 
     try:
         quotes = fetch_bulk_quotes(api_key, requested_tickers)
+        if not quotes:
+            return json_error("No supported tickers provided", 400)
     except RateLimitError:
         return json_error("rate limit exceeded", 429)
     except Exception as exc:
@@ -460,8 +471,19 @@ def market_top_movers():
 
     index = (request.args.get("index") or "FTSE100").strip()
 
+    community_counts = Counter()
+    if index in {"FTSE100", "FTSE250"}:
+        recent_messages = (
+            ChatMessage.query
+            .order_by(ChatMessage.created_at.desc())
+            .limit(500)
+            .all()
+        )
+        for message in recent_messages:
+            community_counts.update(message.ticker_list())
+
     try:
-        payload = fetch_top_movers(api_key, index)
+        payload = fetch_top_movers(api_key, index, community_counts=community_counts)
     except ValueError as exc:
         return json_error(str(exc), 400)
     except RateLimitError:
@@ -732,11 +754,15 @@ def watchlist():
     if not ticker:
         return json_error("Ticker is required", 400)
 
+    if not is_supported_symbol(ticker):
+        return json_error("Ticker is not supported in TradeLink yet", 400)
+
     existing_item = WatchlistItem.query.filter_by(user_id=user.id, ticker=ticker).first()
     if existing_item:
         return json_error("Ticker is already in your watchlist", 409)
 
-    item = WatchlistItem(user_id=user.id, ticker=ticker, company_name=company_name)
+    resolved_company_name = company_name or get_supported_symbol_name(ticker)
+    item = WatchlistItem(user_id=user.id, ticker=ticker, company_name=resolved_company_name)
     db.session.add(item)
     _create_activity(
         user.id,

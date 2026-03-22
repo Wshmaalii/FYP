@@ -43,15 +43,11 @@ export function PrivateRoomsChannel() {
     };
 
     void loadMessages();
-    const interval = setInterval(() => {
-      void loadMessages();
-    }, 10000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
-  }, [messages.length]);
+  }, []);
 
   const handleSend = async (content: string) => {
     setIsSending(true);

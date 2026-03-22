@@ -72,13 +72,9 @@ export function FTSE100Channel() {
     };
 
     void loadChannelData();
-    const interval = setInterval(() => {
-      void loadChannelData();
-    }, 60000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, []);
 

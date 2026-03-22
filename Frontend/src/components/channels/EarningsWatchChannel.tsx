@@ -85,15 +85,11 @@ export function EarningsWatchChannel() {
     };
 
     void loadMessages();
-    const interval = setInterval(() => {
-      void loadMessages();
-    }, 10000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
-  }, [messages.length]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

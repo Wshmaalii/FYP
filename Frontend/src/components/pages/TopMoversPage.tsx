@@ -1,6 +1,5 @@
 import { ArrowLeft, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { getTopMovers, TopMoverItem } from '../../api/market';
 import { addWatchlistItem } from '../../api/watchlist';
 
@@ -16,19 +15,7 @@ interface Stock {
   changePercent: number;
   volume: string;
   volumeValue: number;
-  sparkline: number[];
 }
-
-const generateSparkline = (baseValue: number, trend: 'up' | 'down') => {
-  const data = [];
-  let value = baseValue * 0.97;
-  for (let i = 0; i < 10; i++) {
-    const direction = trend === 'up' ? 0.003 : -0.003;
-    value = value * (1 + direction + (Math.random() - 0.5) * 0.01);
-    data.push(value);
-  }
-  return data;
-};
 
 function StockRow({
   stock,
@@ -61,17 +48,9 @@ function StockRow({
         </div>
 
         <div className="w-24 h-12">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={stock.sparkline.map(value => ({ value }))}>
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke={isPositive ? '#34d399' : '#f87171'} 
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="w-full h-full flex items-center justify-center text-[11px] text-zinc-600 border border-zinc-800 rounded">
+            On demand
+          </div>
         </div>
 
         <div className="text-right min-w-[100px]">
@@ -163,7 +142,6 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
     changePercent: mover.changePercent,
     volume: formatVolume(mover.volume),
     volumeValue: mover.volume,
-    sparkline: generateSparkline(mover.price, mover.changePercent >= 0 ? 'up' : 'down'),
   });
 
   useEffect(() => {
@@ -203,13 +181,9 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
     };
 
     void loadTopMovers();
-    const interval = setInterval(() => {
-      void loadTopMovers();
-    }, 30000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, [selectedFilter]);
 

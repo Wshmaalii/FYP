@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Bell, Star, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { getQuotes } from '../../api/market';
 import { fetchWatchlist, removeWatchlistItem, type WatchlistItem } from '../../api/watchlist';
 
@@ -12,19 +11,7 @@ interface WatchlistStock extends WatchlistItem {
   price: number | null;
   change: number;
   changePercent: number;
-  sparkline: number[];
 }
-
-const generateSparkline = (baseValue: number, trend: 'up' | 'down' | 'neutral') => {
-  const data = [];
-  let value = baseValue || 100;
-  for (let i = 0; i < 10; i += 1) {
-    const direction = trend === 'up' ? 0.003 : trend === 'down' ? -0.003 : 0;
-    value = value * (1 + direction + (Math.random() - 0.5) * 0.01);
-    data.push(value);
-  }
-  return data;
-};
 
 function WatchlistRow({
   stock,
@@ -49,17 +36,9 @@ function WatchlistRow({
       </div>
 
       <div className="w-24 h-12">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={stock.sparkline.map((value) => ({ value }))}>
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={isPositive ? '#34d399' : '#f87171'}
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="w-full h-full flex items-center justify-center text-[11px] text-zinc-600 border border-zinc-800 rounded">
+          On demand
+        </div>
       </div>
 
       <div className="text-right min-w-[100px]">
@@ -120,14 +99,11 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
             const price = quote?.price ?? null;
             const changePercent = quote?.changePercent ?? 0;
             const change = price !== null ? (price * changePercent) / 100 : 0;
-            const trend = changePercent > 0 ? 'up' : changePercent < 0 ? 'down' : 'neutral';
-
             return {
               ...item,
               price,
               change,
               changePercent,
-              sparkline: generateSparkline(price ?? 100, trend),
             };
           }),
         );

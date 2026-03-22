@@ -49,6 +49,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
   const [topMovers, setTopMovers] = useState<Stock[]>([]);
   const [watchlist, setWatchlist] = useState<Stock[]>([]);
   const [liveDataError, setLiveDataError] = useState(false);
+  const [topMoversMessage, setTopMoversMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -65,7 +66,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
       try {
         const [overview, movers, watchlistItems] = await Promise.all([
           getMarketOverview(),
-          getTopMovers('Global'),
+          getTopMovers('FTSE100'),
           fetchWatchlist().catch(() => []),
         ]);
 
@@ -85,7 +86,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
 
         setMarketIndices(
           overview.indices
-            .filter((index) => ['FTSE 100', 'DAX', 'CAC 40'].includes(index.name))
+            .filter((index) => ['FTSE 100', 'S&P 500'].includes(index.name))
             .map((index: MarketOverviewIndex) => ({
               ticker: index.ticker,
               name: index.sourceType === 'proxy_etf' ? `${index.name} (proxy)` : index.name,
@@ -105,6 +106,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
             changePercent: stock.changePercent,
           }));
         setTopMovers(combinedMovers);
+        setTopMoversMessage(movers.message);
 
         setWatchlist(
           watchlistStocks.map((stock) => ({
@@ -121,18 +123,15 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           setLiveDataError(true);
           setMarketIndices([]);
           setTopMovers([]);
+          setTopMoversMessage(null);
         }
       }
     };
 
     void loadDashboardData();
-    const interval = setInterval(() => {
-      void loadDashboardData();
-    }, 60000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, []);
 
@@ -170,7 +169,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
         </button>
         <div className="space-y-1">
           {topMovers.length === 0 && !liveDataError ? (
-            <p className="text-zinc-500 text-xs">Loading top movers...</p>
+            <p className="text-zinc-500 text-xs">{topMoversMessage || 'Loading top movers...'}</p>
           ) : (
             topMovers.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
           )}

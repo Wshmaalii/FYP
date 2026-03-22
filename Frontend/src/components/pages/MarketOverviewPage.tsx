@@ -124,13 +124,9 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
     };
 
     void loadOverview();
-    const interval = setInterval(() => {
-      void loadOverview();
-    }, 60000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, []);
 

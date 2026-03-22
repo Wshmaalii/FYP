@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import time
+from collections import Counter
 from datetime import datetime, timezone
 from urllib import parse, request as urlrequest
 from urllib.error import HTTPError
@@ -13,14 +14,45 @@ STOCK_QUOTE_CACHE_TTL_SECONDS = 300
 STOCK_HISTORY_CACHE_TTL_SECONDS = 900
 EARNINGS_CACHE_TTL_SECONDS = 3600
 
+SUPPORTED_TICKERS = {
+    "BARC.L": {"name": "Barclays PLC", "bucket": "FTSE100"},
+    "BP.L": {"name": "BP PLC", "bucket": "FTSE100"},
+    "GSK.L": {"name": "GSK PLC", "bucket": "FTSE100"},
+    "HSBA.L": {"name": "HSBC Holdings PLC", "bucket": "FTSE100"},
+    "LLOY.L": {"name": "Lloyds Banking Group PLC", "bucket": "FTSE100"},
+    "REL.L": {"name": "RELX PLC", "bucket": "FTSE100"},
+    "RIO.L": {"name": "Rio Tinto PLC", "bucket": "FTSE100"},
+    "SHEL.L": {"name": "Shell PLC", "bucket": "FTSE100"},
+    "TSCO.L": {"name": "Tesco PLC", "bucket": "FTSE100"},
+    "ULVR.L": {"name": "Unilever PLC", "bucket": "FTSE100"},
+    "VOD.L": {"name": "Vodafone Group PLC", "bucket": "FTSE100"},
+    "AHT.L": {"name": "Ashtead Group PLC", "bucket": "FTSE100"},
+    "BAB.L": {"name": "Babcock International Group PLC", "bucket": "FTSE250"},
+    "EZJ.L": {"name": "easyJet PLC", "bucket": "FTSE250"},
+    "HOC.L": {"name": "Hochschild Mining PLC", "bucket": "FTSE250"},
+    "ITRK.L": {"name": "Intertek Group PLC", "bucket": "FTSE250"},
+    "PNN.L": {"name": "Pennon Group PLC", "bucket": "FTSE250"},
+    "TBCG.L": {"name": "TBC Bank Group PLC", "bucket": "FTSE250"},
+    "AAPL": {"name": "Apple Inc.", "bucket": "Global"},
+    "AMZN": {"name": "Amazon.com Inc.", "bucket": "Global"},
+    "GOOGL": {"name": "Alphabet Inc.", "bucket": "Global"},
+    "META": {"name": "Meta Platforms Inc.", "bucket": "Global"},
+    "MSFT": {"name": "Microsoft Corp.", "bucket": "Global"},
+    "NFLX": {"name": "Netflix Inc.", "bucket": "Global"},
+    "NVDA": {"name": "NVIDIA Corp.", "bucket": "Global"},
+    "TSLA": {"name": "Tesla Inc.", "bucket": "Global"},
+    "SPY": {"name": "SPDR S&P 500 ETF Trust", "bucket": "Proxy"},
+    "DIA": {"name": "SPDR Dow Jones Industrial Average ETF Trust", "bucket": "Proxy"},
+    "EWU": {"name": "iShares MSCI United Kingdom ETF", "bucket": "Proxy"},
+    "EWG": {"name": "iShares MSCI Germany ETF", "bucket": "Proxy"},
+    "EWQ": {"name": "iShares MSCI France ETF", "bucket": "Proxy"},
+    "EWH": {"name": "iShares MSCI Hong Kong ETF", "bucket": "Proxy"},
+    "EWJ": {"name": "iShares MSCI Japan ETF", "bucket": "Proxy"},
+}
+
 MARKET_OVERVIEW_INDICES = [
     {"name": "FTSE 100", "ticker": "FTSE 100", "region": "Europe", "source_symbol": "EWU", "source_type": "proxy_etf", "source_label": "iShares MSCI United Kingdom ETF proxy"},
-    {"name": "DAX", "ticker": "DAX", "region": "Europe", "source_symbol": "EWG", "source_type": "proxy_etf", "source_label": "iShares MSCI Germany ETF proxy"},
-    {"name": "CAC 40", "ticker": "CAC 40", "region": "Europe", "source_symbol": "EWQ", "source_type": "proxy_etf", "source_label": "iShares MSCI France ETF proxy"},
     {"name": "S&P 500", "ticker": "S&P 500", "region": "US", "source_symbol": "SPY", "source_type": "proxy_etf", "source_label": "SPDR S&P 500 ETF Trust proxy"},
-    {"name": "Dow Jones", "ticker": "Dow Jones", "region": "US", "source_symbol": "DIA", "source_type": "proxy_etf", "source_label": "SPDR Dow Jones Industrial Average ETF proxy"},
-    {"name": "Nikkei 225", "ticker": "Nikkei 225", "region": "Asia", "source_symbol": "EWJ", "source_type": "proxy_etf", "source_label": "iShares MSCI Japan ETF proxy"},
-    {"name": "Hang Seng", "ticker": "Hang Seng", "region": "Asia", "source_symbol": "EWH", "source_type": "proxy_etf", "source_label": "iShares MSCI Hong Kong ETF proxy"},
 ]
 
 market_cache = {}
@@ -41,6 +73,28 @@ def get_alpha_vantage_api_key():
 
 def normalize_symbol(symbol: str) -> str:
     return (symbol or "").strip().upper()
+
+
+def is_supported_symbol(symbol: str) -> bool:
+    return normalize_symbol(symbol) in SUPPORTED_TICKERS
+
+
+def get_supported_symbol_name(symbol: str) -> str:
+    normalized = normalize_symbol(symbol)
+    return SUPPORTED_TICKERS.get(normalized, {}).get("name", normalized)
+
+
+def get_supported_symbols(bucket: str | None = None):
+    if bucket is None:
+        return set(SUPPORTED_TICKERS.keys())
+    return {symbol for symbol, meta in SUPPORTED_TICKERS.items() if meta["bucket"] == bucket}
+
+
+def _get_cache_entry(cache, key, now):
+    entry = cache.get(key)
+    if not entry:
+        return None, None
+    return entry, entry["data"] if entry["expires_at"] > now else None
 
 
 def _to_float(value, default=0.0):
@@ -95,9 +149,12 @@ def _alpha_vantage_request(params):
 def fetch_quote(api_key: str, symbol: str):
     now = time.time()
     normalized = normalize_symbol(symbol)
-    cache_entry = stock_quote_cache.get(normalized)
-    if cache_entry and cache_entry["expires_at"] > now:
-        return cache_entry["data"]
+    if not is_supported_symbol(normalized):
+        raise ValueError("Unsupported symbol")
+
+    cache_entry, fresh_data = _get_cache_entry(stock_quote_cache, normalized, now)
+    if fresh_data is not None:
+        return fresh_data
 
     try:
         payload = _alpha_vantage_request(
@@ -116,6 +173,8 @@ def fetch_quote(api_key: str, symbol: str):
         if data["change_percent"] and not data["change_percent"].endswith("%"):
             data["change_percent"] = f"{data['change_percent']}%"
     except RateLimitError:
+        if cache_entry:
+            return cache_entry["data"]
         raise
     except Exception:
         payload = _alpha_vantage_request(
@@ -154,9 +213,12 @@ def fetch_quote(api_key: str, symbol: str):
 def fetch_history(api_key: str, symbol: str):
     now = time.time()
     normalized = normalize_symbol(symbol)
-    cache_entry = stock_history_cache.get(normalized)
-    if cache_entry and cache_entry["expires_at"] > now:
-        return cache_entry["data"]
+    if not is_supported_symbol(normalized):
+        raise ValueError("Unsupported symbol")
+
+    cache_entry, fresh_data = _get_cache_entry(stock_history_cache, normalized, now)
+    if fresh_data is not None:
+        return fresh_data
 
     points = []
     try:
@@ -186,6 +248,8 @@ def fetch_history(api_key: str, symbol: str):
                 }
             )
     except RateLimitError:
+        if cache_entry:
+            return cache_entry["data"]
         raise
     except Exception:
         payload = _alpha_vantage_request(
@@ -227,24 +291,29 @@ def fetch_bulk_quotes(api_key: str, tickers):
     requested = []
     for ticker in tickers:
         normalized = (ticker or "").strip()
-        if normalized and normalized not in requested:
+        if normalized and is_supported_symbol(normalized) and normalized not in requested:
             requested.append(normalized)
 
     cache_key = ",".join(sorted(requested))
     now = time.time()
-    cache_entry = market_cache.get(cache_key)
-    if cache_entry and cache_entry["expires_at"] > now:
-        return cache_entry["data"]
+    cache_entry, fresh_data = _get_cache_entry(market_cache, cache_key, now)
+    if fresh_data is not None:
+        return fresh_data
 
     quotes = {}
     for ticker in requested:
-        quote = fetch_quote(api_key, ticker)
-        quotes[ticker] = {
-            "price": quote["price"],
-            "change": quote["change"],
-            "changePercent": _to_float(quote["change_percent"]),
-            "updatedAt": datetime.now(timezone.utc).isoformat(),
-        }
+        try:
+            quote = fetch_quote(api_key, ticker)
+            quotes[ticker] = {
+                "price": quote["price"],
+                "change": quote["change"],
+                "changePercent": _to_float(quote["change_percent"]),
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        except RateLimitError:
+            if cache_entry:
+                return cache_entry["data"]
+            raise
 
     market_cache[cache_key] = {
         "data": quotes,
@@ -253,22 +322,66 @@ def fetch_bulk_quotes(api_key: str, tickers):
     return quotes
 
 
-def fetch_top_movers(api_key: str, index: str):
+def fetch_top_movers(api_key: str, index: str, community_counts: Counter | None = None):
     if index not in {"FTSE100", "FTSE250", "Global"}:
         raise ValueError("Unsupported index")
 
     now = time.time()
-    cache_entry = top_movers_cache.get(index)
-    if cache_entry and cache_entry["expires_at"] > now:
-        return cache_entry["data"]
+    cache_entry, fresh_data = _get_cache_entry(top_movers_cache, index, now)
+    if fresh_data is not None:
+        return fresh_data
 
     if index != "Global":
+        supported_bucket = get_supported_symbols(index)
+        ranked_symbols = [
+            symbol for symbol, _count in (community_counts or Counter()).most_common()
+            if symbol in supported_bucket
+        ][:6]
+
+        if not ranked_symbols:
+            payload = {
+                "gainers": [],
+                "losers": [],
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+                "supported": False,
+                "message": "No community-active FTSE names yet. Mention a supported ticker like #BARC.L in chat.",
+            }
+            top_movers_cache[index] = {
+                "data": payload,
+                "expires_at": now + MARKET_CACHE_TTL_SECONDS,
+            }
+            return payload
+
+        quote_map = fetch_bulk_quotes(api_key, ranked_symbols)
+        movers = []
+        for symbol in ranked_symbols:
+            quote = quote_map.get(symbol)
+            if not quote:
+                continue
+            movers.append(
+                {
+                    "ticker": symbol,
+                    "name": get_supported_symbol_name(symbol),
+                    "price": quote["price"],
+                    "change": quote["change"],
+                    "changePercent": quote["changePercent"],
+                    "volume": max(community_counts.get(symbol, 0), 1),
+                }
+            )
+
         payload = {
-            "gainers": [],
-            "losers": [],
+            "gainers": sorted(
+                [stock for stock in movers if stock["changePercent"] >= 0],
+                key=lambda item: item["changePercent"],
+                reverse=True,
+            )[:5],
+            "losers": sorted(
+                [stock for stock in movers if stock["changePercent"] < 0],
+                key=lambda item: item["changePercent"],
+            )[:5],
             "updatedAt": datetime.now(timezone.utc).isoformat(),
-            "supported": False,
-            "message": "Top movers are only supported for the US market by the current Alpha Vantage endpoint.",
+            "supported": True,
+            "message": "Showing most-mentioned supported FTSE names in the TradeLink community.",
         }
         top_movers_cache[index] = {
             "data": payload,
@@ -276,15 +389,23 @@ def fetch_top_movers(api_key: str, index: str):
         }
         return payload
 
-    payload = _alpha_vantage_request({"function": "TOP_GAINERS_LOSERS", "apikey": api_key})
+    try:
+        payload = _alpha_vantage_request({"function": "TOP_GAINERS_LOSERS", "apikey": api_key})
+    except RateLimitError:
+        if cache_entry:
+            return cache_entry["data"]
+        raise
 
     def _normalize_movers(entries):
         normalized_entries = []
         for entry in entries[:5]:
+            symbol = normalize_symbol(entry.get("ticker") or "")
+            if symbol not in get_supported_symbols("Global"):
+                continue
             normalized_entries.append(
                 {
-                    "ticker": entry.get("ticker") or "",
-                    "name": entry.get("ticker") or "",
+                    "ticker": symbol,
+                    "name": get_supported_symbol_name(symbol),
                     "price": _to_float(entry.get("price")),
                     "change": _to_float(entry.get("change_amount")),
                     "changePercent": _to_float(entry.get("change_percentage")),
@@ -300,6 +421,8 @@ def fetch_top_movers(api_key: str, index: str):
         "supported": True,
         "message": None,
     }
+    if not payload["gainers"] and not payload["losers"]:
+        payload["message"] = "No supported curated global movers are available from Alpha Vantage right now."
 
     top_movers_cache[index] = {
         "data": payload,
@@ -324,6 +447,11 @@ def _market_status(region: str):
 
 
 def fetch_market_overview(api_key: str):
+    now = time.time()
+    cache_entry, fresh_data = _get_cache_entry(market_cache, "overview", now)
+    if fresh_data is not None:
+        return fresh_data
+
     indices = []
     for item in MARKET_OVERVIEW_INDICES:
         try:
@@ -348,6 +476,10 @@ def fetch_market_overview(api_key: str):
                     "sourceLabel": item["source_label"],
                 }
             )
+        except RateLimitError:
+            if cache_entry:
+                return cache_entry["data"]
+            raise
         except Exception:
             indices.append(
                 {
@@ -370,27 +502,37 @@ def fetch_market_overview(api_key: str):
                 }
             )
 
-    return {
+    payload = {
         "indices": indices,
         "updatedAt": datetime.now(timezone.utc).isoformat(),
         "sectors_available": False,
         "sectors": [],
     }
+    market_cache["overview"] = {
+        "data": payload,
+        "expires_at": now + MARKET_CACHE_TTL_SECONDS,
+    }
+    return payload
 
 
 def fetch_upcoming_earnings(api_key: str):
     now = time.time()
-    cache_entry = earnings_cache.get("upcoming")
-    if cache_entry and cache_entry["expires_at"] > now:
-        return cache_entry["data"]
+    cache_entry, fresh_data = _get_cache_entry(earnings_cache, "upcoming", now)
+    if fresh_data is not None:
+        return fresh_data
 
-    payload = _alpha_vantage_request(
-        {
-            "function": "EARNINGS_CALENDAR",
-            "horizon": "3month",
-            "apikey": api_key,
-        }
-    )
+    try:
+        payload = _alpha_vantage_request(
+            {
+                "function": "EARNINGS_CALENDAR",
+                "horizon": "3month",
+                "apikey": api_key,
+            }
+        )
+    except RateLimitError:
+        if cache_entry:
+            return cache_entry["data"]
+        raise
 
     rows = []
     if isinstance(payload, str):
