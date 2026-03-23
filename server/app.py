@@ -27,6 +27,7 @@ try:
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
+        get_market_debug_status,
         get_supported_symbol_name,
         get_supported_symbols,
         is_supported_symbol,
@@ -43,6 +44,7 @@ except ImportError:
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
+        get_market_debug_status,
         get_supported_symbol_name,
         get_supported_symbols,
         is_supported_symbol,
@@ -119,6 +121,7 @@ CORS(
 )
 
 JWT_EXPIRATION_DAYS = 7
+MARKET_DATA_UNAVAILABLE_MESSAGE = "Live market data is limited in this prototype and may not be available right now."
 
 
 def create_token(user_id: str) -> str:
@@ -465,7 +468,7 @@ def stock_quote(symbol):
     except ValueError as exc:
         return json_error(str(exc), 400)
     except RateLimitError:
-        return json_error("rate limit exceeded", 429)
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception as exc:
         return json_error(str(exc), 502)
 
@@ -481,7 +484,7 @@ def market_overview():
     try:
         payload = fetch_market_overview(api_key)
     except RateLimitError:
-        return json_error("rate limit exceeded", 429)
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception as exc:
         return json_error(str(exc), 502)
 
@@ -497,7 +500,7 @@ def earnings_upcoming():
     try:
         payload = fetch_upcoming_earnings(api_key)
     except RateLimitError:
-        return json_error("rate limit exceeded", 429)
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception as exc:
         return json_error(str(exc), 502)
 
@@ -519,7 +522,7 @@ def stock_history(symbol):
     except ValueError as exc:
         return json_error(str(exc), 400)
     except RateLimitError:
-        return json_error("rate limit exceeded", 429)
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception as exc:
         return json_error(str(exc), 502)
 
@@ -545,7 +548,7 @@ def market_quotes():
         if not quotes:
             return json_error("No supported tickers provided", 400)
     except RateLimitError:
-        return json_error("rate limit exceeded", 429)
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception as exc:
         return json_error(str(exc), 502)
 
@@ -574,11 +577,16 @@ def market_top_movers():
     except ValueError as exc:
         return json_error(str(exc), 400)
     except RateLimitError:
-        return json_error("rate limit exceeded", 429)
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception as exc:
         return json_error(str(exc), 502)
 
     return jsonify(payload)
+
+
+@app.route("/api/market/debug", methods=["GET"])
+def market_debug():
+    return jsonify(get_market_debug_status())
 
 
 @app.route("/api/auth/signup", methods=["POST"])

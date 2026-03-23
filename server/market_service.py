@@ -8,10 +8,12 @@ from urllib.error import HTTPError
 
 
 ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
-MARKET_CACHE_TTL_SECONDS = 300
-STOCK_QUOTE_CACHE_TTL_SECONDS = 300
-STOCK_HISTORY_CACHE_TTL_SECONDS = 900
-EARNINGS_CACHE_TTL_SECONDS = 3600
+MARKET_CACHE_TTL_SECONDS = 21600
+STOCK_QUOTE_CACHE_TTL_SECONDS = 900
+STOCK_HISTORY_CACHE_TTL_SECONDS = 3600
+EARNINGS_CACHE_TTL_SECONDS = 43200
+ALPHA_VANTAGE_DAILY_BUDGET = 25
+ALPHA_VANTAGE_BUDGET_WINDOW_SECONDS = 86400
 
 SUPPORTED_TICKERS = {
     "BARC.L": {"name": "Barclays PLC", "bucket": "FTSE100"},
@@ -59,10 +61,62 @@ top_movers_cache = {}
 stock_quote_cache = {}
 stock_history_cache = {}
 earnings_cache = {}
+market_refresh_state = {}
+alpha_vantage_budget_state = {
+    "window_started_at": time.time(),
+    "calls_used": 0,
+    "daily_budget": ALPHA_VANTAGE_DAILY_BUDGET,
+    "last_request_at": None,
+}
 
 
 class RateLimitError(RuntimeError):
     pass
+
+
+def _isoformat_timestamp(timestamp):
+    if not timestamp:
+        return None
+    return datetime.fromtimestamp(timestamp, timezone.utc).isoformat()
+
+
+def _reset_budget_window_if_needed(now):
+    if now - alpha_vantage_budget_state["window_started_at"] >= ALPHA_VANTAGE_BUDGET_WINDOW_SECONDS:
+        alpha_vantage_budget_state["window_started_at"] = now
+        alpha_vantage_budget_state["calls_used"] = 0
+        alpha_vantage_budget_state["last_request_at"] = None
+
+
+def _budget_remaining(now):
+    _reset_budget_window_if_needed(now)
+    return max(alpha_vantage_budget_state["daily_budget"] - alpha_vantage_budget_state["calls_used"], 0)
+
+
+def _record_alpha_vantage_request(now):
+    _reset_budget_window_if_needed(now)
+    alpha_vantage_budget_state["calls_used"] += 1
+    alpha_vantage_budget_state["last_request_at"] = now
+
+
+def _record_refresh_state(key, cache_name, expires_at):
+    market_refresh_state[key] = {
+        "last_refresh_at": _isoformat_timestamp(time.time()),
+        "cache_name": cache_name,
+        "expires_at": _isoformat_timestamp(expires_at),
+    }
+
+
+def get_market_debug_status():
+    now = time.time()
+    remaining = _budget_remaining(now)
+    return {
+        "daily_calls_used": alpha_vantage_budget_state["calls_used"],
+        "daily_calls_remaining": remaining,
+        "daily_budget": alpha_vantage_budget_state["daily_budget"],
+        "window_started_at": _isoformat_timestamp(alpha_vantage_budget_state["window_started_at"]),
+        "last_request_at": _isoformat_timestamp(alpha_vantage_budget_state["last_request_at"]),
+        "last_refresh": market_refresh_state,
+    }
 
 
 def get_alpha_vantage_api_key():
@@ -96,6 +150,13 @@ def _get_cache_entry(cache, key, now):
     return entry, entry["data"] if entry["expires_at"] > now else None
 
 
+def _get_any_cached_data(cache, key):
+    entry = cache.get(key)
+    if not entry:
+        return None
+    return entry.get("data")
+
+
 def _to_float(value, default=0.0):
     try:
         if isinstance(value, str):
@@ -109,6 +170,10 @@ def _to_float(value, default=0.0):
 
 
 def _alpha_vantage_request(params):
+    now = time.time()
+    if _budget_remaining(now) <= 0:
+        raise RateLimitError("daily budget exhausted")
+
     query = parse.urlencode(params)
     url = f"{ALPHA_VANTAGE_BASE_URL}?{query}"
     req = urlrequest.Request(
@@ -131,6 +196,8 @@ def _alpha_vantage_request(params):
         except Exception:
             message = None
         raise RuntimeError(message or f"HTTP Error {exc.code}: {exc.reason}") from exc
+
+    _record_alpha_vantage_request(now)
 
     if "csv" in content_type.lower():
         return body
@@ -206,6 +273,7 @@ def fetch_quote(api_key: str, symbol: str):
         "data": data,
         "expires_at": now + STOCK_QUOTE_CACHE_TTL_SECONDS,
     }
+    _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
     return data
 
 
@@ -283,6 +351,7 @@ def fetch_history(api_key: str, symbol: str):
         "data": latest_points,
         "expires_at": now + STOCK_HISTORY_CACHE_TTL_SECONDS,
     }
+    _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
     return latest_points
 
 
@@ -318,6 +387,7 @@ def fetch_bulk_quotes(api_key: str, tickers):
         "data": quotes,
         "expires_at": now + MARKET_CACHE_TTL_SECONDS,
     }
+    _record_refresh_state(f"quotes:{cache_key}", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
     return quotes
 
 
@@ -347,7 +417,7 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
             "items": [],
             "updatedAt": datetime.now(timezone.utc).isoformat(),
             "supported": False,
-            "message": f"No {scope_label} have been actively discussed in the last {window_days} days. Mention a ticker like #BARC.L or $AAPL to start the conversation.",
+            "message": "Mention a ticker like #BARC.L or $AAPL to start.",
             "windowDays": window_days,
         }
         top_movers_cache[index] = {
@@ -356,27 +426,18 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
         }
         return payload
 
-    try:
-        quote_map = fetch_bulk_quotes(api_key, ranked_symbols)
-    except RateLimitError:
-        if cache_entry:
-            return cache_entry["data"]
-        raise
-
     discussed_items = []
     entry_map = {entry["symbol"]: entry for entry in ranked_entries}
     for symbol in ranked_symbols:
-        quote = quote_map.get(symbol)
-        if not quote:
-            continue
+        quote = _get_any_cached_data(stock_quote_cache, symbol)
         discussion_entry = entry_map.get(symbol, {})
         discussed_items.append(
             {
                 "ticker": symbol,
                 "name": get_supported_symbol_name(symbol),
-                "price": quote["price"],
-                "change": quote["change"],
-                "changePercent": quote["changePercent"],
+                "price": quote["price"] if quote else None,
+                "change": quote["change"] if quote else None,
+                "changePercent": _to_float(quote["change_percent"]) if quote else None,
                 "volume": 0,
                 "mentionCount": int(discussion_entry.get("mentions", 0)),
                 "uniqueUsers": int(discussion_entry.get("unique_users", 0)),
@@ -401,6 +462,7 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
         "data": payload,
         "expires_at": now + MARKET_CACHE_TTL_SECONDS,
     }
+    _record_refresh_state(f"most_discussed:{index}", "top_movers_cache", now + MARKET_CACHE_TTL_SECONDS)
     return payload
 
 
@@ -485,6 +547,7 @@ def fetch_market_overview(api_key: str):
         "data": payload,
         "expires_at": now + MARKET_CACHE_TTL_SECONDS,
     }
+    _record_refresh_state("market_overview", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
     return payload
 
 
@@ -531,4 +594,5 @@ def fetch_upcoming_earnings(api_key: str):
         "data": data,
         "expires_at": now + EARNINGS_CACHE_TTL_SECONDS,
     }
+    _record_refresh_state("earnings_upcoming", "earnings_cache", now + EARNINGS_CACHE_TTL_SECONDS)
     return data

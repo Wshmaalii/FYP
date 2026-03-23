@@ -186,7 +186,8 @@ export function FTSE100Channel() {
           ) : (
             <div className="space-y-3">
               {topMovers.map((stock) => {
-                const stockPositive = stock.change >= 0;
+                const hasQuote = stock.price !== null && stock.change !== null && stock.changePercent !== null;
+                const stockPositive = (stock.change ?? 0) >= 0;
 
                 return (
                   <div
@@ -204,15 +205,24 @@ export function FTSE100Channel() {
                     </div>
                     <div className="flex items-center gap-8">
                       <div className="text-right">
-                        <p className="text-zinc-100">{stock.price.toFixed(2)}p</p>
+                        <p className="text-zinc-100">{stock.price !== null ? `${stock.price.toFixed(2)}p` : '--'}</p>
                         <p className="text-zinc-500 text-sm">{stock.discussionLabel}</p>
                       </div>
-                      <div className={`flex items-center gap-2 min-w-[120px] justify-end ${stockPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {stockPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                        <div className="text-right">
-                          <p>{stockPositive ? '+' : ''}{stock.change.toFixed(2)}</p>
-                          <p className="text-sm">{stockPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%</p>
-                        </div>
+                      <div className={`flex items-center gap-2 min-w-[120px] justify-end ${hasQuote ? (stockPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
+                        {hasQuote ? (
+                          <>
+                            {stockPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                            <div className="text-right">
+                              <p>{stockPositive ? '+' : ''}{stock.change!.toFixed(2)}</p>
+                              <p className="text-sm">{stockPositive ? '+' : ''}{stock.changePercent!.toFixed(2)}%</p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-right">
+                            <p>On demand</p>
+                            <p className="text-sm">No cached quote</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

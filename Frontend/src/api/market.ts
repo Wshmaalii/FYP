@@ -48,9 +48,9 @@ export interface EarningsCalendarItem {
 export interface TopMoverItem {
   ticker: string;
   name: string;
-  price: number;
-  change: number;
-  changePercent: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
   volume: number;
   mentionCount: number;
   uniqueUsers: number;

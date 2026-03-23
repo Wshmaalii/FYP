@@ -10,9 +10,9 @@ interface TopMoversPageProps {
 interface Stock {
   ticker: string;
   name: string;
-  price: number;
-  change: number;
-  changePercent: number;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
   mentionCount: number;
   uniqueUsers: number;
   watchlistAdds: number;
@@ -31,7 +31,8 @@ function StockRow({
   isExpanded: boolean;
   updatedAt?: string;
 }) {
-  const isPositive = stock.change >= 0;
+  const hasQuote = stock.price !== null && stock.change !== null && stock.changePercent !== null;
+  const isPositive = (stock.change ?? 0) >= 0;
 
   return (
     <div
@@ -55,20 +56,29 @@ function StockRow({
         </div>
 
         <div className="text-right min-w-[100px]">
-          <p className="text-zinc-100">{stock.price.toFixed(2)}p</p>
+          <p className="text-zinc-100">{stock.price !== null ? `${stock.price.toFixed(2)}p` : '--'}</p>
           <p className="text-zinc-500 text-sm">{stock.uniqueUsers} members</p>
         </div>
 
-        <div className={`flex items-center gap-2 min-w-[120px] justify-end ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-          {isPositive ? (
-            <TrendingUp className="w-5 h-5" />
+        <div className={`flex items-center gap-2 min-w-[120px] justify-end ${hasQuote ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
+          {hasQuote ? (
+            <>
+              {isPositive ? (
+                <TrendingUp className="w-5 h-5" />
+              ) : (
+                <TrendingDown className="w-5 h-5" />
+              )}
+              <div className="text-right">
+                <p>{isPositive ? '+' : ''}{stock.change!.toFixed(2)}</p>
+                <p className="text-sm">{isPositive ? '+' : ''}{stock.changePercent!.toFixed(2)}%</p>
+              </div>
+            </>
           ) : (
-            <TrendingDown className="w-5 h-5" />
+            <div className="text-right">
+              <p>On demand</p>
+              <p className="text-sm">No cached quote</p>
+            </div>
           )}
-          <div className="text-right">
-            <p>{isPositive ? '+' : ''}{stock.change.toFixed(2)}</p>
-            <p className="text-sm">{isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%</p>
-          </div>
         </div>
 
         <button
@@ -92,13 +102,17 @@ function StockRow({
           <div className="grid grid-cols-3 gap-3 mt-3">
             <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
               <p className="text-zinc-500 text-xs mb-1">Last Price</p>
-              <p className="text-zinc-100">{stock.price.toFixed(2)}p</p>
+              <p className="text-zinc-100">{stock.price !== null ? `${stock.price.toFixed(2)}p` : '--'}</p>
             </div>
             <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
               <p className="text-zinc-500 text-xs mb-1">Day Change</p>
-              <p className={isPositive ? 'text-emerald-400' : 'text-red-400'}>
-                {isPositive ? '+' : ''}{stock.change.toFixed(2)} ({isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%)
-              </p>
+              {hasQuote ? (
+                <p className={isPositive ? 'text-emerald-400' : 'text-red-400'}>
+                  {isPositive ? '+' : ''}{stock.change!.toFixed(2)} ({isPositive ? '+' : ''}{stock.changePercent!.toFixed(2)}%)
+                </p>
+              ) : (
+                <p className="text-zinc-500">Live quote on demand</p>
+              )}
             </div>
             <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
               <p className="text-zinc-500 text-xs mb-1">Mentions / Watchlist Adds</p>
@@ -254,7 +268,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
               </div>
             ) : discussed.length === 0 ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                No discussed tickers available right now.
+                Mention a ticker like #BARC.L or $AAPL to start.
               </div>
             ) : (
               discussed.map((stock) => (
