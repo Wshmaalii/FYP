@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchMessages, sendMessage, type ChannelMessage } from '../../api/messages';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
+import { ChannelPrivacyCard } from './ChannelPrivacyCard';
 
 interface Member {
   name: string;
@@ -96,6 +97,15 @@ export function PrivateRoomsChannel() {
         </button>
       </div>
 
+      <ChannelPrivacyCard
+        scopeLabel="Private Room"
+        audienceLabel="Members Only"
+        visibilitySummary="Only invited room members can read and send messages in this space."
+        membershipVisibility="Room membership is visible only to invited members inside this room."
+        tickerVisibility="Ticker mentions stay inside this room and are only visible to invited members."
+        metadataVisibility="Display name, verification badge, timestamp, and room membership are visible only to invited members."
+      />
+
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-zinc-950">
           {error && (
@@ -166,7 +176,13 @@ export function PrivateRoomsChannel() {
         )}
       </div>
 
-      <MessageInput onSend={handleSend} isSending={isSending} placeholder="Send an encrypted message..." />
+      <MessageInput
+        onSend={handleSend}
+        isSending={isSending}
+        placeholder="Send an encrypted message..."
+        privacyMode="private"
+        contextLabel="room"
+      />
     </>
   );
 }

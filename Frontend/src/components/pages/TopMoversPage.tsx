@@ -1,4 +1,4 @@
-import { ArrowLeft, TrendingUp, TrendingDown, Plus } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getTopMovers, TopMoverItem } from '../../api/market';
 import { addWatchlistItem } from '../../api/watchlist';
@@ -13,8 +13,9 @@ interface Stock {
   price: number;
   change: number;
   changePercent: number;
-  volume: string;
-  volumeValue: number;
+  mentionCount: number;
+  uniqueUsers: number;
+  watchlistAdds: number;
 }
 
 function StockRow({
@@ -55,7 +56,7 @@ function StockRow({
 
         <div className="text-right min-w-[100px]">
           <p className="text-zinc-100">{stock.price.toFixed(2)}p</p>
-          <p className="text-zinc-500 text-sm">Vol: {stock.volume}</p>
+          <p className="text-zinc-500 text-sm">{stock.uniqueUsers} members</p>
         </div>
 
         <div className={`flex items-center gap-2 min-w-[120px] justify-end ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -100,8 +101,8 @@ function StockRow({
               </p>
             </div>
             <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
-              <p className="text-zinc-500 text-xs mb-1">Volume</p>
-              <p className="text-zinc-100">{stock.volumeValue.toLocaleString()}</p>
+              <p className="text-zinc-500 text-xs mb-1">Mentions / Watchlist Adds</p>
+              <p className="text-zinc-100">{stock.mentionCount} / {stock.watchlistAdds}</p>
             </div>
           </div>
         </div>
@@ -112,8 +113,7 @@ function StockRow({
 
 export function TopMoversPage({ onBack }: TopMoversPageProps) {
   const [selectedFilter, setSelectedFilter] = useState<'FTSE100' | 'FTSE250' | 'Global'>('FTSE100');
-  const [gainers, setGainers] = useState<Stock[]>([]);
-  const [losers, setLosers] = useState<Stock[]>([]);
+  const [discussed, setDiscussed] = useState<Stock[]>([]);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [watchlistMessage, setWatchlistMessage] = useState<string | null>(null);
@@ -121,27 +121,15 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [providerMessage, setProviderMessage] = useState<string | null>(null);
 
-  const formatVolume = (volume: number) => {
-    if (volume >= 1_000_000_000) {
-      return `${(volume / 1_000_000_000).toFixed(1)}B`;
-    }
-    if (volume >= 1_000_000) {
-      return `${(volume / 1_000_000).toFixed(1)}M`;
-    }
-    if (volume >= 1_000) {
-      return `${(volume / 1_000).toFixed(1)}K`;
-    }
-    return `${volume}`;
-  };
-
   const mapMoverToStock = (mover: TopMoverItem): Stock => ({
     ticker: mover.ticker,
     name: mover.name,
     price: mover.price,
     change: mover.change,
     changePercent: mover.changePercent,
-    volume: formatVolume(mover.volume),
-    volumeValue: mover.volume,
+    mentionCount: mover.mentionCount,
+    uniqueUsers: mover.uniqueUsers,
+    watchlistAdds: mover.watchlistAdds,
   });
 
   useEffect(() => {
@@ -159,8 +147,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
           return;
         }
 
-        setGainers(data.gainers.map(mapMoverToStock));
-        setLosers(data.losers.map(mapMoverToStock));
+        setDiscussed(data.items.map(mapMoverToStock));
         setLastUpdatedAt(data.updatedAt);
         setProviderMessage(data.message);
       } catch (err) {
@@ -168,10 +155,9 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
           return;
         }
 
-        setGainers([]);
-        setLosers([]);
+        setDiscussed([]);
         setLastUpdatedAt(null);
-        setError(err instanceof Error ? err.message : 'Failed to load top movers');
+        setError(err instanceof Error ? err.message : 'Failed to load discussed tickers');
         setProviderMessage(null);
       } finally {
         if (isMounted) {
@@ -192,7 +178,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
   };
 
   const handleAddToWatchlist = async (ticker: string) => {
-    const stock = [...gainers, ...losers].find((item) => item.ticker === ticker);
+    const stock = discussed.find((item) => item.ticker === ticker);
 
     try {
       await addWatchlistItem(ticker, stock?.name);
@@ -216,8 +202,8 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-white text-2xl mb-2">Top Movers</h1>
-            <p className="text-zinc-400">Biggest gainers and losers in the market</p>
+            <h1 className="text-white text-2xl mb-2">Most Discussed</h1>
+            <p className="text-zinc-400">Most discussed supported tickers in the TradeLink community</p>
           </div>
 
           {/* Filter Buttons */}
@@ -255,55 +241,23 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
             {providerMessage}
           </div>
         )}
-        {/* Gainers */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-zinc-100">Top Gainers</h2>
-            <span className="text-zinc-500 text-sm">({gainers.length} stocks)</span>
+            <TrendingUp className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-zinc-100">Most Discussed</h2>
+            <span className="text-zinc-500 text-sm">({discussed.length} tickers)</span>
           </div>
           <div className="space-y-3">
             {loading ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                Loading top gainers...
+                Loading discussed tickers...
               </div>
-            ) : gainers.length === 0 ? (
+            ) : discussed.length === 0 ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                No gainers available right now.
+                No discussed tickers available right now.
               </div>
             ) : (
-              gainers.map((stock) => (
-                <StockRow
-                  key={stock.ticker}
-                  stock={stock}
-                  onAddToWatchlist={handleAddToWatchlist}
-                  onToggleExpand={toggleExpanded}
-                  isExpanded={expandedTicker === stock.ticker}
-                  updatedAt={lastUpdatedAt || undefined}
-                />
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Losers */}
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingDown className="w-5 h-5 text-red-400" />
-            <h2 className="text-zinc-100">Top Losers</h2>
-            <span className="text-zinc-500 text-sm">({losers.length} stocks)</span>
-          </div>
-          <div className="space-y-3">
-            {loading ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                Loading top losers...
-              </div>
-            ) : losers.length === 0 ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                No losers available right now.
-              </div>
-            ) : (
-              losers.map((stock) => (
+              discussed.map((stock) => (
                 <StockRow
                   key={stock.ticker}
                   stock={stock}

@@ -13,14 +13,15 @@ export interface UserProfile {
   avatar_seed: string;
   joined_at: string | null;
   verified_trader: boolean;
-  trust_score: number;
 }
 
 export interface ProfileStats {
   messages_sent_count: number;
-  tickers_shared_count: number;
   watchlist_items_count: number;
-  trust_score: number;
+  active_rooms_count: number;
+  profile_completion_percent: number;
+  recent_participation_count: number;
+  tickers_shared_count: number;
 }
 
 export interface ProfileActivity {

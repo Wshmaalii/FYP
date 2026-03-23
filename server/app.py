@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 import os
 import re
 import uuid
-from collections import Counter
 from urllib import parse
 
 import jwt
@@ -29,6 +28,7 @@ try:
         fetch_top_movers,
         fetch_upcoming_earnings,
         get_supported_symbol_name,
+        get_supported_symbols,
         is_supported_symbol,
         get_alpha_vantage_api_key,
     )
@@ -44,6 +44,7 @@ except ImportError:
         fetch_top_movers,
         fetch_upcoming_earnings,
         get_supported_symbol_name,
+        get_supported_symbols,
         is_supported_symbol,
         get_alpha_vantage_api_key,
     )
@@ -316,6 +317,22 @@ def build_profile_stats_payload(user: User):
     watchlist_count = WatchlistItem.query.filter_by(user_id=user.id).count()
     messages_sent_count = ChatMessage.query.filter_by(user_id=user.id).count()
     tickers_shared_count = sum(len(message.ticker_list()) for message in ChatMessage.query.filter_by(user_id=user.id).all())
+    active_rooms_count = db.session.query(ChatMessage.channel).filter_by(user_id=user.id).distinct().count()
+    recent_participation_count = (
+        UserActivity.query
+        .filter(
+            UserActivity.user_id == user.id,
+            UserActivity.created_at >= datetime.now(timezone.utc) - timedelta(days=7),
+        )
+        .count()
+    )
+    profile_completion_fields = [
+        bool(profile.full_name.strip()),
+        bool(profile.username.strip()),
+        bool(profile.bio.strip()),
+        bool((profile.avatar_url or "").strip()),
+    ]
+    profile_completion_percent = int((sum(profile_completion_fields) / len(profile_completion_fields)) * 100)
 
     profile.messages_sent_count = messages_sent_count
     profile.tickers_shared_count = tickers_shared_count
@@ -324,8 +341,80 @@ def build_profile_stats_payload(user: User):
         "messages_sent_count": messages_sent_count,
         "tickers_shared_count": tickers_shared_count,
         "watchlist_items_count": watchlist_count,
-        "trust_score": profile.trust_score,
+        "active_rooms_count": active_rooms_count,
+        "profile_completion_percent": profile_completion_percent,
+        "recent_participation_count": recent_participation_count,
     }
+
+
+def _build_discussion_signals(bucket: str, window_days: int = 7):
+    supported_symbols = {
+        symbol for symbol in get_supported_symbols(bucket)
+        if bucket == "Global" or symbol.endswith(".L")
+    }
+    since = datetime.now(timezone.utc) - timedelta(days=window_days)
+    signals: dict[str, dict[str, object]] = {}
+
+    def get_entry(symbol: str):
+        return signals.setdefault(
+            symbol,
+            {"mentions": 0, "watchlist_adds": 0, "users": set()},
+        )
+
+    recent_messages = (
+        ChatMessage.query
+        .filter(ChatMessage.created_at >= since)
+        .order_by(ChatMessage.created_at.desc())
+        .all()
+    )
+    for message in recent_messages:
+        for symbol in message.ticker_list():
+            if symbol not in supported_symbols:
+                continue
+            entry = get_entry(symbol)
+            entry["mentions"] = int(entry["mentions"]) + 1
+            entry["users"].add(str(message.user_id))
+
+    recent_watchlist_events = (
+        UserActivity.query
+        .filter(
+            UserActivity.created_at >= since,
+            UserActivity.activity_type == "watchlist_added",
+        )
+        .all()
+    )
+    for activity in recent_watchlist_events:
+        symbol = (activity.ticker or "").upper()
+        if symbol not in supported_symbols:
+            continue
+        entry = get_entry(symbol)
+        entry["watchlist_adds"] = int(entry["watchlist_adds"]) + 1
+        entry["users"].add(str(activity.user_id))
+
+    ranked_entries = sorted(
+        signals.items(),
+        key=lambda item: (
+            -(
+                len(item[1]["users"]) * 3
+                + int(item[1]["mentions"])
+                + int(item[1]["watchlist_adds"]) * 2
+            ),
+            -len(item[1]["users"]),
+            -int(item[1]["watchlist_adds"]),
+            -int(item[1]["mentions"]),
+            item[0],
+        ),
+    )
+
+    return [
+        {
+            "symbol": symbol,
+            "unique_users": len(metrics["users"]),
+            "mentions": int(metrics["mentions"]),
+            "watchlist_adds": int(metrics["watchlist_adds"]),
+        }
+        for symbol, metrics in ranked_entries
+    ], window_days
 
 
 @app.errorhandler(HTTPException)
@@ -470,20 +559,18 @@ def market_top_movers():
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
 
     index = (request.args.get("index") or "FTSE100").strip()
-
-    community_counts = Counter()
-    if index in {"FTSE100", "FTSE250"}:
-        recent_messages = (
-            ChatMessage.query
-            .order_by(ChatMessage.created_at.desc())
-            .limit(500)
-            .all()
-        )
-        for message in recent_messages:
-            community_counts.update(message.ticker_list())
+    community_entries = None
+    window_days = 7
+    if index in {"FTSE100", "FTSE250", "Global"}:
+        community_entries, window_days = _build_discussion_signals(index, window_days=7)
 
     try:
-        payload = fetch_top_movers(api_key, index, community_counts=community_counts)
+        payload = fetch_top_movers(
+            api_key,
+            index,
+            community_entries=community_entries,
+            window_days=window_days,
+        )
     except ValueError as exc:
         return json_error(str(exc), 400)
     except RateLimitError:

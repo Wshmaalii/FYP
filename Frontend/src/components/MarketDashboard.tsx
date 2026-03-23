@@ -96,7 +96,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
             })),
         );
 
-        const combinedMovers = [...movers.gainers, ...movers.losers]
+        const combinedMovers = movers.items
           .slice(0, 3)
           .map((stock: TopMoverItem) => ({
             ticker: stock.ticker,
@@ -162,14 +162,14 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-zinc-400 text-xs uppercase tracking-wider group-hover:text-cyan-400 transition-colors">Top Movers</h3>
+              <h3 className="text-zinc-400 text-xs uppercase tracking-wider group-hover:text-cyan-400 transition-colors">Most Discussed</h3>
             </div>
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
         <div className="space-y-1">
           {topMovers.length === 0 && !liveDataError ? (
-            <p className="text-zinc-500 text-xs">{topMoversMessage || 'Loading top movers...'}</p>
+            <p className="text-zinc-500 text-xs">{topMoversMessage || 'Loading discussed names...'}</p>
           ) : (
             topMovers.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
           )}

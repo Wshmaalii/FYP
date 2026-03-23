@@ -50,14 +50,17 @@ export interface TopMoverItem {
   change: number;
   changePercent: number;
   volume: number;
+  mentionCount: number;
+  uniqueUsers: number;
+  watchlistAdds: number;
 }
 
 export interface TopMoversResponse {
-  gainers: TopMoverItem[];
-  losers: TopMoverItem[];
+  items: TopMoverItem[];
   updatedAt: string;
   supported: boolean;
   message: string | null;
+  windowDays: number;
 }
 
 export interface StockQuoteResponse {
@@ -144,13 +147,13 @@ export async function getTopMovers(index: string): Promise<TopMoversResponse> {
     if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
       throw new Error('Market API returned HTML. Check VITE_API_URL / deployed API URL.');
     }
-    throw new Error(rawBody || 'Failed to fetch top movers');
+    throw new Error(rawBody || 'Failed to fetch discussed tickers');
   }
 
   const data = rawBody ? JSON.parse(rawBody) : {};
 
   if (!response.ok) {
-    throw new Error(data.error || 'Failed to fetch top movers');
+    throw new Error(data.error || 'Failed to fetch discussed tickers');
   }
 
   return data;

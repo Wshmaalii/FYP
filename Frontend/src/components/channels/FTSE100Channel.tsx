@@ -2,9 +2,10 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { fetchHistory, getMarketOverview, getTopMovers, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
+import { ChannelPrivacyCard } from './ChannelPrivacyCard';
 
 interface TopMoverView extends TopMoverItem {
-  volumeLabel: string;
+  discussionLabel: string;
 }
 
 function formatVolume(volume: number | null) {
@@ -46,9 +47,9 @@ export function FTSE100Channel() {
         setFtseIndex(nextFtseIndex);
         setTopMoversMessage(movers.message);
         setTopMovers(
-          [...movers.gainers, ...movers.losers].map((stock) => ({
+          movers.items.map((stock) => ({
             ...stock,
-            volumeLabel: formatVolume(stock.volume),
+            discussionLabel: `${stock.uniqueUsers} members • ${stock.mentionCount} mentions`,
           })),
         );
         if (nextFtseIndex?.sourceSymbol) {
@@ -134,6 +135,15 @@ export function FTSE100Channel() {
         )}
       </div>
 
+      <ChannelPrivacyCard
+        scopeLabel="Public Channel"
+        audienceLabel="Members Visible"
+        visibilitySummary="FTSE100 is a public community space. Shared market context here is visible to signed-in TradeLink members."
+        membershipVisibility="Participation in linked FTSE discussions is visible to other members in the channel."
+        tickerVisibility="Any explicit ticker mentions shared in FTSE discussions are visible to all members in that channel."
+        metadataVisibility="Display name, verification badge, timestamps, and explicit ticker mentions are visible in FTSE discussions."
+      />
+
       <div className="grid grid-cols-3 gap-6 p-6">
         <div className="col-span-2 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <h3 className="text-zinc-100 mb-4">Intraday Performance</h3>
@@ -170,9 +180,9 @@ export function FTSE100Channel() {
         </div>
 
         <div className="col-span-3 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-          <h3 className="text-zinc-100 mb-4">Top Movers</h3>
+          <h3 className="text-zinc-100 mb-4">Most Discussed</h3>
           {topMovers.length === 0 ? (
-            <div className="text-zinc-500 text-sm">{topMoversMessage || 'Top movers unavailable right now.'}</div>
+            <div className="text-zinc-500 text-sm">{topMoversMessage || 'No discussed names available right now.'}</div>
           ) : (
             <div className="space-y-3">
               {topMovers.map((stock) => {
@@ -195,7 +205,7 @@ export function FTSE100Channel() {
                     <div className="flex items-center gap-8">
                       <div className="text-right">
                         <p className="text-zinc-100">{stock.price.toFixed(2)}p</p>
-                        <p className="text-zinc-500 text-sm">Volume: {stock.volumeLabel}</p>
+                        <p className="text-zinc-500 text-sm">{stock.discussionLabel}</p>
                       </div>
                       <div className={`flex items-center gap-2 min-w-[120px] justify-end ${stockPositive ? 'text-emerald-400' : 'text-red-400'}`}>
                         {stockPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}

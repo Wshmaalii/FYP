@@ -152,7 +152,7 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-white text-2xl mb-2">My Watchlist</h1>
-            <p className="text-zinc-400">Track your saved stocks and market movements</p>
+            <p className="text-zinc-400">Keep track of the tickers you want to revisit in conversations.</p>
           </div>
 
           <div className="flex gap-4">
@@ -174,9 +174,9 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
 
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-zinc-100">Portfolio View</h2>
+          <h2 className="text-zinc-100">Tracked Tickers</h2>
           <div className="flex items-center gap-2 text-zinc-500 text-sm">
-            <span>Real-time updates</span>
+            <span>On-demand quote updates</span>
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
           </div>
         </div>
@@ -192,7 +192,7 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
             <div className="text-center">
               <Star className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
               <h3 className="text-zinc-100 mb-2">No watchlist items yet</h3>
-              <p className="text-zinc-500 text-sm">Add stocks from Top Movers to start tracking them.</p>
+              <p className="text-zinc-500 text-sm">Add discussed tickers to keep track of ongoing conversations.</p>
             </div>
           </div>
         ) : (

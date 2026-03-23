@@ -4,6 +4,7 @@ import { getUpcomingEarnings, type EarningsCalendarItem } from '../../api/market
 import { fetchMessages, sendMessage, type ChannelMessage } from '../../api/messages';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
+import { ChannelPrivacyCard } from './ChannelPrivacyCard';
 
 function formatReportDate(value: string) {
   if (!value) {
@@ -143,6 +144,15 @@ export function EarningsWatchChannel() {
         <span className="text-amber-300 text-sm">Earnings data is subject to company reporting schedules and may change.</span>
       </div>
 
+      <ChannelPrivacyCard
+        scopeLabel="Public Channel"
+        audienceLabel="Members Visible"
+        visibilitySummary="Messages in Earnings Watch are visible to signed-in TradeLink members who can access this channel."
+        membershipVisibility="Participation in this discussion is visible to other members in the channel."
+        tickerVisibility="Any explicit ticker mention you include in commentary is visible to all members here."
+        metadataVisibility="Display name, verification badge, timestamp, and mentioned tickers are visible in this channel."
+      />
+
       <div className="flex-1 overflow-y-auto bg-zinc-950">
         <div className="border-b border-zinc-800 p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -191,7 +201,13 @@ export function EarningsWatchChannel() {
         </div>
       </div>
 
-      <MessageInput onSend={handleSend} isSending={isSending} placeholder="Share earnings commentary..." />
+      <MessageInput
+        onSend={handleSend}
+        isSending={isSending}
+        placeholder="Share earnings commentary..."
+        privacyMode="public"
+        contextLabel="channel"
+      />
     </>
   );
 }

@@ -69,7 +69,6 @@ class UserProfile(db.Model):
             "avatar_seed": self.avatar_seed,
             "joined_at": self.joined_at.isoformat() if self.joined_at else None,
             "verified_trader": self.verified_trader,
-            "trust_score": self.trust_score,
         }
 
 

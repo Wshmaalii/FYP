@@ -5,6 +5,7 @@ import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
 import { TradeTicketDrawer } from '../TradeTicketDrawer';
 import type { TradeTicketInput } from '../TradeTicketDrawer';
+import { ChannelPrivacyCard } from './ChannelPrivacyCard';
 
 export function MarketChatChannel() {
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
@@ -84,6 +85,15 @@ export function MarketChatChannel() {
         <span className="text-amber-300 text-sm">Market data may be delayed by 15 seconds.</span>
       </div>
 
+      <ChannelPrivacyCard
+        scopeLabel="Public Channel"
+        audienceLabel="Members Visible"
+        visibilitySummary="Messages in Market Chat are visible to signed-in TradeLink members who can access this channel."
+        membershipVisibility="Channel participation is visible to other members in this space."
+        tickerVisibility="Explicit ticker mentions like $AAPL or #BARC.L are visible to everyone in this channel."
+        metadataVisibility="Display name, verification badge, timestamp, and mentioned tickers are visible in this channel."
+      />
+
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-zinc-950">
         {error && (
           <div className="bg-zinc-900 border border-red-900 rounded-lg p-4 text-red-400 text-sm">
@@ -103,7 +113,7 @@ export function MarketChatChannel() {
         )}
       </div>
 
-      <MessageInput onSend={handleSend} isSending={isSending} />
+      <MessageInput onSend={handleSend} isSending={isSending} privacyMode="public" contextLabel="channel" />
 
       <TradeTicketDrawer
         isOpen={activeTicket !== null}

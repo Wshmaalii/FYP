@@ -5,16 +5,54 @@ interface MessageInputProps {
   onSend?: (message: string) => Promise<void> | void;
   isSending?: boolean;
   placeholder?: string;
+  privacyMode?: 'public' | 'private';
+  contextLabel?: string;
 }
 
-export function MessageInput({ onSend, isSending = false, placeholder = 'Type a message... Use $AAPL or #BARC.L for tickers' }: MessageInputProps) {
+function getSensitiveContentPrompt(message: string) {
+  const value = message.trim();
+  if (!value) {
+    return null;
+  }
+
+  if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(value)) {
+    return 'This public message includes an email address. Everyone in this channel can see it.';
+  }
+  if (/(?:\+?\d[\d\s()-]{7,}\d)/.test(value)) {
+    return 'This public message looks like it includes a phone number. Everyone in this channel can see it.';
+  }
+  if (/\b(telegram|whatsapp|signal|discord|address|mobile)\b/i.test(value)) {
+    return 'This public message may reveal contact details. Check whether you want to share that in a public channel.';
+  }
+  if (/\b(my|holding|position|bought|buying|sold|selling)\b/i.test(value) && /(£|\$|€|\b\d{3,}\b)/.test(value)) {
+    return 'This public message appears to include personal trade size or position details. Check whether you want to post that publicly.';
+  }
+
+  return null;
+}
+
+export function MessageInput({
+  onSend,
+  isSending = false,
+  placeholder = 'Type a message... Use $AAPL or #BARC.L for tickers',
+  privacyMode = 'public',
+  contextLabel = 'channel',
+}: MessageInputProps) {
   const [message, setMessage] = useState('');
+  const [sendWarning, setSendWarning] = useState<string | null>(null);
 
   const handleSend = async () => {
     if (message.trim() && onSend) {
       const value = message.trim();
+      const sensitivePrompt = privacyMode === 'public' ? getSensitiveContentPrompt(value) : null;
+      if (sensitivePrompt && sendWarning !== sensitivePrompt) {
+        setSendWarning(sensitivePrompt);
+        return;
+      }
+
       await onSend(value);
       setMessage('');
+      setSendWarning(null);
     }
   };
 
@@ -48,7 +86,10 @@ export function MessageInput({ onSend, isSending = false, placeholder = 'Type a 
         <div className="flex-1 relative">
           <textarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              setSendWarning(null);
+            }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -67,9 +108,18 @@ export function MessageInput({ onSend, isSending = false, placeholder = 'Type a 
         </button>
       </div>
 
+      {sendWarning && (
+        <div className="mt-3 bg-amber-950 border border-amber-900 rounded-lg p-3 text-amber-300 text-sm">
+          <p>{sendWarning}</p>
+          <p className="text-amber-400/80 text-xs mt-1">Press send again to post in this public {contextLabel}, or edit the message first.</p>
+        </div>
+      )}
+
       {/* Help Text */}
       <div className="mt-2 text-xs text-zinc-600 px-1">
-        Press Enter to send, Shift+Enter for new line. Use $AAPL or #BARC.L for ticker cards.
+        {privacyMode === 'public'
+          ? `Public ${contextLabel}: your display name, timestamp, and explicit ticker mentions are visible here. Use $AAPL or #BARC.L for ticker cards. Press Enter to send, Shift+Enter for new line.`
+          : `Private ${contextLabel}: only members can see your message metadata here. Use $AAPL or #BARC.L for ticker cards. Press Enter to send, Shift+Enter for new line.`}
       </div>
     </div>
   );

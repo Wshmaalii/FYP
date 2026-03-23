@@ -2,7 +2,6 @@ import csv
 import io
 import json
 import time
-from collections import Counter
 from datetime import datetime, timezone
 from urllib import parse, request as urlrequest
 from urllib.error import HTTPError
@@ -322,7 +321,7 @@ def fetch_bulk_quotes(api_key: str, tickers):
     return quotes
 
 
-def fetch_top_movers(api_key: str, index: str, community_counts: Counter | None = None):
+def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | None = None, window_days: int = 7):
     if index not in {"FTSE100", "FTSE250", "Global"}:
         raise ValueError("Unsupported index")
 
@@ -331,57 +330,25 @@ def fetch_top_movers(api_key: str, index: str, community_counts: Counter | None 
     if fresh_data is not None:
         return fresh_data
 
-    if index != "Global":
-        supported_bucket = get_supported_symbols(index)
-        ranked_symbols = [
-            symbol for symbol, _count in (community_counts or Counter()).most_common()
-            if symbol in supported_bucket
-        ][:6]
+    supported_bucket = get_supported_symbols(index)
+    ranked_entries = [
+        entry for entry in (community_entries or [])
+        if entry["symbol"] in supported_bucket
+    ][:8]
+    ranked_symbols = [entry["symbol"] for entry in ranked_entries]
 
-        if not ranked_symbols:
-            payload = {
-                "gainers": [],
-                "losers": [],
-                "updatedAt": datetime.now(timezone.utc).isoformat(),
-                "supported": False,
-                "message": "No community-active FTSE names yet. Mention a supported ticker like #BARC.L in chat.",
-            }
-            top_movers_cache[index] = {
-                "data": payload,
-                "expires_at": now + MARKET_CACHE_TTL_SECONDS,
-            }
-            return payload
-
-        quote_map = fetch_bulk_quotes(api_key, ranked_symbols)
-        movers = []
-        for symbol in ranked_symbols:
-            quote = quote_map.get(symbol)
-            if not quote:
-                continue
-            movers.append(
-                {
-                    "ticker": symbol,
-                    "name": get_supported_symbol_name(symbol),
-                    "price": quote["price"],
-                    "change": quote["change"],
-                    "changePercent": quote["changePercent"],
-                    "volume": max(community_counts.get(symbol, 0), 1),
-                }
-            )
-
+    if not ranked_symbols:
+        scope_label = {
+            "FTSE100": "supported FTSE 100 names",
+            "FTSE250": "supported FTSE 250 names",
+            "Global": "curated global names",
+        }[index]
         payload = {
-            "gainers": sorted(
-                [stock for stock in movers if stock["changePercent"] >= 0],
-                key=lambda item: item["changePercent"],
-                reverse=True,
-            )[:5],
-            "losers": sorted(
-                [stock for stock in movers if stock["changePercent"] < 0],
-                key=lambda item: item["changePercent"],
-            )[:5],
+            "items": [],
             "updatedAt": datetime.now(timezone.utc).isoformat(),
-            "supported": True,
-            "message": "Showing most-mentioned supported FTSE names in the TradeLink community.",
+            "supported": False,
+            "message": f"No {scope_label} have been actively discussed in the last {window_days} days. Mention a ticker like #BARC.L or $AAPL to start the conversation.",
+            "windowDays": window_days,
         }
         top_movers_cache[index] = {
             "data": payload,
@@ -390,39 +357,45 @@ def fetch_top_movers(api_key: str, index: str, community_counts: Counter | None 
         return payload
 
     try:
-        payload = _alpha_vantage_request({"function": "TOP_GAINERS_LOSERS", "apikey": api_key})
+        quote_map = fetch_bulk_quotes(api_key, ranked_symbols)
     except RateLimitError:
         if cache_entry:
             return cache_entry["data"]
         raise
 
-    def _normalize_movers(entries):
-        normalized_entries = []
-        for entry in entries[:5]:
-            symbol = normalize_symbol(entry.get("ticker") or "")
-            if symbol not in get_supported_symbols("Global"):
-                continue
-            normalized_entries.append(
-                {
-                    "ticker": symbol,
-                    "name": get_supported_symbol_name(symbol),
-                    "price": _to_float(entry.get("price")),
-                    "change": _to_float(entry.get("change_amount")),
-                    "changePercent": _to_float(entry.get("change_percentage")),
-                    "volume": int(_to_float(entry.get("volume"), 0)),
-                }
-            )
-        return normalized_entries
+    discussed_items = []
+    entry_map = {entry["symbol"]: entry for entry in ranked_entries}
+    for symbol in ranked_symbols:
+        quote = quote_map.get(symbol)
+        if not quote:
+            continue
+        discussion_entry = entry_map.get(symbol, {})
+        discussed_items.append(
+            {
+                "ticker": symbol,
+                "name": get_supported_symbol_name(symbol),
+                "price": quote["price"],
+                "change": quote["change"],
+                "changePercent": quote["changePercent"],
+                "volume": 0,
+                "mentionCount": int(discussion_entry.get("mentions", 0)),
+                "uniqueUsers": int(discussion_entry.get("unique_users", 0)),
+                "watchlistAdds": int(discussion_entry.get("watchlist_adds", 0)),
+            }
+        )
 
+    scope_message = {
+        "FTSE100": "Most discussed supported FTSE 100 names in TradeLink over the last 7 days.",
+        "FTSE250": "Most discussed supported FTSE 250 names in TradeLink over the last 7 days.",
+        "Global": "Most discussed curated global names in TradeLink over the last 7 days.",
+    }[index]
     payload = {
-        "gainers": _normalize_movers(payload.get("top_gainers") or []),
-        "losers": _normalize_movers(payload.get("top_losers") or []),
+        "items": discussed_items,
         "updatedAt": datetime.now(timezone.utc).isoformat(),
         "supported": True,
-        "message": None,
+        "message": scope_message,
+        "windowDays": window_days,
     }
-    if not payload["gainers"] and not payload["losers"]:
-        payload["message"] = "No supported curated global movers are available from Alpha Vantage right now."
 
     top_movers_cache[index] = {
         "data": payload,

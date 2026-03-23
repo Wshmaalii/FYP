@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Shield, Calendar, MessageSquare, TrendingUp, Star, X } from 'lucide-react';
+import { ArrowLeft, Shield, Calendar, MessageSquare, Star, Users, CheckCircle2, X } from 'lucide-react';
 import { getQuotes } from '../../api/market';
 import { fetchMyProfile, fetchProfileActivity, fetchProfileStats, updateMyProfile, type ProfileActivity, type ProfileStats, type UserProfile } from '../../api/profile';
 import { fetchWatchlist, type WatchlistItem } from '../../api/watchlist';
@@ -266,13 +266,6 @@ export function MyProfilePage({ onBack, onViewWatchlist, onProfileUpdated }: MyP
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
-              <span className="text-zinc-500 text-sm">Tickers Shared</span>
-            </div>
-            <p className="text-white text-2xl">{stats.tickers_shared_count.toLocaleString()}</p>
-          </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
               <Star className="w-4 h-4 text-amber-400" />
               <span className="text-zinc-500 text-sm">Watchlist Items</span>
             </div>
@@ -280,10 +273,18 @@ export function MyProfilePage({ onBack, onViewWatchlist, onProfileUpdated }: MyP
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className="w-4 h-4 text-cyan-400" />
-              <span className="text-zinc-500 text-sm">Trust Score</span>
+              <Users className="w-4 h-4 text-cyan-400" />
+              <span className="text-zinc-500 text-sm">Active Rooms</span>
             </div>
-            <p className="text-white text-2xl">{stats.trust_score}%</p>
+            <p className="text-white text-2xl">{stats.active_rooms_count.toLocaleString()}</p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-zinc-500 text-sm">Profile Completion</span>
+            </div>
+            <p className="text-white text-2xl">{stats.profile_completion_percent}%</p>
+            <p className="text-zinc-600 text-xs mt-1">{stats.recent_participation_count} actions in the last 7 days</p>
           </div>
         </div>
       </div>
