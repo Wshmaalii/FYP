@@ -86,7 +86,7 @@ export function PrivateRoomsChannel() {
       <div className="bg-cyan-950 border-b border-cyan-900 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-cyan-400" />
-          <span className="text-cyan-300 text-sm">End-to-end encrypted • Only members can see messages</span>
+          <span className="text-cyan-300 text-sm">Secure room • Messages restricted to invited members</span>
         </div>
         <button
           onClick={() => setShowMembers(!showMembers)}
@@ -124,7 +124,7 @@ export function PrivateRoomsChannel() {
                 </div>
                 <h3 className="text-zinc-100 mb-2">Secure Private Room</h3>
                 <p className="text-zinc-500 text-sm">
-                  All messages in this room are end-to-end encrypted. Only invited members can read and send messages.
+                  Messages in this room are restricted to invited members. Use private rooms for conversations you do not want visible in public channels.
                 </p>
               </div>
             </div>
@@ -179,7 +179,7 @@ export function PrivateRoomsChannel() {
       <MessageInput
         onSend={handleSend}
         isSending={isSending}
-        placeholder="Send an encrypted message..."
+        placeholder="Send a private room message..."
         privacyMode="private"
         contextLabel="room"
       />

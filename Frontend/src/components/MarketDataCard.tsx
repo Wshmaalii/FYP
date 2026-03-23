@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, Activity } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import type { TradeTicketInput } from './TradeTicketDrawer';
-import { fetchHistory, fetchQuote } from '../api/market';
+import { fetchHistory, fetchQuote, MARKET_DATA_LIMITED_MESSAGE } from '../api/market';
 import { addWatchlistItem, fetchWatchlist, removeWatchlistItem } from '../api/watchlist';
 
 interface MarketDataCardProps {
@@ -164,7 +164,7 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
             <span className="text-xs text-zinc-500">today</span>
           </div>
           {liveDataError && (
-            <span className="text-xs text-zinc-500">Live data temporarily unavailable</span>
+            <span className="text-xs text-zinc-500">{MARKET_DATA_LIMITED_MESSAGE}</span>
           )}
           {watchError && (
             <span className="text-xs text-red-400">{watchError}</span>

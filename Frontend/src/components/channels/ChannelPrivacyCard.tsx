@@ -26,24 +26,21 @@ export function ChannelPrivacyCard({
         </span>
       </div>
       <p className="text-zinc-500 text-xs uppercase tracking-wider mb-2">What is visible here?</p>
-      <p className="text-zinc-300 text-sm">{visibilitySummary}</p>
-      <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-        <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
-          <span className="block text-zinc-500 mb-1">Who can read messages?</span>
-          <span className="text-zinc-300">{visibilitySummary}</span>
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
-          <span className="block text-zinc-500 mb-1">Is membership visible?</span>
-          <span className="text-zinc-300">{membershipVisibility}</span>
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
-          <span className="block text-zinc-500 mb-1">Are ticker mentions visible?</span>
-          <span className="text-zinc-300">{tickerVisibility}</span>
-        </div>
-        <div className="bg-zinc-950 border border-zinc-800 rounded p-3">
-          <span className="block text-zinc-500 mb-1">What metadata is shown?</span>
-          <span className="text-zinc-300">{metadataVisibility}</span>
-        </div>
+      <div className="mt-3 bg-zinc-950 border border-zinc-800 rounded p-3">
+        <ul className="space-y-2 text-sm">
+          <li className="text-zinc-300">
+            <span className="text-zinc-500">• Audience:</span> {visibilitySummary}
+          </li>
+          <li className="text-zinc-300">
+            <span className="text-zinc-500">• Membership:</span> {membershipVisibility}
+          </li>
+          <li className="text-zinc-300">
+            <span className="text-zinc-500">• Ticker mentions:</span> {tickerVisibility}
+          </li>
+          <li className="text-zinc-300">
+            <span className="text-zinc-500">• Metadata shown:</span> {metadataVisibility}
+          </li>
+        </ul>
       </div>
     </div>
   );

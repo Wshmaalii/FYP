@@ -1,6 +1,6 @@
 import { AlertTriangle, Clock, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getUpcomingEarnings, type EarningsCalendarItem } from '../../api/market';
+import { getUpcomingEarnings, MARKET_DATA_LIMITED_MESSAGE, type EarningsCalendarItem } from '../../api/market';
 import { fetchMessages, sendMessage, type ChannelMessage } from '../../api/messages';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
@@ -161,7 +161,7 @@ export function EarningsWatchChannel() {
           </div>
           {earningsError ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm">
-              {earningsError}
+              {MARKET_DATA_LIMITED_MESSAGE}
             </div>
           ) : earningsLoading ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm">
@@ -169,7 +169,7 @@ export function EarningsWatchChannel() {
             </div>
           ) : earnings.length === 0 ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm">
-              Upcoming earnings data is unavailable right now.
+              Upcoming earnings context is not available right now.
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">

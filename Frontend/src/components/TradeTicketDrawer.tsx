@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getQuotes } from '../api/market';
+import { getQuotes, MARKET_DATA_LIMITED_MESSAGE } from '../api/market';
 
 export interface TradeTicketInput {
   ticker: string;
@@ -50,7 +50,7 @@ export function TradeTicketDrawer({ isOpen, ticket, onClose, onPlaceOrder }: Tra
         }
       } catch {
         if (isMounted) {
-          setError('Live data temporarily unavailable');
+          setError(MARKET_DATA_LIMITED_MESSAGE);
         }
       }
     };

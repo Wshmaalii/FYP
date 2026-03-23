@@ -1,6 +1,6 @@
 import { ArrowLeft, TrendingUp, TrendingDown, Clock, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getMarketOverview, type MarketOverviewIndex } from '../../api/market';
+import { getMarketOverview, MARKET_DATA_LIMITED_MESSAGE, type MarketOverviewIndex } from '../../api/market';
 
 interface MarketOverviewPageProps {
   onBack: () => void;
@@ -78,7 +78,7 @@ function IndexCard({ index }: { index: MarketOverviewIndex }) {
           </div>
         </>
       ) : (
-        <div className="text-zinc-500 text-sm">Live data unavailable for this index right now.</div>
+        <div className="text-zinc-500 text-sm">Live market data is not available for this item in the prototype right now.</div>
       )}
     </div>
   );
@@ -114,7 +114,7 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load market overview');
+          setError(err instanceof Error ? err.message : MARKET_DATA_LIMITED_MESSAGE);
         }
       } finally {
         if (isMounted) {
@@ -189,14 +189,14 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
       </div>
 
       <div className="p-6 space-y-6">
-        {error && <div className="bg-zinc-900 border border-red-900 rounded-lg p-4 text-red-400 text-sm">{error}</div>}
+        {error && <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">{error}</div>}
 
         <div>
-          <h2 className="text-zinc-100 mb-4">Global Indices</h2>
+          <h2 className="text-zinc-100 mb-4">Curated Market Snapshot</h2>
           {loading && indices.length === 0 ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">Loading market overview...</div>
           ) : filteredIndices.length === 0 ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">No market indices available for this filter.</div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">No tracked market items are available for this filter.</div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
               {filteredIndices.map((index) => (
@@ -212,7 +212,7 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
             {sectorsAvailable ? (
               <div className="text-zinc-500 text-sm">Sector data loaded.</div>
             ) : (
-              <div className="text-zinc-500 text-sm">Live sector heatmap is unavailable from the current market data source.</div>
+              <div className="text-zinc-500 text-sm">{MARKET_DATA_LIMITED_MESSAGE}</div>
             )}
           </div>
         </div>

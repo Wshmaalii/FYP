@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { fetchHistory, getMarketOverview, getTopMovers, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
+import { fetchHistory, getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
 import { ChannelPrivacyCard } from './ChannelPrivacyCard';
 
 interface TopMoverView extends TopMoverItem {
@@ -91,7 +91,7 @@ export function FTSE100Channel() {
         {loading && !ftseIndex ? (
           <div className="text-zinc-400 text-sm">Loading FTSE 100 data...</div>
         ) : error ? (
-          <div className="bg-zinc-900 border border-red-900 rounded-lg p-4 text-red-400 text-sm">{error}</div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">{MARKET_DATA_LIMITED_MESSAGE}</div>
         ) : ftseIndex && ftseIndex.available ? (
           <div className="flex items-end gap-6">
             <div>
@@ -149,8 +149,8 @@ export function FTSE100Channel() {
           <h3 className="text-zinc-100 mb-4">Intraday Performance</h3>
           <div className="h-80">
             {chartValues.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
-                Intraday chart unavailable right now.
+          <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+                Intraday chart is available only when selected ticker history can be loaded in the prototype.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">

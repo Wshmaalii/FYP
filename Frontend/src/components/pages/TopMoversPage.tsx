@@ -1,6 +1,6 @@
 import { ArrowLeft, TrendingUp, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getTopMovers, TopMoverItem } from '../../api/market';
+import { getTopMovers, MARKET_DATA_LIMITED_MESSAGE, TopMoverItem } from '../../api/market';
 import { addWatchlistItem } from '../../api/watchlist';
 
 interface TopMoversPageProps {
@@ -233,7 +233,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
         )}
         {error && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-400">
-            {error}
+            {MARKET_DATA_LIMITED_MESSAGE}
           </div>
         )}
         {providerMessage && !error && (

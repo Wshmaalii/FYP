@@ -1,6 +1,8 @@
 import { getApiBaseUrl } from './config';
 
 const API_BASE_URL = getApiBaseUrl();
+export const MARKET_DATA_LIMITED_MESSAGE = 'Live market data is limited in this prototype. Data is provided on-demand for selected tickers.';
+const MARKET_DATA_UNAVAILABLE_MESSAGE = 'Live market data is temporarily unavailable for the selected tickers.';
 
 export interface MarketQuote {
   price: number;
@@ -80,15 +82,24 @@ async function parseError(response: Response) {
   const rawBody = await response.text();
 
   if (contentType.includes('application/json')) {
-    const data = rawBody ? JSON.parse(rawBody) : {};
-    throw new Error(data.error || 'Failed to fetch market data');
+    let data: Record<string, unknown> = {};
+    try {
+      data = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      throw new Error(MARKET_DATA_UNAVAILABLE_MESSAGE);
+    }
+    const error = typeof data?.error === 'string' ? data.error.toLowerCase() : '';
+    if (error.includes('rate limit')) {
+      throw new Error(MARKET_DATA_LIMITED_MESSAGE);
+    }
+    throw new Error(MARKET_DATA_UNAVAILABLE_MESSAGE);
   }
 
   if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
-    throw new Error('Market API returned HTML. Check VITE_API_URL / deployed API URL.');
+    throw new Error(MARKET_DATA_UNAVAILABLE_MESSAGE);
   }
 
-  throw new Error(rawBody || 'Failed to fetch market data');
+  throw new Error(MARKET_DATA_UNAVAILABLE_MESSAGE);
 }
 
 export async function fetchQuote(symbol: string): Promise<StockQuoteResponse> {
@@ -122,16 +133,14 @@ export async function getQuotes(tickers: string[]): Promise<Record<string, Marke
   const rawBody = await response.text();
 
   if (!contentType.includes('application/json')) {
-    if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
-      throw new Error('Market API returned HTML. Check VITE_API_URL / deployed API URL.');
-    }
-    throw new Error(rawBody || 'Failed to fetch market quotes');
+    throw new Error(MARKET_DATA_UNAVAILABLE_MESSAGE);
   }
 
   const data = rawBody ? JSON.parse(rawBody) : {};
 
   if (!response.ok) {
-    throw new Error(data.error || 'Failed to fetch market quotes');
+    const error = typeof data?.error === 'string' ? data.error.toLowerCase() : '';
+    throw new Error(error.includes('rate limit') ? MARKET_DATA_LIMITED_MESSAGE : MARKET_DATA_UNAVAILABLE_MESSAGE);
   }
 
   return data.quotes || {};
@@ -144,16 +153,14 @@ export async function getTopMovers(index: string): Promise<TopMoversResponse> {
   const rawBody = await response.text();
 
   if (!contentType.includes('application/json')) {
-    if (rawBody.trim().startsWith('<!doctype') || rawBody.trim().startsWith('<html')) {
-      throw new Error('Market API returned HTML. Check VITE_API_URL / deployed API URL.');
-    }
-    throw new Error(rawBody || 'Failed to fetch discussed tickers');
+    throw new Error(MARKET_DATA_UNAVAILABLE_MESSAGE);
   }
 
   const data = rawBody ? JSON.parse(rawBody) : {};
 
   if (!response.ok) {
-    throw new Error(data.error || 'Failed to fetch discussed tickers');
+    const error = typeof data?.error === 'string' ? data.error.toLowerCase() : '';
+    throw new Error(error.includes('rate limit') ? MARKET_DATA_LIMITED_MESSAGE : MARKET_DATA_UNAVAILABLE_MESSAGE);
   }
 
   return data;

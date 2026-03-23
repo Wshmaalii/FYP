@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
-import { getMarketOverview, getTopMovers, type MarketOverviewIndex, type TopMoverItem } from '../api/market';
+import { getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketOverviewIndex, type TopMoverItem } from '../api/market';
 import { fetchWatchlist } from '../api/watchlist';
 import { getQuotes } from '../api/market';
 
@@ -147,7 +147,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
             </div>
           </div>
         </button>
-        {liveDataError && <p className="text-zinc-500 text-xs mb-2">Live data temporarily unavailable</p>}
+        {liveDataError && <p className="text-zinc-500 text-xs mb-2">{MARKET_DATA_LIMITED_MESSAGE}</p>}
         <div className="space-y-1">
           {marketIndices.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">Loading market overview...</p>
