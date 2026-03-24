@@ -23,7 +23,7 @@ try:
     from .market_service import (
         MARKET_OVERVIEW_INDICES,
         RateLimitError,
-        diagnose_quote_request,
+        bootstrap_market_snapshots,
         fetch_bulk_quotes,
         fetch_history,
         fetch_market_overview,
@@ -36,6 +36,8 @@ try:
         get_supported_symbols,
         is_supported_symbol,
         get_alpha_vantage_api_key,
+        get_supported_market_universe,
+        refresh_market_snapshots,
     )
     from .models import ChatMessage, MarketSnapshot, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 except ImportError:
@@ -43,7 +45,7 @@ except ImportError:
     from market_service import (
         MARKET_OVERVIEW_INDICES,
         RateLimitError,
-        diagnose_quote_request,
+        bootstrap_market_snapshots,
         fetch_bulk_quotes,
         fetch_history,
         fetch_market_overview,
@@ -56,6 +58,8 @@ except ImportError:
         get_supported_symbols,
         is_supported_symbol,
         get_alpha_vantage_api_key,
+        get_supported_market_universe,
+        refresh_market_snapshots,
     )
     from models import ChatMessage, MarketSnapshot, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 
@@ -547,17 +551,13 @@ def health():
 def stock_quote(symbol):
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
-    if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
-
     normalized_symbol = (symbol or "").strip().upper()
     if not normalized_symbol:
         return json_error("symbol is required", 400)
 
     try:
         quote = fetch_quote(
-            api_key,
+            "",
             normalized_symbol,
             snapshot_loader=load_market_snapshot,
             snapshot_saver=save_market_snapshot,
@@ -576,13 +576,9 @@ def stock_quote(symbol):
 def market_overview():
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
-    if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
-
     try:
         payload = fetch_market_overview(
-            api_key,
+            "",
             snapshot_loader=load_market_snapshot,
             snapshot_saver=save_market_snapshot,
         )
@@ -598,13 +594,9 @@ def market_overview():
 def earnings_upcoming():
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
-    if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
-
     try:
         payload = fetch_upcoming_earnings(
-            api_key,
+            "",
             snapshot_loader=load_market_snapshot,
             snapshot_saver=save_market_snapshot,
         )
@@ -620,17 +612,13 @@ def earnings_upcoming():
 def stock_history(symbol):
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
-    if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
-
     normalized_symbol = (symbol or "").strip().upper()
     if not normalized_symbol:
         return json_error("symbol is required", 400)
 
     try:
         history = fetch_history(
-            api_key,
+            "",
             normalized_symbol,
             snapshot_loader=load_market_snapshot,
             snapshot_saver=save_market_snapshot,
@@ -652,10 +640,6 @@ def stock_history(symbol):
 def market_quotes():
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
-    if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
-
     tickers_param = (request.args.get("tickers") or "").strip()
     if not tickers_param:
         return json_error("tickers query parameter is required", 400)
@@ -666,7 +650,7 @@ def market_quotes():
 
     try:
         quotes_payload = fetch_bulk_quotes(
-            api_key,
+            "",
             requested_tickers,
             snapshot_loader=load_market_snapshot,
             snapshot_saver=save_market_snapshot,
@@ -689,10 +673,6 @@ def market_quotes():
 def market_top_movers():
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
-    if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
-
     index = (request.args.get("index") or "FTSE100").strip()
     community_entries = None
     window_days = 7
@@ -701,7 +681,7 @@ def market_top_movers():
 
     try:
         payload = fetch_top_movers(
-            api_key,
+            "",
             index,
             community_entries=community_entries,
             window_days=window_days,
@@ -721,7 +701,6 @@ def market_debug():
     ensure_database_schema()
     cleanup_legacy_hru_data()
     payload = get_market_debug_status()
-    api_key = get_alpha_vantage_api_key()
     payload["persistent_snapshots"] = list_market_snapshot_keys()
     payload["overview_symbols"] = [
         {
@@ -734,13 +713,7 @@ def market_debug():
     ]
     payload["overview_snapshot_available"] = snapshot_has_available_overview("market_overview")
     payload["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
-    payload["quote_probe"] = diagnose_quote_request(api_key, "AAPL") if api_key else {
-        "symbol": "AAPL",
-        "normalized_symbol": "AAPL",
-        "supported": True,
-        "status": "env_missing",
-        "message": "ALPHA_VANTAGE_API_KEY is not set",
-    }
+    payload["supported_universe"] = get_supported_market_universe()
     return jsonify(payload)
 
 
@@ -752,48 +725,39 @@ def market_bootstrap():
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
 
-    results = {
-        "overview_seeded": False,
-        "earnings_seeded": False,
-        "message": None,
-        "alpha_vantage_env": get_alpha_vantage_env_diagnostics(),
-        "quote_probe": diagnose_quote_request(api_key, "AAPL"),
-        "symbol_diagnostics": [],
-    }
-
-    for item in MARKET_OVERVIEW_INDICES:
-        results["symbol_diagnostics"].append(
-            diagnose_quote_request(api_key, item["source_symbol"])
-        )
-
-    try:
-        overview_payload = fetch_market_overview(
-            api_key,
-            snapshot_loader=load_market_snapshot,
-            snapshot_saver=save_market_snapshot,
-        )
-        results["overview_seeded"] = any(
-            isinstance(index, dict) and index.get("available")
-            for index in (overview_payload.get("indices") or [])
-        )
-    except Exception:
-        pass
-
-    try:
-        fetch_upcoming_earnings(
-            api_key,
-            snapshot_loader=load_market_snapshot,
-            snapshot_saver=save_market_snapshot,
-        )
-        results["earnings_seeded"] = True
-    except Exception:
-        pass
-
-    if not results["overview_seeded"] and not results["earnings_seeded"]:
+    results = bootstrap_market_snapshots(
+        api_key,
+        snapshot_loader=load_market_snapshot,
+        snapshot_saver=save_market_snapshot,
+    )
+    results["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
+    if results.get("status") == "failed" and not results.get("overview_seeded"):
         results["message"] = MARKET_DATA_UNAVAILABLE_MESSAGE
         return jsonify(results), 503
 
-    results["message"] = "Market snapshots refreshed where data was available."
+    results["message"] = "Stored market baseline refreshed where data was available."
+    return jsonify(results)
+
+
+@app.route("/api/market/refresh", methods=["POST"])
+def market_refresh():
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
+    api_key = get_alpha_vantage_api_key()
+    if not api_key:
+        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
+
+    results = refresh_market_snapshots(
+        api_key,
+        snapshot_loader=load_market_snapshot,
+        snapshot_saver=save_market_snapshot,
+    )
+    results["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
+    if results.get("status") == "failed":
+        results["message"] = MARKET_DATA_UNAVAILABLE_MESSAGE
+        return jsonify(results), 503
+
+    results["message"] = "Stored market snapshots refreshed where data was available."
     return jsonify(results)
 
 

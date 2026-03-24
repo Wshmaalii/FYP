@@ -9,54 +9,54 @@ from urllib.error import HTTPError
 
 ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
 MARKET_CACHE_TTL_SECONDS = 21600
-STOCK_QUOTE_CACHE_TTL_SECONDS = 900
-STOCK_HISTORY_CACHE_TTL_SECONDS = 3600
+STOCK_QUOTE_CACHE_TTL_SECONDS = 43200
+STOCK_HISTORY_CACHE_TTL_SECONDS = 43200
 EARNINGS_CACHE_TTL_SECONDS = 43200
 ALPHA_VANTAGE_DAILY_BUDGET = 25
 ALPHA_VANTAGE_BUDGET_WINDOW_SECONDS = 86400
 ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS = 21600
 ALPHA_VANTAGE_DIAGNOSTIC_HISTORY_LIMIT = 25
+ALPHA_VANTAGE_MIN_REQUEST_SPACING_SECONDS = 1.0
+MARKET_REFRESH_BATCH_LIMIT = 5
+MARKET_REFRESH_BUFFER = 5
 
 SUPPORTED_TICKERS = {
-    "BARC.L": {"name": "Barclays PLC", "bucket": "FTSE100"},
-    "BP.L": {"name": "BP PLC", "bucket": "FTSE100"},
-    "GSK.L": {"name": "GSK PLC", "bucket": "FTSE100"},
-    "HSBA.L": {"name": "HSBC Holdings PLC", "bucket": "FTSE100"},
-    "LLOY.L": {"name": "Lloyds Banking Group PLC", "bucket": "FTSE100"},
-    "REL.L": {"name": "RELX PLC", "bucket": "FTSE100"},
-    "RIO.L": {"name": "Rio Tinto PLC", "bucket": "FTSE100"},
-    "SHEL.L": {"name": "Shell PLC", "bucket": "FTSE100"},
-    "TSCO.L": {"name": "Tesco PLC", "bucket": "FTSE100"},
-    "ULVR.L": {"name": "Unilever PLC", "bucket": "FTSE100"},
-    "VOD.L": {"name": "Vodafone Group PLC", "bucket": "FTSE100"},
-    "AHT.L": {"name": "Ashtead Group PLC", "bucket": "FTSE100"},
-    "BAB.L": {"name": "Babcock International Group PLC", "bucket": "FTSE250"},
-    "EZJ.L": {"name": "easyJet PLC", "bucket": "FTSE250"},
-    "HOC.L": {"name": "Hochschild Mining PLC", "bucket": "FTSE250"},
-    "ITRK.L": {"name": "Intertek Group PLC", "bucket": "FTSE250"},
-    "PNN.L": {"name": "Pennon Group PLC", "bucket": "FTSE250"},
-    "TBCG.L": {"name": "TBC Bank Group PLC", "bucket": "FTSE250"},
-    "AAPL": {"name": "Apple Inc.", "bucket": "Global"},
-    "AMZN": {"name": "Amazon.com Inc.", "bucket": "Global"},
-    "GOOGL": {"name": "Alphabet Inc.", "bucket": "Global"},
-    "META": {"name": "Meta Platforms Inc.", "bucket": "Global"},
-    "MSFT": {"name": "Microsoft Corp.", "bucket": "Global"},
-    "NFLX": {"name": "Netflix Inc.", "bucket": "Global"},
-    "NVDA": {"name": "NVIDIA Corp.", "bucket": "Global"},
-    "TSLA": {"name": "Tesla Inc.", "bucket": "Global"},
-    "SPY": {"name": "SPDR S&P 500 ETF Trust", "bucket": "Proxy"},
-    "DIA": {"name": "SPDR Dow Jones Industrial Average ETF Trust", "bucket": "Proxy"},
-    "EWU": {"name": "iShares MSCI United Kingdom ETF", "bucket": "Proxy"},
-    "EWG": {"name": "iShares MSCI Germany ETF", "bucket": "Proxy"},
-    "EWQ": {"name": "iShares MSCI France ETF", "bucket": "Proxy"},
-    "EWH": {"name": "iShares MSCI Hong Kong ETF", "bucket": "Proxy"},
-    "EWJ": {"name": "iShares MSCI Japan ETF", "bucket": "Proxy"},
+    "LLOY": {"name": "Lloyds Banking Group", "bucket": "FTSE100", "provider_symbol": "LLOY.L", "aliases": ["LLOY", "LLOY.L"]},
+    "LGEN": {"name": "Legal & General", "bucket": "FTSE100", "provider_symbol": "LGEN.L", "aliases": ["LGEN", "LGEN.L"]},
+    "BP.": {"name": "BP", "bucket": "FTSE100", "provider_symbol": "BP.L", "aliases": ["BP.", "BP", "BP.L"]},
+    "RR.": {"name": "Rolls-Royce Holdings", "bucket": "FTSE100", "provider_symbol": "RR.L", "aliases": ["RR.", "RR", "RR.L"]},
+    "SHEL": {"name": "Shell", "bucket": "FTSE100", "provider_symbol": "SHEL.L", "aliases": ["SHEL", "SHEL.L"]},
+    "BARC": {"name": "Barclays", "bucket": "FTSE100", "provider_symbol": "BARC.L", "aliases": ["BARC", "BARC.L"]},
+    "NWG": {"name": "NatWest Group", "bucket": "FTSE100", "provider_symbol": "NWG.L", "aliases": ["NWG", "NWG.L"]},
+    "HSBA": {"name": "HSBC Holdings", "bucket": "FTSE100", "provider_symbol": "HSBA.L", "aliases": ["HSBA", "HSBA.L"]},
+    "AZN": {"name": "AstraZeneca", "bucket": "FTSE100", "provider_symbol": "AZN.L", "aliases": ["AZN", "AZN.L"]},
+    "VOD": {"name": "Vodafone Group", "bucket": "FTSE100", "provider_symbol": "VOD.L", "aliases": ["VOD", "VOD.L"]},
+    "BT.A": {"name": "BT Group", "bucket": "FTSE100", "provider_symbol": "BT-A.L", "aliases": ["BT.A", "BTA", "BT-A.L"]},
+    "GSK": {"name": "GSK", "bucket": "FTSE100", "provider_symbol": "GSK.L", "aliases": ["GSK", "GSK.L"]},
+    "AV.": {"name": "Aviva", "bucket": "FTSE100", "provider_symbol": "AV.L", "aliases": ["AV.", "AV", "AV.L"]},
+    "TSCO": {"name": "Tesco", "bucket": "FTSE100", "provider_symbol": "TSCO.L", "aliases": ["TSCO", "TSCO.L"]},
+    "ULVR": {"name": "Unilever", "bucket": "FTSE100", "provider_symbol": "ULVR.L", "aliases": ["ULVR", "ULVR.L"]},
+    "RIO": {"name": "Rio Tinto", "bucket": "FTSE100", "provider_symbol": "RIO.L", "aliases": ["RIO", "RIO.L"]},
+    "GLEN": {"name": "Glencore", "bucket": "FTSE100", "provider_symbol": "GLEN.L", "aliases": ["GLEN", "GLEN.L"]},
+    "BATS": {"name": "British American Tobacco", "bucket": "FTSE100", "provider_symbol": "BATS.L", "aliases": ["BATS", "BATS.L"]},
+    "STAN": {"name": "Standard Chartered", "bucket": "FTSE100", "provider_symbol": "STAN.L", "aliases": ["STAN", "STAN.L"]},
+    "MNG": {"name": "M&G", "bucket": "FTSE100", "provider_symbol": "MNG.L", "aliases": ["MNG", "MNG.L"]},
+    "EWU": {"name": "iShares MSCI United Kingdom ETF", "bucket": "Proxy", "provider_symbol": "EWU", "aliases": ["EWU"]},
+    "SPY": {"name": "SPDR S&P 500 ETF Trust", "bucket": "Proxy", "provider_symbol": "SPY", "aliases": ["SPY"]},
 }
+
+SUPPORTED_SYMBOL_ALIASES = {}
+for canonical_symbol, metadata in SUPPORTED_TICKERS.items():
+    SUPPORTED_SYMBOL_ALIASES[canonical_symbol] = canonical_symbol
+    for alias in metadata.get("aliases", []):
+        SUPPORTED_SYMBOL_ALIASES[alias.upper()] = canonical_symbol
 
 MARKET_OVERVIEW_INDICES = [
     {"name": "FTSE 100", "ticker": "FTSE 100", "region": "Europe", "source_symbol": "EWU", "source_type": "proxy_etf", "source_label": "iShares MSCI United Kingdom ETF proxy"},
     {"name": "S&P 500", "ticker": "S&P 500", "region": "US", "source_symbol": "SPY", "source_type": "proxy_etf", "source_label": "SPDR S&P 500 ETF Trust proxy"},
 ]
+
+MARKET_BOOTSTRAP_SYMBOLS = ["EWU", "SPY", "BARC", "LLOY", "SHEL"]
 
 market_cache = {}
 top_movers_cache = {}
@@ -64,6 +64,9 @@ stock_quote_cache = {}
 stock_history_cache = {}
 earnings_cache = {}
 market_refresh_state = {}
+alpha_vantage_request_state = {
+    "last_started_at": None,
+}
 alpha_vantage_budget_state = {
     "window_started_at": time.time(),
     "calls_used": 0,
@@ -126,6 +129,18 @@ def _record_alpha_vantage_request(now):
     _reset_budget_window_if_needed(now)
     alpha_vantage_budget_state["calls_used"] += 1
     alpha_vantage_budget_state["last_request_at"] = now
+
+
+def _wait_for_request_slot():
+    last_started_at = alpha_vantage_request_state.get("last_started_at")
+    now = time.time()
+    if last_started_at is None:
+        alpha_vantage_request_state["last_started_at"] = now
+        return
+    elapsed = now - last_started_at
+    if elapsed < ALPHA_VANTAGE_MIN_REQUEST_SPACING_SECONDS:
+        time.sleep(ALPHA_VANTAGE_MIN_REQUEST_SPACING_SECONDS - elapsed)
+    alpha_vantage_request_state["last_started_at"] = time.time()
 
 
 def _record_refresh_state(key, cache_name, expires_at):
@@ -202,6 +217,7 @@ def get_market_debug_status():
         "daily_budget": alpha_vantage_budget_state["daily_budget"],
         "window_started_at": _isoformat_timestamp(alpha_vantage_budget_state["window_started_at"]),
         "last_request_at": _isoformat_timestamp(alpha_vantage_budget_state["last_request_at"]),
+        "rate_limited_mode": remaining <= 0,
         "last_refresh": market_refresh_state,
         "recent_diagnostics": alpha_vantage_diagnostic_history,
         "failure_backoff_seconds": ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS,
@@ -240,13 +256,23 @@ def normalize_symbol(symbol: str) -> str:
     return (symbol or "").strip().upper()
 
 
+def canonicalize_symbol(symbol: str) -> str:
+    normalized = normalize_symbol(symbol)
+    return SUPPORTED_SYMBOL_ALIASES.get(normalized, normalized)
+
+
 def is_supported_symbol(symbol: str) -> bool:
-    return normalize_symbol(symbol) in SUPPORTED_TICKERS
+    return canonicalize_symbol(symbol) in SUPPORTED_TICKERS
 
 
 def get_supported_symbol_name(symbol: str) -> str:
-    normalized = normalize_symbol(symbol)
+    normalized = canonicalize_symbol(symbol)
     return SUPPORTED_TICKERS.get(normalized, {}).get("name", normalized)
+
+
+def get_provider_symbol(symbol: str) -> str:
+    canonical = canonicalize_symbol(symbol)
+    return SUPPORTED_TICKERS.get(canonical, {}).get("provider_symbol", canonical)
 
 
 def get_supported_symbols(bucket: str | None = None):
@@ -314,6 +340,13 @@ def _persist_snapshot(snapshot_saver, key, data, updated_at):
         snapshot_saver(key, data, updated_at)
 
 
+def _snapshot_updated_at(snapshot_loader, key):
+    snapshot_entry = _load_snapshot_entry(snapshot_loader, key)
+    if not snapshot_entry:
+        return None
+    return snapshot_entry.get("updated_at")
+
+
 def _overview_has_available_data(payload):
     if not isinstance(payload, dict):
         return False
@@ -338,7 +371,7 @@ def _to_float(value, default=0.0):
 def _alpha_vantage_request(params):
     now = time.time()
     function_name = params.get("function")
-    symbol = normalize_symbol(params.get("symbol", "")) or None
+    symbol = canonicalize_symbol(params.get("symbol", "")) or None
 
     backoff_entry = _failure_backoff_entry(function_name, symbol)
     if backoff_entry:
@@ -373,6 +406,7 @@ def _alpha_vantage_request(params):
         )
         raise RateLimitError("daily budget exhausted")
 
+    _wait_for_request_slot()
     query = parse.urlencode(params)
     url = f"{ALPHA_VANTAGE_BASE_URL}?{query}"
     req = urlrequest.Request(
@@ -539,7 +573,7 @@ def _alpha_vantage_request(params):
 
 
 def diagnose_quote_request(api_key: str, symbol: str):
-    normalized = normalize_symbol(symbol)
+    normalized = canonicalize_symbol(symbol)
     if not normalized:
         return {
             "symbol": symbol,
@@ -557,9 +591,10 @@ def diagnose_quote_request(api_key: str, symbol: str):
             "message": "unsupported symbol",
         }
 
+    provider_symbol = get_provider_symbol(normalized)
     functions_to_try = [
-        ("GLOBAL_QUOTE", {"function": "GLOBAL_QUOTE", "symbol": normalized, "apikey": api_key}),
-        ("TIME_SERIES_DAILY", {"function": "TIME_SERIES_DAILY", "symbol": normalized, "outputsize": "compact", "apikey": api_key}),
+        ("GLOBAL_QUOTE", {"function": "GLOBAL_QUOTE", "symbol": provider_symbol, "apikey": api_key}),
+        ("TIME_SERIES_DAILY", {"function": "TIME_SERIES_DAILY", "symbol": provider_symbol, "outputsize": "compact", "apikey": api_key}),
     ]
     attempts = []
     for function_name, params in functions_to_try:
@@ -572,6 +607,7 @@ def diagnose_quote_request(api_key: str, symbol: str):
                     "reached_upstream": True,
                     "counted_budget": True,
                     "message": "request succeeded",
+                    "provider_symbol": provider_symbol,
                 }
             )
             return {
@@ -591,6 +627,7 @@ def diagnose_quote_request(api_key: str, symbol: str):
                     "reached_upstream": False if "budget exhausted" in str(exc).lower() else True,
                     "counted_budget": False if "budget exhausted" in str(exc).lower() else True,
                     "message": str(exc),
+                    "provider_symbol": provider_symbol,
                 }
             )
             break
@@ -604,6 +641,7 @@ def diagnose_quote_request(api_key: str, symbol: str):
                     "counted_budget": exc.counted_budget,
                     "upstream_status": exc.upstream_status,
                     "message": exc.reason,
+                    "provider_symbol": provider_symbol,
                 }
             )
         except Exception as exc:
@@ -615,6 +653,7 @@ def diagnose_quote_request(api_key: str, symbol: str):
                     "reached_upstream": False,
                     "counted_budget": False,
                     "message": str(exc),
+                    "provider_symbol": provider_symbol,
                 }
             )
 
@@ -627,273 +666,116 @@ def diagnose_quote_request(api_key: str, symbol: str):
     }
 
 
+def _snapshot_status(updated_at, available: bool, *, message: str | None = None):
+    return {
+        "source": "cache",
+        "isCachedFallback": bool(available),
+        "lastUpdatedAt": _isoformat_timestamp(updated_at),
+        "message": message if available else "Live market data is limited in this prototype and may not be available right now.",
+    }
+
+
+def _build_quote_snapshot_key(symbol: str) -> str:
+    return f"quote:{canonicalize_symbol(symbol)}"
+
+
+def _build_history_snapshot_key(symbol: str) -> str:
+    return f"history:{canonicalize_symbol(symbol)}"
+
+
+def get_snapshot_quote(symbol: str, snapshot_loader=None):
+    normalized = canonicalize_symbol(symbol)
+    if not is_supported_symbol(normalized):
+        raise ValueError("This ticker is not part of the supported prototype universe.")
+
+    cache_entry, fresh_data = _get_cache_entry(stock_quote_cache, normalized, time.time())
+    if fresh_data is not None:
+        return fresh_data, cache_entry.get("updated_at")
+
+    snapshot_entry = _load_snapshot_entry(snapshot_loader, _build_quote_snapshot_key(normalized))
+    if snapshot_entry and snapshot_entry.get("data"):
+        _store_cache_entry(
+            stock_quote_cache,
+            normalized,
+            snapshot_entry["data"],
+            time.time() + STOCK_QUOTE_CACHE_TTL_SECONDS,
+            snapshot_entry.get("updated_at") or time.time(),
+        )
+        return snapshot_entry["data"], snapshot_entry.get("updated_at")
+
+    return None, None
+
+
+def get_snapshot_history(symbol: str, snapshot_loader=None):
+    normalized = canonicalize_symbol(symbol)
+    if not is_supported_symbol(normalized):
+        raise ValueError("This ticker is not part of the supported prototype universe.")
+
+    cache_entry, fresh_data = _get_cache_entry(stock_history_cache, normalized, time.time())
+    if fresh_data is not None:
+        return fresh_data, cache_entry.get("updated_at")
+
+    snapshot_entry = _load_snapshot_entry(snapshot_loader, _build_history_snapshot_key(normalized))
+    if snapshot_entry and snapshot_entry.get("data"):
+        _store_cache_entry(
+            stock_history_cache,
+            normalized,
+            snapshot_entry["data"],
+            time.time() + STOCK_HISTORY_CACHE_TTL_SECONDS,
+            snapshot_entry.get("updated_at") or time.time(),
+        )
+        return snapshot_entry["data"], snapshot_entry.get("updated_at")
+
+    return [], None
+
+
 def fetch_quote(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
     now = time.time()
-    normalized = normalize_symbol(symbol)
-    if not is_supported_symbol(normalized):
-        raise ValueError("Unsupported symbol")
-
-    cache_entry, fresh_data = _get_cache_entry(stock_quote_cache, normalized, now)
-    if cache_entry is None:
-        cache_entry = _load_snapshot_entry(snapshot_loader, f"quote:{normalized}")
-    if fresh_data is not None:
+    data, updated_at = get_snapshot_quote(symbol, snapshot_loader=snapshot_loader)
+    normalized = canonicalize_symbol(symbol)
+    if data:
         return {
-            **fresh_data,
-            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
+            **data,
+            "marketDataStatus": _snapshot_status(updated_at, True, message="Showing most recent available data."),
         }
-
-    try:
-        payload = _alpha_vantage_request(
-            {"function": "GLOBAL_QUOTE", "symbol": normalized, "apikey": api_key}
-        )
-        quote = payload.get("Global Quote") or {}
-        if not isinstance(quote, dict) or not quote:
-            raise RuntimeError("No quote data available")
-
-        data = {
-            "symbol": (quote.get("01. symbol") or normalized).upper(),
-            "price": _to_float(quote.get("05. price")),
-            "change": _to_float(quote.get("09. change")),
-            "change_percent": (quote.get("10. change percent") or "0.00%").strip(),
-        }
-        if data["change_percent"] and not data["change_percent"].endswith("%"):
-            data["change_percent"] = f"{data['change_percent']}%"
-    except RateLimitError:
-        if cache_entry:
-            return {
-                **cache_entry["data"],
-                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-            }
-        raise
-    except AlphaVantageRequestError as exc:
-        if exc.error_class in {"unauthorized", "network_error", "timeout", "backoff", "rate_limit", "information"}:
-            if cache_entry:
-                return {
-                    **cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            raise
-        try:
-            payload = _alpha_vantage_request(
-                {
-                    "function": "TIME_SERIES_DAILY",
-                    "symbol": normalized,
-                    "outputsize": "compact",
-                    "apikey": api_key,
-                }
-            )
-            series = payload.get("Time Series (Daily)") or {}
-            if not isinstance(series, dict) or len(series) < 2:
-                raise RuntimeError("No quote data available")
-
-            sorted_points = sorted(series.items(), key=lambda item: item[0], reverse=True)
-            latest = sorted_points[0][1]
-            previous = sorted_points[1][1]
-            latest_close = _to_float(latest.get("4. close"))
-            previous_close = _to_float(previous.get("4. close"))
-            change = latest_close - previous_close
-            change_percent = ((change / previous_close) * 100) if previous_close else 0.0
-            data = {
-                "symbol": normalized,
-                "price": latest_close,
-                "change": change,
-                "change_percent": f"{change_percent:.2f}%",
-            }
-        except Exception:
-            if cache_entry:
-                return {
-                    **cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            raise
-    except Exception:
-        try:
-            payload = _alpha_vantage_request(
-                {
-                    "function": "TIME_SERIES_DAILY",
-                    "symbol": normalized,
-                    "outputsize": "compact",
-                    "apikey": api_key,
-                }
-            )
-            series = payload.get("Time Series (Daily)") or {}
-            if not isinstance(series, dict) or len(series) < 2:
-                raise RuntimeError("No quote data available")
-
-            sorted_points = sorted(series.items(), key=lambda item: item[0], reverse=True)
-            latest = sorted_points[0][1]
-            previous = sorted_points[1][1]
-            latest_close = _to_float(latest.get("4. close"))
-            previous_close = _to_float(previous.get("4. close"))
-            change = latest_close - previous_close
-            change_percent = ((change / previous_close) * 100) if previous_close else 0.0
-            data = {
-                "symbol": normalized,
-                "price": latest_close,
-                "change": change,
-                "change_percent": f"{change_percent:.2f}%",
-            }
-        except Exception:
-            if cache_entry:
-                return {
-                    **cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            raise
-
-    _store_cache_entry(stock_quote_cache, normalized, data, now + STOCK_QUOTE_CACHE_TTL_SECONDS, now)
-    _persist_snapshot(snapshot_saver, f"quote:{normalized}", data, now)
-    _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
     return {
-        **data,
-        "marketDataStatus": _cache_status_payload(stock_quote_cache.get(normalized), "live", now),
+        "symbol": normalized,
+        "price": None,
+        "change": None,
+        "change_percent": "Unavailable",
+        "marketDataStatus": _snapshot_status(updated_at, False),
     }
 
 
 def fetch_history(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
-    now = time.time()
-    normalized = normalize_symbol(symbol)
-    if not is_supported_symbol(normalized):
-        raise ValueError("Unsupported symbol")
-
-    cache_entry, fresh_data = _get_cache_entry(stock_history_cache, normalized, now)
-    if cache_entry is None:
-        cache_entry = _load_snapshot_entry(snapshot_loader, f"history:{normalized}")
-    if fresh_data is not None:
-        return {
-            "points": fresh_data,
-            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
-        }
-
-    points = []
-    try:
-        payload = _alpha_vantage_request(
-            {
-                "function": "TIME_SERIES_INTRADAY",
-                "symbol": normalized,
-                "interval": "5min",
-                "apikey": api_key,
-            }
-        )
-        series = payload.get("Time Series (5min)") or {}
-        if not isinstance(series, dict) or not series:
-            raise RuntimeError("No historical data available")
-
-        for timestamp, values in series.items():
-            if not isinstance(values, dict):
-                continue
-            points.append(
-                {
-                    "time": timestamp,
-                    "price": _to_float(values.get("4. close")),
-                    "open": _to_float(values.get("1. open")),
-                    "high": _to_float(values.get("2. high")),
-                    "low": _to_float(values.get("3. low")),
-                    "volume": _to_float(values.get("5. volume")),
-                }
-            )
-    except RateLimitError:
-        if cache_entry:
-            return {
-                "points": cache_entry["data"],
-                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-            }
-        raise
-    except Exception:
-        try:
-            payload = _alpha_vantage_request(
-                {
-                    "function": "TIME_SERIES_DAILY",
-                    "symbol": normalized,
-                    "outputsize": "compact",
-                    "apikey": api_key,
-                }
-            )
-            series = payload.get("Time Series (Daily)") or {}
-            if not isinstance(series, dict) or not series:
-                raise RuntimeError("No historical data available")
-
-            for timestamp, values in series.items():
-                if not isinstance(values, dict):
-                    continue
-                points.append(
-                    {
-                        "time": timestamp,
-                        "price": _to_float(values.get("4. close")),
-                        "open": _to_float(values.get("1. open")),
-                        "high": _to_float(values.get("2. high")),
-                        "low": _to_float(values.get("3. low")),
-                        "volume": _to_float(values.get("5. volume")),
-                    }
-                )
-        except Exception:
-            if cache_entry:
-                return {
-                    "points": cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            raise
-
-    points.sort(key=lambda item: item["time"])
-    latest_points = points[-50:]
-    _store_cache_entry(stock_history_cache, normalized, latest_points, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
-    _persist_snapshot(snapshot_saver, f"history:{normalized}", latest_points, now)
-    _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
+    points, updated_at = get_snapshot_history(symbol, snapshot_loader=snapshot_loader)
     return {
-        "points": latest_points,
-        "marketDataStatus": _cache_status_payload(stock_history_cache.get(normalized), "live", now),
+        "points": points,
+        "marketDataStatus": _snapshot_status(updated_at, bool(points), message="Showing most recent available data." if points else None),
     }
 
 
 def fetch_bulk_quotes(api_key: str, tickers, snapshot_loader=None, snapshot_saver=None):
-    requested = []
-    for ticker in tickers:
-        normalized = (ticker or "").strip()
-        if normalized and is_supported_symbol(normalized) and normalized not in requested:
-            requested.append(normalized)
-
-    cache_key = ",".join(sorted(requested))
-    now = time.time()
-    cache_entry, fresh_data = _get_cache_entry(market_cache, cache_key, now)
-    if cache_entry is None:
-        cache_entry = _load_snapshot_entry(snapshot_loader, f"quotes:{cache_key}")
-    if fresh_data is not None:
-        return {
-            "quotes": fresh_data,
-            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
-        }
-
     quotes = {}
-    for ticker in requested:
-        try:
-            quote = fetch_quote(api_key, ticker)
-            quotes[ticker] = {
-                "price": quote["price"],
-                "change": quote["change"],
-                "changePercent": _to_float(quote["change_percent"]),
-                "updatedAt": datetime.now(timezone.utc).isoformat(),
-            }
-        except RateLimitError:
-            if cache_entry:
-                return {
-                    "quotes": cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            raise
-        except Exception:
-            if cache_entry:
-                return {
-                    "quotes": cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            raise
-
-    _store_cache_entry(market_cache, cache_key, quotes, now + MARKET_CACHE_TTL_SECONDS, now)
-    _persist_snapshot(snapshot_saver, f"quotes:{cache_key}", quotes, now)
-    _record_refresh_state(f"quotes:{cache_key}", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
+    last_updated_at = None
+    for ticker in tickers:
+        normalized = canonicalize_symbol(ticker)
+        if not is_supported_symbol(normalized):
+            continue
+        quote, updated_at = get_snapshot_quote(normalized, snapshot_loader=snapshot_loader)
+        if not quote:
+            continue
+        quotes[normalized] = {
+            "price": quote["price"],
+            "change": quote["change"],
+            "changePercent": _to_float(quote["change_percent"]),
+            "updatedAt": _isoformat_timestamp(updated_at),
+        }
+        if updated_at and (last_updated_at is None or updated_at > last_updated_at):
+            last_updated_at = updated_at
     return {
         "quotes": quotes,
-        "marketDataStatus": _cache_status_payload(market_cache.get(cache_key), "live", now),
+        "marketDataStatus": _snapshot_status(last_updated_at, bool(quotes), message="Showing most recent available data." if quotes else None),
     }
 
 
@@ -993,109 +875,259 @@ def _market_status(region: str):
     return "Open" if hours[0] <= hour <= hours[1] else "Closed"
 
 
-def fetch_market_overview(api_key: str, snapshot_loader=None, snapshot_saver=None):
-    now = time.time()
-    cache_entry, fresh_data = _get_cache_entry(market_cache, "overview", now)
-    if cache_entry and not _overview_has_available_data(cache_entry.get("data")):
-        cache_entry = None
-        fresh_data = None
-    if cache_entry is None:
-        cache_entry = _load_snapshot_entry(snapshot_loader, "market_overview")
-        if cache_entry and not _overview_has_available_data(cache_entry.get("data")):
-            cache_entry = None
-    if fresh_data is not None and _overview_has_available_data(fresh_data):
-        return {
-            **fresh_data,
-            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
-        }
+def _daily_series_key(payload):
+    for key in ("Time Series (Daily)", "Weekly Time Series", "Monthly Time Series"):
+        if isinstance(payload, dict) and key in payload:
+            return key
+    return None
 
+
+def _parse_daily_time_series(payload):
+    series_key = _daily_series_key(payload)
+    if not series_key:
+        raise AlphaVantageRequestError(
+            "daily time series missing",
+            "invalid_payload",
+            reached_upstream=True,
+            counted_budget=True,
+        )
+
+    series = payload.get(series_key) or {}
+    if not isinstance(series, dict) or not series:
+        raise AlphaVantageRequestError(
+            "daily time series empty",
+            "empty_payload",
+            reached_upstream=True,
+            counted_budget=True,
+        )
+
+    ordered_dates = sorted(series.keys(), reverse=True)
+    latest = series.get(ordered_dates[0]) or {}
+    previous = series.get(ordered_dates[1]) or latest
+    latest_close = _to_float(latest.get("4. close"), None)
+    previous_close = _to_float(previous.get("4. close"), latest_close)
+    if latest_close is None:
+        raise AlphaVantageRequestError(
+            "latest close missing",
+            "invalid_payload",
+            reached_upstream=True,
+            counted_budget=True,
+        )
+
+    change = None if previous_close in (None, 0) else latest_close - previous_close
+    change_percent = None if previous_close in (None, 0) else (change / previous_close) * 100
+    volume = _to_float(latest.get("5. volume"), None)
+
+    history_points = []
+    for date_key in reversed(ordered_dates[:30]):
+        daily_row = series.get(date_key) or {}
+        price = _to_float(daily_row.get("4. close"), None)
+        if price is None:
+            continue
+        history_points.append({"time": date_key, "price": price})
+
+    return {
+        "latest_close": latest_close,
+        "change": change,
+        "change_percent": change_percent,
+        "volume": volume,
+        "history_points": history_points,
+        "latest_date": ordered_dates[0],
+    }
+
+
+def _build_quote_payload(symbol: str, parsed_daily: dict):
+    normalized = canonicalize_symbol(symbol)
+    return {
+        "symbol": normalized,
+        "name": get_supported_symbol_name(normalized),
+        "price": parsed_daily["latest_close"],
+        "change": parsed_daily["change"],
+        "change_percent": parsed_daily["change_percent"],
+        "volume": parsed_daily["volume"],
+        "providerSymbol": get_provider_symbol(normalized),
+    }
+
+
+def _available_quote_payload(symbol: str, quote_data, updated_at, source_message=None):
+    return {
+        **quote_data,
+        "marketDataStatus": _snapshot_status(
+            updated_at,
+            True,
+            message=source_message or "Showing most recent available data.",
+        ),
+    }
+
+
+def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
+    normalized = canonicalize_symbol(symbol)
+    if not is_supported_symbol(normalized):
+        raise ValueError("This ticker is not part of the supported prototype universe.")
+
+    provider_symbol = get_provider_symbol(normalized)
+    now = time.time()
+    result = {
+        "symbol": normalized,
+        "provider_symbol": provider_symbol,
+        "status": "failed",
+        "quote_refreshed": False,
+        "history_refreshed": False,
+        "counted_budget": False,
+        "reached_upstream": False,
+        "error_class": None,
+        "message": None,
+    }
+
+    try:
+        payload = _alpha_vantage_request(
+            {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": provider_symbol,
+                "outputsize": "compact",
+                "apikey": api_key,
+            }
+        )
+        parsed_daily = _parse_daily_time_series(payload)
+        quote_payload = _build_quote_payload(normalized, parsed_daily)
+        history_payload = parsed_daily["history_points"]
+
+        _store_cache_entry(stock_quote_cache, normalized, quote_payload, now + STOCK_QUOTE_CACHE_TTL_SECONDS, now)
+        _store_cache_entry(stock_history_cache, normalized, history_payload, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
+        _persist_snapshot(snapshot_saver, _build_quote_snapshot_key(normalized), quote_payload, now)
+        _persist_snapshot(snapshot_saver, _build_history_snapshot_key(normalized), history_payload, now)
+        _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
+        _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
+
+        result.update(
+            {
+                "status": "success",
+                "quote_refreshed": True,
+                "history_refreshed": True,
+                "counted_budget": True,
+                "reached_upstream": True,
+                "message": "daily snapshot refreshed",
+                "updated_at": _isoformat_timestamp(now),
+            }
+        )
+        return result
+    except RateLimitError as exc:
+        result.update(
+            {
+                "error_class": "rate_limit",
+                "message": str(exc),
+                "counted_budget": "budget exhausted" not in str(exc).lower(),
+                "reached_upstream": "budget exhausted" not in str(exc).lower(),
+            }
+        )
+        return result
+    except AlphaVantageRequestError as exc:
+        result.update(
+            {
+                "error_class": exc.error_class,
+                "message": exc.reason,
+                "counted_budget": exc.counted_budget,
+                "reached_upstream": exc.reached_upstream,
+                "upstream_status": exc.upstream_status,
+            }
+        )
+        return result
+
+
+def _build_overview_from_snapshot_loader(snapshot_loader=None):
     indices = []
+    latest_updated_at = None
     for item in MARKET_OVERVIEW_INDICES:
-        try:
-            quote = fetch_quote(api_key, item["source_symbol"])
-            indices.append(
-                {
-                    "name": item["name"],
-                    "ticker": item["ticker"],
-                    "price": quote["price"],
-                    "change": quote["change"],
-                    "changePercent": _to_float(quote["change_percent"]),
-                    "open": None,
-                    "high": None,
-                    "low": None,
-                    "volume": None,
-                    "region": item["region"],
-                    "status": _market_status(item["region"]),
-                    "history": [],
-                    "available": True,
-                    "sourceSymbol": item["source_symbol"],
-                    "sourceType": item["source_type"],
-                    "sourceLabel": item["source_label"],
-                }
-            )
-        except RateLimitError:
-            if cache_entry:
-                return {
-                    **cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            raise
-        except Exception:
-            if cache_entry:
-                return {
-                    **cache_entry["data"],
-                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-                }
-            indices.append(
-                {
-                    "name": item["name"],
-                    "ticker": item["ticker"],
-                    "price": None,
-                    "change": None,
-                    "changePercent": None,
-                    "open": None,
-                    "high": None,
-                    "low": None,
-                    "volume": None,
-                    "region": item["region"],
-                    "status": "Unavailable",
-                    "history": [],
-                    "available": False,
-                    "sourceSymbol": item["source_symbol"],
-                    "sourceType": item["source_type"],
-                    "sourceLabel": item["source_label"],
-                }
-            )
+        quote, updated_at = get_snapshot_quote(item["source_symbol"], snapshot_loader=snapshot_loader)
+        available = bool(quote and quote.get("price") is not None)
+        if available and updated_at and (latest_updated_at is None or updated_at > latest_updated_at):
+            latest_updated_at = updated_at
+        indices.append(
+            {
+                "name": item["name"],
+                "ticker": item["ticker"],
+                "price": quote["price"] if available else None,
+                "change": quote["change"] if available else None,
+                "changePercent": quote["change_percent"] if available else None,
+                "open": None,
+                "high": None,
+                "low": None,
+                "volume": quote.get("volume") if available else None,
+                "region": item["region"],
+                "status": _market_status(item["region"]) if available else "Unavailable",
+                "history": [],
+                "available": available,
+                "sourceSymbol": item["source_symbol"],
+                "sourceType": item["source_type"],
+                "sourceLabel": item["source_label"],
+            }
+        )
 
     payload = {
         "indices": indices,
-        "updatedAt": datetime.now(timezone.utc).isoformat(),
+        "updatedAt": _isoformat_timestamp(latest_updated_at) or datetime.now(timezone.utc).isoformat(),
         "sectors_available": False,
         "sectors": [],
     }
-    if _overview_has_available_data(payload):
-        _store_cache_entry(market_cache, "overview", payload, now + MARKET_CACHE_TTL_SECONDS, now)
-        _persist_snapshot(snapshot_saver, "market_overview", payload, now)
-        _record_refresh_state("market_overview", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
+    return payload, latest_updated_at
+
+
+def refresh_market_overview_snapshot(snapshot_loader=None, snapshot_saver=None):
+    payload, latest_updated_at = _build_overview_from_snapshot_loader(snapshot_loader=snapshot_loader)
+    if not _overview_has_available_data(payload):
+        return False
+    updated_at = latest_updated_at or time.time()
+    _store_cache_entry(market_cache, "overview", payload, time.time() + MARKET_CACHE_TTL_SECONDS, updated_at)
+    _persist_snapshot(snapshot_saver, "market_overview", payload, updated_at)
+    _record_refresh_state("market_overview", "market_cache", time.time() + MARKET_CACHE_TTL_SECONDS)
+    return True
+
+
+def fetch_market_overview(api_key: str, snapshot_loader=None, snapshot_saver=None):
+    now = time.time()
+    cache_entry, fresh_data = _get_cache_entry(market_cache, "overview", now)
+    if fresh_data is not None and _overview_has_available_data(fresh_data):
         return {
-            **payload,
-            "marketDataStatus": _cache_status_payload(market_cache.get("overview"), "live", now),
+            **fresh_data,
+            "marketDataStatus": _snapshot_status(
+                cache_entry.get("updated_at") if cache_entry else None,
+                True,
+                message="Showing most recent available data.",
+            ),
         }
 
-    if cache_entry:
+    snapshot_entry = _load_snapshot_entry(snapshot_loader, "market_overview")
+    if snapshot_entry and _overview_has_available_data(snapshot_entry.get("data")):
+        _store_cache_entry(
+            market_cache,
+            "overview",
+            snapshot_entry["data"],
+            now + MARKET_CACHE_TTL_SECONDS,
+            snapshot_entry.get("updated_at") or now,
+        )
         return {
-            **cache_entry["data"],
-            "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+            **snapshot_entry["data"],
+            "marketDataStatus": _snapshot_status(
+                snapshot_entry.get("updated_at"),
+                True,
+                message="Showing most recent available data.",
+            ),
+        }
+
+    payload, latest_updated_at = _build_overview_from_snapshot_loader(snapshot_loader=snapshot_loader)
+    if _overview_has_available_data(payload):
+        return {
+            **payload,
+            "marketDataStatus": _snapshot_status(
+                latest_updated_at,
+                True,
+                message="Showing most recent available data.",
+            ),
         }
 
     return {
         **payload,
-        "marketDataStatus": {
-            "source": "live",
-            "isCachedFallback": False,
-            "lastUpdatedAt": None,
-            "message": "Live market data is limited in this prototype and may not be available right now.",
-        },
+        "marketDataStatus": _snapshot_status(None, False),
     }
 
 
@@ -1110,6 +1142,32 @@ def fetch_upcoming_earnings(api_key: str, snapshot_loader=None, snapshot_saver=N
             "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
         }
 
+    if cache_entry:
+        return {
+            **cache_entry["data"],
+            "marketDataStatus": _snapshot_status(
+                cache_entry.get("updated_at"),
+                True,
+                message="Showing most recent available data.",
+            ),
+        }
+
+    return {
+        "items": [],
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+        "marketDataStatus": _snapshot_status(None, False),
+    }
+
+
+def refresh_earnings_snapshot(api_key: str, snapshot_saver=None):
+    now = time.time()
+    result = {
+        "status": "failed",
+        "counted_budget": False,
+        "reached_upstream": False,
+        "error_class": None,
+        "message": None,
+    }
     try:
         payload = _alpha_vantage_request(
             {
@@ -1118,45 +1176,132 @@ def fetch_upcoming_earnings(api_key: str, snapshot_loader=None, snapshot_saver=N
                 "apikey": api_key,
             }
         )
-    except RateLimitError:
-        if cache_entry:
-            return {
-                **cache_entry["data"],
-                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-            }
-        raise
-    except Exception:
-        if cache_entry:
-            return {
-                **cache_entry["data"],
-                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
-            }
-        raise
+        rows = []
+        if isinstance(payload, str):
+            reader = csv.DictReader(io.StringIO(payload))
+            for row in reader:
+                if row:
+                    rows.append(row)
 
-    rows = []
-    if isinstance(payload, str):
-        reader = csv.DictReader(io.StringIO(payload))
-        for row in reader:
-            if row:
-                rows.append(row)
+        normalized = []
+        for row in rows[:12]:
+            normalized.append(
+                {
+                    "ticker": row.get("symbol") or "",
+                    "company": row.get("name") or row.get("symbol") or "",
+                    "report_date": row.get("reportDate") or "",
+                    "estimate": _to_float(row.get("estimate"), None),
+                    "currency": row.get("currency") or "",
+                }
+            )
 
-    normalized = []
-    for row in rows[:12]:
-        normalized.append(
+        data = {"items": normalized, "updatedAt": datetime.now(timezone.utc).isoformat()}
+        _store_cache_entry(earnings_cache, "upcoming", data, now + EARNINGS_CACHE_TTL_SECONDS, now)
+        _persist_snapshot(snapshot_saver, "earnings_upcoming", data, now)
+        _record_refresh_state("earnings_upcoming", "earnings_cache", now + EARNINGS_CACHE_TTL_SECONDS)
+        result.update(
             {
-                "ticker": row.get("symbol") or "",
-                "company": row.get("name") or row.get("symbol") or "",
-                "report_date": row.get("reportDate") or "",
-                "estimate": _to_float(row.get("estimate"), None),
-                "currency": row.get("currency") or "",
+                "status": "success",
+                "counted_budget": True,
+                "reached_upstream": True,
+                "message": "earnings snapshot refreshed",
+                "updated_at": _isoformat_timestamp(now),
             }
         )
+        return result
+    except RateLimitError as exc:
+        result.update(
+            {
+                "error_class": "rate_limit",
+                "message": str(exc),
+                "counted_budget": "budget exhausted" not in str(exc).lower(),
+                "reached_upstream": "budget exhausted" not in str(exc).lower(),
+            }
+        )
+        return result
+    except AlphaVantageRequestError as exc:
+        result.update(
+            {
+                "error_class": exc.error_class,
+                "message": exc.reason,
+                "counted_budget": exc.counted_budget,
+                "reached_upstream": exc.reached_upstream,
+                "upstream_status": exc.upstream_status,
+            }
+        )
+        return result
 
-    data = {"items": normalized, "updatedAt": datetime.now(timezone.utc).isoformat()}
-    _store_cache_entry(earnings_cache, "upcoming", data, now + EARNINGS_CACHE_TTL_SECONDS, now)
-    _persist_snapshot(snapshot_saver, "earnings_upcoming", data, now)
-    _record_refresh_state("earnings_upcoming", "earnings_cache", now + EARNINGS_CACHE_TTL_SECONDS)
+
+def get_supported_market_universe():
+    return [
+        symbol for symbol, metadata in SUPPORTED_TICKERS.items()
+        if metadata["bucket"] == "FTSE100"
+    ]
+
+
+def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=None):
+    results = []
+    if _budget_remaining(time.time()) <= 0:
+        return {
+            "status": "rate_limited",
+            "rate_limited_mode": True,
+            "symbols": results,
+            "overview_seeded": snapshot_loader is not None and _overview_has_available_data(
+                (_load_snapshot_entry(snapshot_loader, "market_overview") or {}).get("data")
+            ),
+            "baseline_symbols": MARKET_BOOTSTRAP_SYMBOLS,
+        }
+
+    for symbol in MARKET_BOOTSTRAP_SYMBOLS:
+        if _budget_remaining(time.time()) <= MARKET_REFRESH_BUFFER:
+            break
+        results.append(refresh_symbol_snapshot(api_key, symbol, snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver))
+
+    overview_seeded = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
     return {
-        **data,
-        "marketDataStatus": _cache_status_payload(earnings_cache.get("upcoming"), "live", now),
+        "status": "success" if any(item["status"] == "success" for item in results) else "failed",
+        "rate_limited_mode": _budget_remaining(time.time()) <= 0,
+        "symbols": results,
+        "overview_seeded": overview_seeded,
+        "baseline_symbols": MARKET_BOOTSTRAP_SYMBOLS,
+    }
+
+
+def refresh_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=None):
+    results = []
+    if _budget_remaining(time.time()) <= 0:
+        return {
+            "status": "rate_limited",
+            "rate_limited_mode": True,
+            "symbols": results,
+            "refreshed_count": 0,
+        }
+
+    symbols_to_refresh = list(MARKET_BOOTSTRAP_SYMBOLS)
+    for symbol in get_supported_market_universe():
+        if symbol not in symbols_to_refresh:
+            symbols_to_refresh.append(symbol)
+
+    symbols_to_refresh = sorted(
+        symbols_to_refresh,
+        key=lambda symbol: _snapshot_updated_at(snapshot_loader, _build_quote_snapshot_key(symbol)) or 0,
+    )
+
+    for symbol in symbols_to_refresh[:MARKET_REFRESH_BATCH_LIMIT]:
+        if _budget_remaining(time.time()) <= MARKET_REFRESH_BUFFER:
+            break
+        results.append(refresh_symbol_snapshot(api_key, symbol, snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver))
+
+    overview_seeded = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
+    earnings_result = None
+    if _budget_remaining(time.time()) > MARKET_REFRESH_BUFFER:
+        earnings_result = refresh_earnings_snapshot(api_key, snapshot_saver=snapshot_saver)
+
+    return {
+        "status": "success" if any(item["status"] == "success" for item in results) or overview_seeded else "failed",
+        "rate_limited_mode": _budget_remaining(time.time()) <= 0,
+        "symbols": results,
+        "overview_seeded": overview_seeded,
+        "earnings": earnings_result,
+        "refreshed_count": len([item for item in results if item["status"] == "success"]),
     }
