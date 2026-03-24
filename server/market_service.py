@@ -56,7 +56,7 @@ MARKET_OVERVIEW_INDICES = [
     {"name": "S&P 500", "ticker": "S&P 500", "region": "US", "source_symbol": "SPY", "source_type": "proxy_etf", "source_label": "SPDR S&P 500 ETF Trust proxy"},
 ]
 
-MARKET_BOOTSTRAP_SYMBOLS = ["AAPL", "SPY", "EWU", "BARC", "LLOY"]
+MARKET_BOOTSTRAP_SYMBOLS = ["SPY", "EWU", "BARC", "LLOY", "SHEL"]
 
 market_cache = {}
 top_movers_cache = {}
@@ -963,7 +963,17 @@ def _available_quote_payload(symbol: str, quote_data, updated_at, source_message
 def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
     normalized = canonicalize_symbol(symbol)
     if not is_supported_symbol(normalized):
-        raise ValueError("This ticker is not part of the supported prototype universe.")
+        return {
+            "symbol": normalized or normalize_symbol(symbol),
+            "provider_symbol": None,
+            "status": "failed",
+            "quote_refreshed": False,
+            "history_refreshed": False,
+            "counted_budget": False,
+            "reached_upstream": False,
+            "error_class": "unsupported_symbol",
+            "message": "This ticker is not part of the supported prototype universe.",
+        }
 
     provider_symbol = get_provider_symbol(normalized)
     now = time.time()
@@ -1032,6 +1042,16 @@ def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, sna
             }
         )
         return result
+    except Exception as exc:
+        result.update(
+            {
+                "error_class": exc.__class__.__name__,
+                "message": str(exc) or "snapshot refresh failed",
+                "counted_budget": False,
+                "reached_upstream": False,
+            }
+        )
+        return result
 
 
 def _build_overview_from_snapshot_loader(snapshot_loader=None):
@@ -1075,12 +1095,32 @@ def _build_overview_from_snapshot_loader(snapshot_loader=None):
 def refresh_market_overview_snapshot(snapshot_loader=None, snapshot_saver=None):
     payload, latest_updated_at = _build_overview_from_snapshot_loader(snapshot_loader=snapshot_loader)
     if not _overview_has_available_data(payload):
-        return False
+        return {
+            "status": "failed",
+            "saved": False,
+            "available": False,
+            "error_class": "no_available_snapshot_data",
+            "message": "No stored quote snapshots were available for the overview.",
+        }
     updated_at = latest_updated_at or time.time()
-    _store_cache_entry(market_cache, "overview", payload, time.time() + MARKET_CACHE_TTL_SECONDS, updated_at)
-    _persist_snapshot(snapshot_saver, "market_overview", payload, updated_at)
-    _record_refresh_state("market_overview", "market_cache", time.time() + MARKET_CACHE_TTL_SECONDS)
-    return True
+    try:
+        _store_cache_entry(market_cache, "overview", payload, time.time() + MARKET_CACHE_TTL_SECONDS, updated_at)
+        _persist_snapshot(snapshot_saver, "market_overview", payload, updated_at)
+        _record_refresh_state("market_overview", "market_cache", time.time() + MARKET_CACHE_TTL_SECONDS)
+        return {
+            "status": "success",
+            "saved": True,
+            "available": True,
+            "updated_at": _isoformat_timestamp(updated_at),
+        }
+    except Exception as exc:
+        return {
+            "status": "failed",
+            "saved": False,
+            "available": True,
+            "error_class": exc.__class__.__name__,
+            "message": str(exc) or "overview snapshot save failed",
+        }
 
 
 def fetch_market_overview(api_key: str, snapshot_loader=None, snapshot_saver=None):
@@ -1230,6 +1270,16 @@ def refresh_earnings_snapshot(api_key: str, snapshot_saver=None):
             }
         )
         return result
+    except Exception as exc:
+        result.update(
+            {
+                "error_class": exc.__class__.__name__,
+                "message": str(exc) or "earnings snapshot refresh failed",
+                "counted_budget": False,
+                "reached_upstream": False,
+            }
+        )
+        return result
 
 
 def get_supported_market_universe():
@@ -1267,6 +1317,13 @@ def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_save
             "status": "rate_limited",
             "rate_limited_mode": True,
             "symbols": results,
+            "overview_result": {
+                "status": "skipped",
+                "saved": False,
+                "available": snapshot_loader is not None and _overview_has_available_data(
+                (_load_snapshot_entry(snapshot_loader, "market_overview") or {}).get("data")
+                ),
+            },
             "overview_seeded": snapshot_loader is not None and _overview_has_available_data(
                 (_load_snapshot_entry(snapshot_loader, "market_overview") or {}).get("data")
             ),
@@ -1277,25 +1334,55 @@ def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_save
     for symbol in MARKET_BOOTSTRAP_SYMBOLS:
         if _budget_remaining(time.time()) <= MARKET_REFRESH_BUFFER:
             break
-        refresh_result = refresh_symbol_snapshot(
-            api_key,
-            symbol,
-            snapshot_loader=snapshot_loader,
-            snapshot_saver=snapshot_saver,
-        )
+        try:
+            refresh_result = refresh_symbol_snapshot(
+                api_key,
+                symbol,
+                snapshot_loader=snapshot_loader,
+                snapshot_saver=snapshot_saver,
+            )
+        except Exception as exc:
+            refresh_result = {
+                "symbol": symbol,
+                "provider_symbol": None,
+                "status": "failed",
+                "quote_refreshed": False,
+                "history_refreshed": False,
+                "counted_budget": False,
+                "reached_upstream": False,
+                "error_class": exc.__class__.__name__,
+                "message": str(exc) or "bootstrap symbol refresh crashed",
+            }
         results.append(refresh_result)
         if refresh_result["status"] == "success":
             baseline_seeded = True
             break
 
+    overview_result = {
+        "status": "skipped",
+        "saved": False,
+        "available": False,
+        "message": "No successful baseline quote yet.",
+    }
     overview_seeded = False
     if baseline_seeded:
-        overview_seeded = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
+        try:
+            overview_result = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
+            overview_seeded = overview_result.get("status") == "success" and overview_result.get("saved")
+        except Exception as exc:
+            overview_result = {
+                "status": "failed",
+                "saved": False,
+                "available": False,
+                "error_class": exc.__class__.__name__,
+                "message": str(exc) or "overview snapshot build crashed",
+            }
     return {
         "status": "success" if any(item["status"] == "success" for item in results) else "failed",
         "rate_limited_mode": _budget_remaining(time.time()) <= 0,
         "symbols": results,
         "overview_seeded": overview_seeded,
+        "overview_result": overview_result,
         "baseline_seeded": baseline_seeded,
         "baseline_symbols": MARKET_BOOTSTRAP_SYMBOLS,
     }
@@ -1326,7 +1413,17 @@ def refresh_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=
             break
         results.append(refresh_symbol_snapshot(api_key, symbol, snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver))
 
-    overview_seeded = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
+    try:
+        overview_result = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
+    except Exception as exc:
+        overview_result = {
+            "status": "failed",
+            "saved": False,
+            "available": False,
+            "error_class": exc.__class__.__name__,
+            "message": str(exc) or "overview snapshot refresh crashed",
+        }
+    overview_seeded = overview_result.get("status") == "success" and overview_result.get("saved")
     earnings_result = None
     if _budget_remaining(time.time()) > MARKET_REFRESH_BUFFER:
         earnings_result = refresh_earnings_snapshot(api_key, snapshot_saver=snapshot_saver)
@@ -1336,6 +1433,7 @@ def refresh_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=
         "rate_limited_mode": _budget_remaining(time.time()) <= 0,
         "symbols": results,
         "overview_seeded": overview_seeded,
+        "overview_result": overview_result,
         "earnings": earnings_result,
         "refreshed_count": len([item for item in results if item["status"] == "success"]),
     }

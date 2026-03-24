@@ -731,11 +731,26 @@ def market_bootstrap():
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
 
-    results = bootstrap_market_snapshots(
-        api_key,
-        snapshot_loader=load_market_snapshot,
-        snapshot_saver=save_market_snapshot,
-    )
+    try:
+        results = bootstrap_market_snapshots(
+            api_key,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
+    except Exception as exc:
+        results = {
+            "status": "failed",
+            "rate_limited_mode": False,
+            "symbols": [],
+            "overview_seeded": False,
+            "overview_result": {
+                "status": "failed",
+                "saved": False,
+                "available": False,
+                "error_class": exc.__class__.__name__,
+                "message": str(exc) or "bootstrap route crashed",
+            },
+        }
     results["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
     if results.get("status") == "failed" and not results.get("overview_seeded"):
         results["message"] = MARKET_DATA_UNAVAILABLE_MESSAGE
@@ -753,11 +768,26 @@ def market_refresh():
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
 
-    results = refresh_market_snapshots(
-        api_key,
-        snapshot_loader=load_market_snapshot,
-        snapshot_saver=save_market_snapshot,
-    )
+    try:
+        results = refresh_market_snapshots(
+            api_key,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
+    except Exception as exc:
+        results = {
+            "status": "failed",
+            "rate_limited_mode": False,
+            "symbols": [],
+            "overview_seeded": False,
+            "overview_result": {
+                "status": "failed",
+                "saved": False,
+                "available": False,
+                "error_class": exc.__class__.__name__,
+                "message": str(exc) or "refresh route crashed",
+            },
+        }
     results["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
     if results.get("status") == "failed":
         results["message"] = MARKET_DATA_UNAVAILABLE_MESSAGE
