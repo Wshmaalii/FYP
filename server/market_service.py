@@ -56,7 +56,7 @@ MARKET_OVERVIEW_INDICES = [
     {"name": "S&P 500", "ticker": "S&P 500", "region": "US", "source_symbol": "SPY", "source_type": "proxy_etf", "source_label": "SPDR S&P 500 ETF Trust proxy"},
 ]
 
-MARKET_BOOTSTRAP_SYMBOLS = ["EWU", "SPY", "BARC", "LLOY", "SHEL"]
+MARKET_BOOTSTRAP_SYMBOLS = ["AAPL", "SPY", "EWU", "BARC", "LLOY"]
 
 market_cache = {}
 top_movers_cache = {}
@@ -1239,6 +1239,27 @@ def get_supported_market_universe():
     ]
 
 
+def get_bootstrap_symbols():
+    return list(MARKET_BOOTSTRAP_SYMBOLS)
+
+
+def list_stored_quote_snapshot_symbols(snapshot_loader=None):
+    stored = []
+    for symbol in SUPPORTED_TICKERS.keys():
+        snapshot = _load_snapshot_entry(snapshot_loader, _build_quote_snapshot_key(symbol))
+        data = snapshot.get("data") if snapshot else None
+        has_price = bool(isinstance(data, dict) and data.get("price") is not None)
+        stored.append(
+            {
+                "symbol": symbol,
+                "has_snapshot": bool(snapshot),
+                "has_price": has_price,
+                "updated_at": _isoformat_timestamp(snapshot.get("updated_at")) if snapshot else None,
+            }
+        )
+    return stored
+
+
 def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=None):
     results = []
     if _budget_remaining(time.time()) <= 0:
@@ -1252,17 +1273,30 @@ def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_save
             "baseline_symbols": MARKET_BOOTSTRAP_SYMBOLS,
         }
 
+    baseline_seeded = False
     for symbol in MARKET_BOOTSTRAP_SYMBOLS:
         if _budget_remaining(time.time()) <= MARKET_REFRESH_BUFFER:
             break
-        results.append(refresh_symbol_snapshot(api_key, symbol, snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver))
+        refresh_result = refresh_symbol_snapshot(
+            api_key,
+            symbol,
+            snapshot_loader=snapshot_loader,
+            snapshot_saver=snapshot_saver,
+        )
+        results.append(refresh_result)
+        if refresh_result["status"] == "success":
+            baseline_seeded = True
+            break
 
-    overview_seeded = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
+    overview_seeded = False
+    if baseline_seeded:
+        overview_seeded = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
     return {
         "status": "success" if any(item["status"] == "success" for item in results) else "failed",
         "rate_limited_mode": _budget_remaining(time.time()) <= 0,
         "symbols": results,
         "overview_seeded": overview_seeded,
+        "baseline_seeded": baseline_seeded,
         "baseline_symbols": MARKET_BOOTSTRAP_SYMBOLS,
     }
 

@@ -31,7 +31,9 @@ try:
         fetch_top_movers,
         fetch_upcoming_earnings,
         get_alpha_vantage_env_diagnostics,
+        get_bootstrap_symbols,
         get_market_debug_status,
+        list_stored_quote_snapshot_symbols,
         get_supported_symbol_name,
         get_supported_symbols,
         is_supported_symbol,
@@ -53,7 +55,9 @@ except ImportError:
         fetch_top_movers,
         fetch_upcoming_earnings,
         get_alpha_vantage_env_diagnostics,
+        get_bootstrap_symbols,
         get_market_debug_status,
+        list_stored_quote_snapshot_symbols,
         get_supported_symbol_name,
         get_supported_symbols,
         is_supported_symbol,
@@ -714,6 +718,8 @@ def market_debug():
     payload["overview_snapshot_available"] = snapshot_has_available_overview("market_overview")
     payload["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
     payload["supported_universe"] = get_supported_market_universe()
+    payload["bootstrap_symbols"] = get_bootstrap_symbols()
+    payload["stored_quote_snapshots"] = list_stored_quote_snapshot_symbols(snapshot_loader=load_market_snapshot)
     return jsonify(payload)
 
 
