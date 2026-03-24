@@ -157,6 +157,33 @@ def _get_any_cached_data(cache, key):
     return entry.get("data")
 
 
+def _cache_status_payload(cache_entry, source: str, now):
+    if not cache_entry:
+        return {
+            "source": source,
+            "isCachedFallback": False,
+            "lastUpdatedAt": None,
+            "message": None,
+        }
+
+    expires_at = cache_entry.get("expires_at")
+    is_stale = bool(expires_at and expires_at <= now)
+    return {
+        "source": source,
+        "isCachedFallback": is_stale,
+        "lastUpdatedAt": _isoformat_timestamp(cache_entry.get("updated_at")),
+        "message": "Showing most recent available data." if is_stale else None,
+    }
+
+
+def _store_cache_entry(cache, key, data, expires_at, updated_at):
+    cache[key] = {
+        "data": data,
+        "expires_at": expires_at,
+        "updated_at": updated_at,
+    }
+
+
 def _to_float(value, default=0.0):
     try:
         if isinstance(value, str):
@@ -220,7 +247,10 @@ def fetch_quote(api_key: str, symbol: str):
 
     cache_entry, fresh_data = _get_cache_entry(stock_quote_cache, normalized, now)
     if fresh_data is not None:
-        return fresh_data
+        return {
+            **fresh_data,
+            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
+        }
 
     try:
         payload = _alpha_vantage_request(
@@ -240,41 +270,52 @@ def fetch_quote(api_key: str, symbol: str):
             data["change_percent"] = f"{data['change_percent']}%"
     except RateLimitError:
         if cache_entry:
-            return cache_entry["data"]
+            return {
+                **cache_entry["data"],
+                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+            }
         raise
     except Exception:
-        payload = _alpha_vantage_request(
-            {
-                "function": "TIME_SERIES_DAILY",
+        try:
+            payload = _alpha_vantage_request(
+                {
+                    "function": "TIME_SERIES_DAILY",
+                    "symbol": normalized,
+                    "outputsize": "compact",
+                    "apikey": api_key,
+                }
+            )
+            series = payload.get("Time Series (Daily)") or {}
+            if not isinstance(series, dict) or len(series) < 2:
+                raise RuntimeError("No quote data available")
+
+            sorted_points = sorted(series.items(), key=lambda item: item[0], reverse=True)
+            latest = sorted_points[0][1]
+            previous = sorted_points[1][1]
+            latest_close = _to_float(latest.get("4. close"))
+            previous_close = _to_float(previous.get("4. close"))
+            change = latest_close - previous_close
+            change_percent = ((change / previous_close) * 100) if previous_close else 0.0
+            data = {
                 "symbol": normalized,
-                "outputsize": "compact",
-                "apikey": api_key,
+                "price": latest_close,
+                "change": change,
+                "change_percent": f"{change_percent:.2f}%",
             }
-        )
-        series = payload.get("Time Series (Daily)") or {}
-        if not isinstance(series, dict) or len(series) < 2:
-            raise RuntimeError("No quote data available")
+        except Exception:
+            if cache_entry:
+                return {
+                    **cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
+            raise
 
-        sorted_points = sorted(series.items(), key=lambda item: item[0], reverse=True)
-        latest = sorted_points[0][1]
-        previous = sorted_points[1][1]
-        latest_close = _to_float(latest.get("4. close"))
-        previous_close = _to_float(previous.get("4. close"))
-        change = latest_close - previous_close
-        change_percent = ((change / previous_close) * 100) if previous_close else 0.0
-        data = {
-            "symbol": normalized,
-            "price": latest_close,
-            "change": change,
-            "change_percent": f"{change_percent:.2f}%",
-        }
-
-    stock_quote_cache[normalized] = {
-        "data": data,
-        "expires_at": now + STOCK_QUOTE_CACHE_TTL_SECONDS,
-    }
+    _store_cache_entry(stock_quote_cache, normalized, data, now + STOCK_QUOTE_CACHE_TTL_SECONDS, now)
     _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
-    return data
+    return {
+        **data,
+        "marketDataStatus": _cache_status_payload(stock_quote_cache.get(normalized), "live", now),
+    }
 
 
 def fetch_history(api_key: str, symbol: str):
@@ -285,7 +326,10 @@ def fetch_history(api_key: str, symbol: str):
 
     cache_entry, fresh_data = _get_cache_entry(stock_history_cache, normalized, now)
     if fresh_data is not None:
-        return fresh_data
+        return {
+            "points": fresh_data,
+            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
+        }
 
     points = []
     try:
@@ -316,43 +360,54 @@ def fetch_history(api_key: str, symbol: str):
             )
     except RateLimitError:
         if cache_entry:
-            return cache_entry["data"]
+            return {
+                "points": cache_entry["data"],
+                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+            }
         raise
     except Exception:
-        payload = _alpha_vantage_request(
-            {
-                "function": "TIME_SERIES_DAILY",
-                "symbol": normalized,
-                "outputsize": "compact",
-                "apikey": api_key,
-            }
-        )
-        series = payload.get("Time Series (Daily)") or {}
-        if not isinstance(series, dict) or not series:
-            raise RuntimeError("No historical data available")
-
-        for timestamp, values in series.items():
-            if not isinstance(values, dict):
-                continue
-            points.append(
+        try:
+            payload = _alpha_vantage_request(
                 {
-                    "time": timestamp,
-                    "price": _to_float(values.get("4. close")),
-                    "open": _to_float(values.get("1. open")),
-                    "high": _to_float(values.get("2. high")),
-                    "low": _to_float(values.get("3. low")),
-                    "volume": _to_float(values.get("5. volume")),
+                    "function": "TIME_SERIES_DAILY",
+                    "symbol": normalized,
+                    "outputsize": "compact",
+                    "apikey": api_key,
                 }
             )
+            series = payload.get("Time Series (Daily)") or {}
+            if not isinstance(series, dict) or not series:
+                raise RuntimeError("No historical data available")
+
+            for timestamp, values in series.items():
+                if not isinstance(values, dict):
+                    continue
+                points.append(
+                    {
+                        "time": timestamp,
+                        "price": _to_float(values.get("4. close")),
+                        "open": _to_float(values.get("1. open")),
+                        "high": _to_float(values.get("2. high")),
+                        "low": _to_float(values.get("3. low")),
+                        "volume": _to_float(values.get("5. volume")),
+                    }
+                )
+        except Exception:
+            if cache_entry:
+                return {
+                    "points": cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
+            raise
 
     points.sort(key=lambda item: item["time"])
     latest_points = points[-50:]
-    stock_history_cache[normalized] = {
-        "data": latest_points,
-        "expires_at": now + STOCK_HISTORY_CACHE_TTL_SECONDS,
-    }
+    _store_cache_entry(stock_history_cache, normalized, latest_points, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
     _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
-    return latest_points
+    return {
+        "points": latest_points,
+        "marketDataStatus": _cache_status_payload(stock_history_cache.get(normalized), "live", now),
+    }
 
 
 def fetch_bulk_quotes(api_key: str, tickers):
@@ -366,7 +421,10 @@ def fetch_bulk_quotes(api_key: str, tickers):
     now = time.time()
     cache_entry, fresh_data = _get_cache_entry(market_cache, cache_key, now)
     if fresh_data is not None:
-        return fresh_data
+        return {
+            "quotes": fresh_data,
+            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
+        }
 
     quotes = {}
     for ticker in requested:
@@ -380,15 +438,25 @@ def fetch_bulk_quotes(api_key: str, tickers):
             }
         except RateLimitError:
             if cache_entry:
-                return cache_entry["data"]
+                return {
+                    "quotes": cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
+            raise
+        except Exception:
+            if cache_entry:
+                return {
+                    "quotes": cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
             raise
 
-    market_cache[cache_key] = {
-        "data": quotes,
-        "expires_at": now + MARKET_CACHE_TTL_SECONDS,
-    }
+    _store_cache_entry(market_cache, cache_key, quotes, now + MARKET_CACHE_TTL_SECONDS, now)
     _record_refresh_state(f"quotes:{cache_key}", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
-    return quotes
+    return {
+        "quotes": quotes,
+        "marketDataStatus": _cache_status_payload(market_cache.get(cache_key), "live", now),
+    }
 
 
 def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | None = None, window_days: int = 7):
@@ -419,11 +487,14 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
             "supported": False,
             "message": "Mention a ticker like #BARC.L or $AAPL to start.",
             "windowDays": window_days,
+            "marketDataStatus": {
+                "source": "internal",
+                "isCachedFallback": False,
+                "lastUpdatedAt": datetime.now(timezone.utc).isoformat(),
+                "message": None,
+            },
         }
-        top_movers_cache[index] = {
-            "data": payload,
-            "expires_at": now + MARKET_CACHE_TTL_SECONDS,
-        }
+        _store_cache_entry(top_movers_cache, index, payload, now + MARKET_CACHE_TTL_SECONDS, now)
         return payload
 
     discussed_items = []
@@ -456,12 +527,15 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
         "supported": True,
         "message": scope_message,
         "windowDays": window_days,
+        "marketDataStatus": {
+            "source": "internal",
+            "isCachedFallback": False,
+            "lastUpdatedAt": datetime.now(timezone.utc).isoformat(),
+            "message": None,
+        },
     }
 
-    top_movers_cache[index] = {
-        "data": payload,
-        "expires_at": now + MARKET_CACHE_TTL_SECONDS,
-    }
+    _store_cache_entry(top_movers_cache, index, payload, now + MARKET_CACHE_TTL_SECONDS, now)
     _record_refresh_state(f"most_discussed:{index}", "top_movers_cache", now + MARKET_CACHE_TTL_SECONDS)
     return payload
 
@@ -485,7 +559,10 @@ def fetch_market_overview(api_key: str):
     now = time.time()
     cache_entry, fresh_data = _get_cache_entry(market_cache, "overview", now)
     if fresh_data is not None:
-        return fresh_data
+        return {
+            **fresh_data,
+            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
+        }
 
     indices = []
     for item in MARKET_OVERVIEW_INDICES:
@@ -513,9 +590,17 @@ def fetch_market_overview(api_key: str):
             )
         except RateLimitError:
             if cache_entry:
-                return cache_entry["data"]
+                return {
+                    **cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
             raise
         except Exception:
+            if cache_entry:
+                return {
+                    **cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
             indices.append(
                 {
                     "name": item["name"],
@@ -543,19 +628,22 @@ def fetch_market_overview(api_key: str):
         "sectors_available": False,
         "sectors": [],
     }
-    market_cache["overview"] = {
-        "data": payload,
-        "expires_at": now + MARKET_CACHE_TTL_SECONDS,
-    }
+    _store_cache_entry(market_cache, "overview", payload, now + MARKET_CACHE_TTL_SECONDS, now)
     _record_refresh_state("market_overview", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
-    return payload
+    return {
+        **payload,
+        "marketDataStatus": _cache_status_payload(market_cache.get("overview"), "live", now),
+    }
 
 
 def fetch_upcoming_earnings(api_key: str):
     now = time.time()
     cache_entry, fresh_data = _get_cache_entry(earnings_cache, "upcoming", now)
     if fresh_data is not None:
-        return fresh_data
+        return {
+            **fresh_data,
+            "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
+        }
 
     try:
         payload = _alpha_vantage_request(
@@ -567,7 +655,17 @@ def fetch_upcoming_earnings(api_key: str):
         )
     except RateLimitError:
         if cache_entry:
-            return cache_entry["data"]
+            return {
+                **cache_entry["data"],
+                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+            }
+        raise
+    except Exception:
+        if cache_entry:
+            return {
+                **cache_entry["data"],
+                "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+            }
         raise
 
     rows = []
@@ -590,9 +688,9 @@ def fetch_upcoming_earnings(api_key: str):
         )
 
     data = {"items": normalized, "updatedAt": datetime.now(timezone.utc).isoformat()}
-    earnings_cache["upcoming"] = {
-        "data": data,
-        "expires_at": now + EARNINGS_CACHE_TTL_SECONDS,
-    }
+    _store_cache_entry(earnings_cache, "upcoming", data, now + EARNINGS_CACHE_TTL_SECONDS, now)
     _record_refresh_state("earnings_upcoming", "earnings_cache", now + EARNINGS_CACHE_TTL_SECONDS)
-    return data
+    return {
+        **data,
+        "marketDataStatus": _cache_status_payload(earnings_cache.get("upcoming"), "live", now),
+    }

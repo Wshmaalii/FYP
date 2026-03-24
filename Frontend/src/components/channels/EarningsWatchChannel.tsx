@@ -1,6 +1,6 @@
 import { AlertTriangle, Clock, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getUpcomingEarnings, MARKET_DATA_LIMITED_MESSAGE, type EarningsCalendarItem } from '../../api/market';
+import { getUpcomingEarnings, MARKET_DATA_LIMITED_MESSAGE, type EarningsCalendarItem, type MarketDataStatus } from '../../api/market';
 import { fetchMessages, sendMessage, type ChannelMessage } from '../../api/messages';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
@@ -59,6 +59,7 @@ export function EarningsWatchChannel() {
   const [earningsLoading, setEarningsLoading] = useState(true);
   const [earningsError, setEarningsError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [earningsStatus, setEarningsStatus] = useState<MarketDataStatus | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,6 +104,7 @@ export function EarningsWatchChannel() {
         const data = await getUpcomingEarnings();
         if (isMounted) {
           setEarnings(data.items.slice(0, 6));
+          setEarningsStatus(data.marketDataStatus || null);
         }
       } catch (err) {
         if (isMounted) {
@@ -172,11 +174,19 @@ export function EarningsWatchChannel() {
               Upcoming earnings context is not available right now.
             </div>
           ) : (
+            <>
+              {earningsStatus?.isCachedFallback && (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm mb-4">
+                  {earningsStatus.message || 'Showing most recent available data.'}
+                  {earningsStatus.lastUpdatedAt ? ` Last updated ${new Date(earningsStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+                </div>
+              )}
             <div className="grid grid-cols-3 gap-4">
               {earnings.map((report) => (
                 <EarningsCard key={`${report.ticker}-${report.report_date}`} report={report} />
               ))}
             </div>
+            </>
           )}
         </div>
 

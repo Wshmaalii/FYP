@@ -58,6 +58,7 @@ load_dotenv(os.path.join(os.path.dirname(BASE_DIR), ".env"))
 
 app = Flask(__name__)
 schema_initialized = False
+legacy_data_cleanup_completed = False
 
 
 def _clean_secret(raw_value: str, fallback: str) -> str:
@@ -186,6 +187,41 @@ def ensure_database_schema():
     schema_initialized = True
 
 
+def cleanup_legacy_hru_data():
+    global legacy_data_cleanup_completed
+
+    if legacy_data_cleanup_completed:
+        return
+
+    legacy_messages = (
+        ChatMessage.query
+        .filter(ChatMessage.ticker_symbols.ilike("%HRU%"))
+        .all()
+    )
+    for message in legacy_messages:
+        normalized_content = (message.content or "").strip().lower()
+        if normalized_content == "hru":
+            db.session.delete(message)
+
+    legacy_activities = (
+        UserActivity.query
+        .filter(
+            (UserActivity.ticker == "HRU")
+            | (UserActivity.description.ilike("%HRU%"))
+        )
+        .all()
+    )
+    for activity in legacy_activities:
+        db.session.delete(activity)
+
+    legacy_watchlist_items = WatchlistItem.query.filter_by(ticker="HRU").all()
+    for item in legacy_watchlist_items:
+        db.session.delete(item)
+
+    db.session.commit()
+    legacy_data_cleanup_completed = True
+
+
 def _username_seed(value: str) -> str:
     normalized = re.sub(r"[^a-z0-9_]", "", value.lower().replace(" ", "_"))
     normalized = normalized.strip("_")
@@ -274,6 +310,7 @@ def ensure_user_settings(user: User) -> UserSettings:
 
 def get_authenticated_user():
     ensure_database_schema()
+    cleanup_legacy_hru_data()
     token = get_authorization_token()
     if not token:
         return None, json_error("Missing token", 401)
@@ -445,6 +482,7 @@ def root():
 def health():
     try:
         ensure_database_schema()
+        cleanup_legacy_hru_data()
         db.session.execute(text("SELECT 1"))
     except SQLAlchemyError:
         db.session.rollback()
@@ -455,6 +493,8 @@ def health():
 
 @app.route("/api/stocks/quote/<symbol>", methods=["GET"])
 def stock_quote(symbol):
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
     api_key = get_alpha_vantage_api_key()
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
@@ -469,14 +509,16 @@ def stock_quote(symbol):
         return json_error(str(exc), 400)
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
-    except Exception as exc:
-        return json_error(str(exc), 502)
+    except Exception:
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 502)
 
     return jsonify(quote)
 
 
 @app.route("/api/market/overview", methods=["GET"])
 def market_overview():
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
     api_key = get_alpha_vantage_api_key()
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
@@ -485,14 +527,16 @@ def market_overview():
         payload = fetch_market_overview(api_key)
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
-    except Exception as exc:
-        return json_error(str(exc), 502)
+    except Exception:
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 502)
 
     return jsonify(payload)
 
 
 @app.route("/api/earnings/upcoming", methods=["GET"])
 def earnings_upcoming():
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
     api_key = get_alpha_vantage_api_key()
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
@@ -501,14 +545,16 @@ def earnings_upcoming():
         payload = fetch_upcoming_earnings(api_key)
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
-    except Exception as exc:
-        return json_error(str(exc), 502)
+    except Exception:
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 502)
 
     return jsonify(payload)
 
 
 @app.route("/api/stocks/history/<symbol>", methods=["GET"])
 def stock_history(symbol):
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
     api_key = get_alpha_vantage_api_key()
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
@@ -523,14 +569,19 @@ def stock_history(symbol):
         return json_error(str(exc), 400)
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
-    except Exception as exc:
-        return json_error(str(exc), 502)
+    except Exception:
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 502)
 
-    return jsonify([{"time": point["time"], "price": point["price"]} for point in history])
+    return jsonify({
+        "points": [{"time": point["time"], "price": point["price"]} for point in history["points"]],
+        "marketDataStatus": history.get("marketDataStatus"),
+    })
 
 
 @app.route("/api/market/quotes", methods=["GET"])
 def market_quotes():
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
     api_key = get_alpha_vantage_api_key()
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
@@ -544,19 +595,25 @@ def market_quotes():
         return json_error("No valid tickers provided", 400)
 
     try:
-        quotes = fetch_bulk_quotes(api_key, requested_tickers)
+        quotes_payload = fetch_bulk_quotes(api_key, requested_tickers)
+        quotes = quotes_payload.get("quotes", {})
         if not quotes:
             return json_error("No supported tickers provided", 400)
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
-    except Exception as exc:
-        return json_error(str(exc), 502)
+    except Exception:
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 502)
 
-    return jsonify({"quotes": quotes})
+    return jsonify({
+        "quotes": quotes,
+        "marketDataStatus": quotes_payload.get("marketDataStatus"),
+    })
 
 
 @app.route("/api/market/top-movers", methods=["GET"])
 def market_top_movers():
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
     api_key = get_alpha_vantage_api_key()
     if not api_key:
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
@@ -578,14 +635,16 @@ def market_top_movers():
         return json_error(str(exc), 400)
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
-    except Exception as exc:
-        return json_error(str(exc), 502)
+    except Exception:
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 502)
 
     return jsonify(payload)
 
 
 @app.route("/api/market/debug", methods=["GET"])
 def market_debug():
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
     return jsonify(get_market_debug_status())
 
 

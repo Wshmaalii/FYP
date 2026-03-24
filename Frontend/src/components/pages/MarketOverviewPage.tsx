@@ -91,6 +91,7 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sectorsAvailable, setSectorsAvailable] = useState(false);
+  const [marketDataStatus, setMarketDataStatus] = useState<import('../../api/market').MarketDataStatus | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -111,6 +112,7 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
         if (isMounted) {
           setIndices(data.indices);
           setSectorsAvailable(data.sectors_available);
+          setMarketDataStatus(data.marketDataStatus || null);
         }
       } catch (err) {
         if (isMounted) {
@@ -190,6 +192,12 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
 
       <div className="p-6 space-y-6">
         {error && <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">{error}</div>}
+        {!error && marketDataStatus?.isCachedFallback && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">
+            {marketDataStatus.message || 'Showing most recent available data.'}
+            {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+          </div>
+        )}
 
         <div>
           <h2 className="text-zinc-100 mb-4">Curated Market Snapshot</h2>

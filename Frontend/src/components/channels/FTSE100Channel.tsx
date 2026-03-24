@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { fetchHistory, getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
+import { fetchHistory, getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketDataStatus, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
 import { ChannelPrivacyCard } from './ChannelPrivacyCard';
 
 interface TopMoverView extends TopMoverItem {
@@ -25,6 +25,7 @@ export function FTSE100Channel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [topMoversMessage, setTopMoversMessage] = useState<string | null>(null);
+  const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,6 +46,7 @@ export function FTSE100Channel() {
 
         const nextFtseIndex = overview.indices.find((index) => index.name === 'FTSE 100') || null;
         setFtseIndex(nextFtseIndex);
+        setMarketDataStatus(overview.marketDataStatus || null);
         setTopMoversMessage(movers.message);
         setTopMovers(
           movers.items.map((stock) => ({
@@ -55,7 +57,7 @@ export function FTSE100Channel() {
         if (nextFtseIndex?.sourceSymbol) {
           const historyData = await fetchHistory(nextFtseIndex.sourceSymbol);
           if (isMounted) {
-            setHistory(historyData);
+            setHistory(historyData.points);
           }
         } else {
           setHistory([]);
@@ -107,6 +109,12 @@ export function FTSE100Channel() {
               <p className="text-zinc-500 text-sm mt-2">Status: {ftseIndex.status}</p>
               {ftseIndex.sourceLabel && (
                 <p className="text-zinc-500 text-xs mt-1">Source: {ftseIndex.sourceLabel}</p>
+              )}
+              {marketDataStatus?.isCachedFallback && (
+                <p className="text-zinc-500 text-xs mt-1">
+                  {marketDataStatus.message || 'Showing most recent available data.'}
+                  {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+                </p>
               )}
             </div>
             <div className="flex gap-6 pb-2">
@@ -182,7 +190,7 @@ export function FTSE100Channel() {
         <div className="col-span-3 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <h3 className="text-zinc-100 mb-4">Most Discussed</h3>
           {topMovers.length === 0 ? (
-            <div className="text-zinc-500 text-sm">{topMoversMessage || 'No discussed names available right now.'}</div>
+            <div className="text-zinc-500 text-sm">{topMoversMessage || 'Mention a ticker like #BARC.L or $AAPL to start.'}</div>
           ) : (
             <div className="space-y-3">
               {topMovers.map((stock) => {

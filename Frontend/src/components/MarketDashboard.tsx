@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
-import { getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketOverviewIndex, type TopMoverItem } from '../api/market';
+import { getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketDataStatus, type MarketOverviewIndex, type TopMoverItem } from '../api/market';
 import { fetchWatchlist } from '../api/watchlist';
 import { getQuotes } from '../api/market';
 
@@ -50,6 +50,8 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
   const [watchlist, setWatchlist] = useState<Stock[]>([]);
   const [liveDataError, setLiveDataError] = useState(false);
   const [topMoversMessage, setTopMoversMessage] = useState<string | null>(null);
+  const [overviewStatus, setOverviewStatus] = useState<MarketDataStatus | null>(null);
+  const [watchlistStatus, setWatchlistStatus] = useState<MarketDataStatus | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -78,7 +80,8 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           changePercent: null,
         }));
 
-        const quotes = watchlistStocks.length > 0 ? await getQuotes(watchlistStocks.map((item) => item.ticker)) : {};
+        const quoteResponse = watchlistStocks.length > 0 ? await getQuotes(watchlistStocks.map((item) => item.ticker)) : { quotes: {} };
+        const quotes = quoteResponse.quotes;
 
         if (!isMounted) {
           return;
@@ -107,6 +110,8 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           }));
         setTopMovers(combinedMovers);
         setTopMoversMessage(movers.message);
+        setOverviewStatus(overview.marketDataStatus || null);
+        setWatchlistStatus(quoteResponse.marketDataStatus || null);
 
         setWatchlist(
           watchlistStocks.map((stock) => ({
@@ -148,6 +153,12 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           </div>
         </button>
         {liveDataError && <p className="text-zinc-500 text-xs mb-2">{MARKET_DATA_LIMITED_MESSAGE}</p>}
+        {!liveDataError && overviewStatus?.isCachedFallback && (
+          <p className="text-zinc-500 text-xs mb-2">
+            {overviewStatus.message || 'Showing most recent available data.'}
+            {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+          </p>
+        )}
         <div className="space-y-1">
           {marketIndices.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">Loading market overview...</p>
@@ -187,6 +198,12 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           </div>
         </button>
         <div className="space-y-1">
+          {watchlistStatus?.isCachedFallback && (
+            <p className="text-zinc-500 text-xs mb-2">
+              {watchlistStatus.message || 'Showing most recent available data.'}
+              {watchlistStatus.lastUpdatedAt ? ` Last updated ${new Date(watchlistStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+            </p>
+          )}
           {watchlist.length === 0 ? (
             <p className="text-zinc-500 text-xs">No watchlist items yet</p>
           ) : (

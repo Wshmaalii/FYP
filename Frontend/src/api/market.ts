@@ -11,6 +11,13 @@ export interface MarketQuote {
   updatedAt: string;
 }
 
+export interface MarketDataStatus {
+  source: 'live' | 'cache' | 'internal';
+  isCachedFallback: boolean;
+  lastUpdatedAt: string | null;
+  message: string | null;
+}
+
 export interface MarketOverviewIndex {
   name: string;
   ticker: string;
@@ -35,6 +42,7 @@ export interface MarketOverviewResponse {
   updatedAt: string;
   sectors_available: boolean;
   sectors: Array<{ sector: string; change: number }>;
+  marketDataStatus?: MarketDataStatus;
 }
 
 export interface EarningsCalendarItem {
@@ -63,6 +71,7 @@ export interface TopMoversResponse {
   supported: boolean;
   message: string | null;
   windowDays: number;
+  marketDataStatus?: MarketDataStatus;
 }
 
 export interface StockQuoteResponse {
@@ -70,11 +79,28 @@ export interface StockQuoteResponse {
   price: number;
   change?: number;
   change_percent: string;
+  marketDataStatus?: MarketDataStatus;
 }
 
 export interface StockHistoryPoint {
   time: string;
   price: number;
+}
+
+export interface StockHistoryResponse {
+  points: StockHistoryPoint[];
+  marketDataStatus?: MarketDataStatus;
+}
+
+export interface EarningsCalendarResponse {
+  items: EarningsCalendarItem[];
+  updatedAt: string;
+  marketDataStatus?: MarketDataStatus;
+}
+
+export interface MarketQuotesResponse {
+  quotes: Record<string, MarketQuote>;
+  marketDataStatus?: MarketDataStatus;
 }
 
 async function parseError(response: Response) {
@@ -111,7 +137,7 @@ export async function fetchQuote(symbol: string): Promise<StockQuoteResponse> {
   return response.json();
 }
 
-export async function fetchHistory(symbol: string): Promise<StockHistoryPoint[]> {
+export async function fetchHistory(symbol: string): Promise<StockHistoryResponse> {
   const normalized = symbol.trim();
   const response = await fetch(`${API_BASE_URL}/api/stocks/history/${encodeURIComponent(normalized)}`);
   if (!response.ok) {
@@ -120,11 +146,11 @@ export async function fetchHistory(symbol: string): Promise<StockHistoryPoint[]>
   return response.json();
 }
 
-export async function getQuotes(tickers: string[]): Promise<Record<string, MarketQuote>> {
+export async function getQuotes(tickers: string[]): Promise<MarketQuotesResponse> {
   const uniqueTickers = Array.from(new Set(tickers.map((ticker) => ticker.trim()).filter(Boolean)));
 
   if (uniqueTickers.length === 0) {
-    return {};
+    return { quotes: {} };
   }
 
   const query = encodeURIComponent(uniqueTickers.join(','));
@@ -143,7 +169,7 @@ export async function getQuotes(tickers: string[]): Promise<Record<string, Marke
     throw new Error(error.includes('rate limit') ? MARKET_DATA_LIMITED_MESSAGE : MARKET_DATA_UNAVAILABLE_MESSAGE);
   }
 
-  return data.quotes || {};
+  return { quotes: data.quotes || {}, marketDataStatus: data.marketDataStatus };
 }
 
 export async function getTopMovers(index: string): Promise<TopMoversResponse> {
@@ -174,7 +200,7 @@ export async function getMarketOverview(): Promise<MarketOverviewResponse> {
   return response.json();
 }
 
-export async function getUpcomingEarnings(): Promise<{ items: EarningsCalendarItem[]; updatedAt: string }> {
+export async function getUpcomingEarnings(): Promise<EarningsCalendarResponse> {
   const response = await fetch(`${API_BASE_URL}/api/earnings/upcoming`);
   if (!response.ok) {
     await parseError(response);

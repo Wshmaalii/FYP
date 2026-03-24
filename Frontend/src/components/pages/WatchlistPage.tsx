@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Bell, Star, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
-import { getQuotes } from '../../api/market';
+import { getQuotes, type MarketDataStatus } from '../../api/market';
 import { fetchWatchlist, removeWatchlistItem, type WatchlistItem } from '../../api/watchlist';
 
 interface WatchlistPageProps {
@@ -77,6 +77,7 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
   const [stocks, setStocks] = useState<WatchlistStock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -87,7 +88,8 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
 
       try {
         const items = await fetchWatchlist();
-        const quotes = items.length > 0 ? await getQuotes(items.map((item) => item.ticker)) : {};
+        const quoteResponse = items.length > 0 ? await getQuotes(items.map((item) => item.ticker)) : { quotes: {} };
+        const quotes = quoteResponse.quotes;
 
         if (!isMounted) {
           return;
@@ -107,6 +109,7 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
             };
           }),
         );
+        setMarketDataStatus(quoteResponse.marketDataStatus || null);
       } catch (err) {
         if (!isMounted) {
           return;
@@ -182,6 +185,12 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
         </div>
 
         {error && <div className="mb-4 bg-red-950 border border-red-900 rounded-lg p-4 text-red-400 text-sm">{error}</div>}
+        {!error && marketDataStatus?.isCachedFallback && (
+          <div className="mb-4 bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">
+            {marketDataStatus.message || 'Showing most recent available data.'}
+            {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-12 bg-zinc-900 border border-zinc-800 rounded-lg">

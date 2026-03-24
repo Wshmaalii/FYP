@@ -21,6 +21,7 @@ export function TradeTicketDrawer({ isOpen, ticket, onClose, onPlaceOrder }: Tra
   const [limitPrice, setLimitPrice] = useState('');
   const [displayPrice, setDisplayPrice] = useState<number>(ticket?.price || 0);
   const [error, setError] = useState<string | null>(null);
+  const [marketStatusMessage, setMarketStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ticket) {
@@ -32,6 +33,7 @@ export function TradeTicketDrawer({ isOpen, ticket, onClose, onPlaceOrder }: Tra
     setLimitPrice(ticket.price.toFixed(2));
     setDisplayPrice(ticket.price);
     setError(null);
+    setMarketStatusMessage(null);
   }, [ticket]);
 
   useEffect(() => {
@@ -42,11 +44,19 @@ export function TradeTicketDrawer({ isOpen, ticket, onClose, onPlaceOrder }: Tra
     let isMounted = true;
     const loadLatestQuote = async () => {
       try {
-        const quotes = await getQuotes([ticket.ticker]);
-        const nextPrice = quotes[ticket.ticker]?.price;
+        const quoteResponse = await getQuotes([ticket.ticker]);
+        const nextPrice = quoteResponse.quotes[ticket.ticker]?.price;
         if (isMounted && typeof nextPrice === 'number' && Number.isFinite(nextPrice)) {
           setDisplayPrice(nextPrice);
           setLimitPrice(nextPrice.toFixed(2));
+        }
+        if (isMounted) {
+          const status = quoteResponse.marketDataStatus;
+          setMarketStatusMessage(
+            status?.isCachedFallback
+              ? `${status.message || 'Showing most recent available data.'}${status.lastUpdatedAt ? ` Last updated ${new Date(status.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}`
+              : null,
+          );
         }
       } catch {
         if (isMounted) {
@@ -153,6 +163,7 @@ export function TradeTicketDrawer({ isOpen, ticket, onClose, onPlaceOrder }: Tra
           <div className="bg-zinc-950 border border-zinc-800 rounded p-4">
             <p className="text-zinc-500 text-sm">Current Price: <span className="text-zinc-300">{displayPrice.toFixed(2)} GBp</span></p>
             <p className="text-zinc-500 text-sm mt-1">Estimated Total: <span className="text-zinc-300">{estimatedTotal.toFixed(2)} GBp</span></p>
+            {marketStatusMessage && <p className="text-zinc-500 text-xs mt-2">{marketStatusMessage}</p>}
           </div>
 
           {error && (

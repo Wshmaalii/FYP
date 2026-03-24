@@ -90,7 +90,8 @@ export function MyProfilePage({ onBack, onViewWatchlist, onProfileUpdated }: MyP
 
         if (previewItems.length > 0) {
           try {
-            const quotes = await getQuotes(previewItems.map((item) => item.ticker));
+            const quotesResponse = await getQuotes(previewItems.map((item) => item.ticker));
+            const quotes = quotesResponse.quotes;
             quoteMap = Object.fromEntries(
               Object.entries(quotes).map(([ticker, quote]) => [ticker, { price: quote.price, changePercent: quote.changePercent }]),
             );

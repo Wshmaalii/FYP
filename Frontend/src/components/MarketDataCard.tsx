@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, Activity } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import type { TradeTicketInput } from './TradeTicketDrawer';
-import { fetchHistory, fetchQuote, MARKET_DATA_LIMITED_MESSAGE } from '../api/market';
+import { fetchHistory, fetchQuote, MARKET_DATA_LIMITED_MESSAGE, type MarketDataStatus } from '../api/market';
 import { addWatchlistItem, fetchWatchlist, removeWatchlistItem } from '../api/watchlist';
 
 interface MarketDataCardProps {
@@ -17,6 +17,7 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
   const [sparklineData, setSparklineData] = useState<Array<{ value: number }>>([]);
   const [isWatched, setIsWatched] = useState(false);
   const [liveDataError, setLiveDataError] = useState(false);
+  const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
   const [watchError, setWatchError] = useState<string | null>(null);
 
   const isPositive = (changePercent ?? 0) >= 0;
@@ -39,10 +40,11 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
         setPrice(Number.isFinite(quote.price) ? quote.price : null);
         setChangePercent(parsedPercent);
         setSparklineData(
-          history.map((point) => ({
+          history.points.map((point) => ({
             value: point.price,
           })),
         );
+        setMarketDataStatus(quote.marketDataStatus || history.marketDataStatus || null);
         setLiveDataError(false);
       } catch {
         if (!isMounted) {
@@ -51,6 +53,7 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
         setPrice(null);
         setChangePercent(null);
         setSparklineData([]);
+        setMarketDataStatus(null);
         setLiveDataError(true);
       }
     };
@@ -165,6 +168,12 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
           </div>
           {liveDataError && (
             <span className="text-xs text-zinc-500">{MARKET_DATA_LIMITED_MESSAGE}</span>
+          )}
+          {!liveDataError && marketDataStatus?.isCachedFallback && (
+            <span className="text-xs text-zinc-500">
+              {marketDataStatus.message || 'Showing most recent available data.'}
+              {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+            </span>
           )}
           {watchError && (
             <span className="text-xs text-red-400">{watchError}</span>
