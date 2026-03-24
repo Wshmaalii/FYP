@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import os
 import re
 import uuid
+import json
 from urllib import parse
 
 import jwt
@@ -20,6 +21,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 try:
     from .extensions import db, migrate
     from .market_service import (
+        MARKET_OVERVIEW_INDICES,
         RateLimitError,
         fetch_bulk_quotes,
         fetch_history,
@@ -33,10 +35,11 @@ try:
         is_supported_symbol,
         get_alpha_vantage_api_key,
     )
-    from .models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
+    from .models import ChatMessage, MarketSnapshot, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 except ImportError:
     from extensions import db, migrate
     from market_service import (
+        MARKET_OVERVIEW_INDICES,
         RateLimitError,
         fetch_bulk_quotes,
         fetch_history,
@@ -50,7 +53,7 @@ except ImportError:
         is_supported_symbol,
         get_alpha_vantage_api_key,
     )
-    from models import ChatMessage, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
+    from models import ChatMessage, MarketSnapshot, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -352,6 +355,42 @@ def build_settings_payload(user: User):
     }
 
 
+def load_market_snapshot(snapshot_key: str):
+    snapshot = MarketSnapshot.query.filter_by(snapshot_key=snapshot_key).first()
+    if not snapshot:
+        return None
+    try:
+        payload = json.loads(snapshot.payload)
+    except (TypeError, ValueError):
+        return None
+    return {
+        "data": payload,
+        "updated_at": snapshot.updated_at.timestamp() if snapshot.updated_at else None,
+    }
+
+
+def save_market_snapshot(snapshot_key: str, payload, updated_at: float):
+    snapshot = MarketSnapshot.query.filter_by(snapshot_key=snapshot_key).first()
+    if snapshot is None:
+        snapshot = MarketSnapshot(snapshot_key=snapshot_key, payload="{}")
+        db.session.add(snapshot)
+
+    snapshot.payload = json.dumps(payload)
+    snapshot.updated_at = datetime.fromtimestamp(updated_at, timezone.utc)
+    db.session.commit()
+
+
+def list_market_snapshot_keys():
+    snapshots = MarketSnapshot.query.order_by(MarketSnapshot.snapshot_key.asc()).all()
+    return [
+        {
+            "snapshot_key": snapshot.snapshot_key,
+            "updated_at": snapshot.updated_at.isoformat() if snapshot.updated_at else None,
+        }
+        for snapshot in snapshots
+    ]
+
+
 def build_profile_stats_payload(user: User):
     profile = ensure_user_profile(user)
     watchlist_count = WatchlistItem.query.filter_by(user_id=user.id).count()
@@ -504,7 +543,12 @@ def stock_quote(symbol):
         return json_error("symbol is required", 400)
 
     try:
-        quote = fetch_quote(api_key, normalized_symbol)
+        quote = fetch_quote(
+            api_key,
+            normalized_symbol,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
     except ValueError as exc:
         return json_error(str(exc), 400)
     except RateLimitError:
@@ -524,7 +568,11 @@ def market_overview():
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
 
     try:
-        payload = fetch_market_overview(api_key)
+        payload = fetch_market_overview(
+            api_key,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception:
@@ -542,7 +590,11 @@ def earnings_upcoming():
         return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
 
     try:
-        payload = fetch_upcoming_earnings(api_key)
+        payload = fetch_upcoming_earnings(
+            api_key,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
     except RateLimitError:
         return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 429)
     except Exception:
@@ -564,7 +616,12 @@ def stock_history(symbol):
         return json_error("symbol is required", 400)
 
     try:
-        history = fetch_history(api_key, normalized_symbol)
+        history = fetch_history(
+            api_key,
+            normalized_symbol,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
     except ValueError as exc:
         return json_error(str(exc), 400)
     except RateLimitError:
@@ -595,7 +652,12 @@ def market_quotes():
         return json_error("No valid tickers provided", 400)
 
     try:
-        quotes_payload = fetch_bulk_quotes(api_key, requested_tickers)
+        quotes_payload = fetch_bulk_quotes(
+            api_key,
+            requested_tickers,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
         quotes = quotes_payload.get("quotes", {})
         if not quotes:
             return json_error("No supported tickers provided", 400)
@@ -645,7 +707,60 @@ def market_top_movers():
 def market_debug():
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    return jsonify(get_market_debug_status())
+    payload = get_market_debug_status()
+    payload["persistent_snapshots"] = list_market_snapshot_keys()
+    payload["overview_symbols"] = [
+        {
+            "name": item["name"],
+            "source_symbol": item["source_symbol"],
+            "source_type": item["source_type"],
+            "source_label": item["source_label"],
+        }
+        for item in MARKET_OVERVIEW_INDICES
+    ]
+    return jsonify(payload)
+
+
+@app.route("/api/market/bootstrap", methods=["POST"])
+def market_bootstrap():
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
+    api_key = get_alpha_vantage_api_key()
+    if not api_key:
+        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
+
+    results = {
+        "overview_seeded": False,
+        "earnings_seeded": False,
+        "message": None,
+    }
+
+    try:
+        fetch_market_overview(
+            api_key,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
+        results["overview_seeded"] = True
+    except Exception:
+        pass
+
+    try:
+        fetch_upcoming_earnings(
+            api_key,
+            snapshot_loader=load_market_snapshot,
+            snapshot_saver=save_market_snapshot,
+        )
+        results["earnings_seeded"] = True
+    except Exception:
+        pass
+
+    if not results["overview_seeded"] and not results["earnings_seeded"]:
+        results["message"] = MARKET_DATA_UNAVAILABLE_MESSAGE
+        return jsonify(results), 503
+
+    results["message"] = "Market snapshots refreshed where data was available."
+    return jsonify(results)
 
 
 @app.route("/api/auth/signup", methods=["POST"])

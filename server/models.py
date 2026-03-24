@@ -171,3 +171,13 @@ class UserActivity(db.Model):
             "ticker": self.ticker,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class MarketSnapshot(db.Model):
+    __tablename__ = "market_snapshots"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    snapshot_key = db.Column(String(128), unique=True, nullable=False, index=True)
+    payload = db.Column(Text, nullable=False)
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

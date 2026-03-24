@@ -184,6 +184,24 @@ def _store_cache_entry(cache, key, data, expires_at, updated_at):
     }
 
 
+def _load_snapshot_entry(snapshot_loader, key):
+    if not snapshot_loader:
+        return None
+    snapshot = snapshot_loader(key)
+    if not snapshot:
+        return None
+    return {
+        "data": snapshot.get("data"),
+        "expires_at": 0,
+        "updated_at": snapshot.get("updated_at"),
+    }
+
+
+def _persist_snapshot(snapshot_saver, key, data, updated_at):
+    if snapshot_saver:
+        snapshot_saver(key, data, updated_at)
+
+
 def _to_float(value, default=0.0):
     try:
         if isinstance(value, str):
@@ -239,13 +257,15 @@ def _alpha_vantage_request(params):
     return payload
 
 
-def fetch_quote(api_key: str, symbol: str):
+def fetch_quote(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
     now = time.time()
     normalized = normalize_symbol(symbol)
     if not is_supported_symbol(normalized):
         raise ValueError("Unsupported symbol")
 
     cache_entry, fresh_data = _get_cache_entry(stock_quote_cache, normalized, now)
+    if cache_entry is None:
+        cache_entry = _load_snapshot_entry(snapshot_loader, f"quote:{normalized}")
     if fresh_data is not None:
         return {
             **fresh_data,
@@ -311,6 +331,7 @@ def fetch_quote(api_key: str, symbol: str):
             raise
 
     _store_cache_entry(stock_quote_cache, normalized, data, now + STOCK_QUOTE_CACHE_TTL_SECONDS, now)
+    _persist_snapshot(snapshot_saver, f"quote:{normalized}", data, now)
     _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
     return {
         **data,
@@ -318,13 +339,15 @@ def fetch_quote(api_key: str, symbol: str):
     }
 
 
-def fetch_history(api_key: str, symbol: str):
+def fetch_history(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
     now = time.time()
     normalized = normalize_symbol(symbol)
     if not is_supported_symbol(normalized):
         raise ValueError("Unsupported symbol")
 
     cache_entry, fresh_data = _get_cache_entry(stock_history_cache, normalized, now)
+    if cache_entry is None:
+        cache_entry = _load_snapshot_entry(snapshot_loader, f"history:{normalized}")
     if fresh_data is not None:
         return {
             "points": fresh_data,
@@ -403,6 +426,7 @@ def fetch_history(api_key: str, symbol: str):
     points.sort(key=lambda item: item["time"])
     latest_points = points[-50:]
     _store_cache_entry(stock_history_cache, normalized, latest_points, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
+    _persist_snapshot(snapshot_saver, f"history:{normalized}", latest_points, now)
     _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
     return {
         "points": latest_points,
@@ -410,7 +434,7 @@ def fetch_history(api_key: str, symbol: str):
     }
 
 
-def fetch_bulk_quotes(api_key: str, tickers):
+def fetch_bulk_quotes(api_key: str, tickers, snapshot_loader=None, snapshot_saver=None):
     requested = []
     for ticker in tickers:
         normalized = (ticker or "").strip()
@@ -420,6 +444,8 @@ def fetch_bulk_quotes(api_key: str, tickers):
     cache_key = ",".join(sorted(requested))
     now = time.time()
     cache_entry, fresh_data = _get_cache_entry(market_cache, cache_key, now)
+    if cache_entry is None:
+        cache_entry = _load_snapshot_entry(snapshot_loader, f"quotes:{cache_key}")
     if fresh_data is not None:
         return {
             "quotes": fresh_data,
@@ -452,6 +478,7 @@ def fetch_bulk_quotes(api_key: str, tickers):
             raise
 
     _store_cache_entry(market_cache, cache_key, quotes, now + MARKET_CACHE_TTL_SECONDS, now)
+    _persist_snapshot(snapshot_saver, f"quotes:{cache_key}", quotes, now)
     _record_refresh_state(f"quotes:{cache_key}", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
     return {
         "quotes": quotes,
@@ -555,9 +582,11 @@ def _market_status(region: str):
     return "Open" if hours[0] <= hour <= hours[1] else "Closed"
 
 
-def fetch_market_overview(api_key: str):
+def fetch_market_overview(api_key: str, snapshot_loader=None, snapshot_saver=None):
     now = time.time()
     cache_entry, fresh_data = _get_cache_entry(market_cache, "overview", now)
+    if cache_entry is None:
+        cache_entry = _load_snapshot_entry(snapshot_loader, "market_overview")
     if fresh_data is not None:
         return {
             **fresh_data,
@@ -629,6 +658,7 @@ def fetch_market_overview(api_key: str):
         "sectors": [],
     }
     _store_cache_entry(market_cache, "overview", payload, now + MARKET_CACHE_TTL_SECONDS, now)
+    _persist_snapshot(snapshot_saver, "market_overview", payload, now)
     _record_refresh_state("market_overview", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
     return {
         **payload,
@@ -636,9 +666,11 @@ def fetch_market_overview(api_key: str):
     }
 
 
-def fetch_upcoming_earnings(api_key: str):
+def fetch_upcoming_earnings(api_key: str, snapshot_loader=None, snapshot_saver=None):
     now = time.time()
     cache_entry, fresh_data = _get_cache_entry(earnings_cache, "upcoming", now)
+    if cache_entry is None:
+        cache_entry = _load_snapshot_entry(snapshot_loader, "earnings_upcoming")
     if fresh_data is not None:
         return {
             **fresh_data,
@@ -689,6 +721,7 @@ def fetch_upcoming_earnings(api_key: str):
 
     data = {"items": normalized, "updatedAt": datetime.now(timezone.utc).isoformat()}
     _store_cache_entry(earnings_cache, "upcoming", data, now + EARNINGS_CACHE_TTL_SECONDS, now)
+    _persist_snapshot(snapshot_saver, "earnings_upcoming", data, now)
     _record_refresh_state("earnings_upcoming", "earnings_cache", now + EARNINGS_CACHE_TTL_SECONDS)
     return {
         **data,
