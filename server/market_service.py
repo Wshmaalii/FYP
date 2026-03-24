@@ -202,6 +202,15 @@ def _persist_snapshot(snapshot_saver, key, data, updated_at):
         snapshot_saver(key, data, updated_at)
 
 
+def _overview_has_available_data(payload):
+    if not isinstance(payload, dict):
+        return False
+    indices = payload.get("indices")
+    if not isinstance(indices, list) or not indices:
+        return False
+    return any(isinstance(index, dict) and index.get("available") for index in indices)
+
+
 def _to_float(value, default=0.0):
     try:
         if isinstance(value, str):
@@ -585,9 +594,14 @@ def _market_status(region: str):
 def fetch_market_overview(api_key: str, snapshot_loader=None, snapshot_saver=None):
     now = time.time()
     cache_entry, fresh_data = _get_cache_entry(market_cache, "overview", now)
+    if cache_entry and not _overview_has_available_data(cache_entry.get("data")):
+        cache_entry = None
+        fresh_data = None
     if cache_entry is None:
         cache_entry = _load_snapshot_entry(snapshot_loader, "market_overview")
-    if fresh_data is not None:
+        if cache_entry and not _overview_has_available_data(cache_entry.get("data")):
+            cache_entry = None
+    if fresh_data is not None and _overview_has_available_data(fresh_data):
         return {
             **fresh_data,
             "marketDataStatus": _cache_status_payload(cache_entry, "live", now),
@@ -657,12 +671,29 @@ def fetch_market_overview(api_key: str, snapshot_loader=None, snapshot_saver=Non
         "sectors_available": False,
         "sectors": [],
     }
-    _store_cache_entry(market_cache, "overview", payload, now + MARKET_CACHE_TTL_SECONDS, now)
-    _persist_snapshot(snapshot_saver, "market_overview", payload, now)
-    _record_refresh_state("market_overview", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
+    if _overview_has_available_data(payload):
+        _store_cache_entry(market_cache, "overview", payload, now + MARKET_CACHE_TTL_SECONDS, now)
+        _persist_snapshot(snapshot_saver, "market_overview", payload, now)
+        _record_refresh_state("market_overview", "market_cache", now + MARKET_CACHE_TTL_SECONDS)
+        return {
+            **payload,
+            "marketDataStatus": _cache_status_payload(market_cache.get("overview"), "live", now),
+        }
+
+    if cache_entry:
+        return {
+            **cache_entry["data"],
+            "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+        }
+
     return {
         **payload,
-        "marketDataStatus": _cache_status_payload(market_cache.get("overview"), "live", now),
+        "marketDataStatus": {
+            "source": "live",
+            "isCachedFallback": False,
+            "lastUpdatedAt": None,
+            "message": "Live market data is limited in this prototype and may not be available right now.",
+        },
     }
 
 

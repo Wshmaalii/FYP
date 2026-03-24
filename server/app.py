@@ -391,6 +391,15 @@ def list_market_snapshot_keys():
     ]
 
 
+def snapshot_has_available_overview(snapshot_key: str) -> bool:
+    snapshot = load_market_snapshot(snapshot_key)
+    if not snapshot:
+        return False
+    payload = snapshot.get("data") or {}
+    indices = payload.get("indices") or []
+    return any(isinstance(index, dict) and index.get("available") for index in indices)
+
+
 def build_profile_stats_payload(user: User):
     profile = ensure_user_profile(user)
     watchlist_count = WatchlistItem.query.filter_by(user_id=user.id).count()
@@ -718,6 +727,7 @@ def market_debug():
         }
         for item in MARKET_OVERVIEW_INDICES
     ]
+    payload["overview_snapshot_available"] = snapshot_has_available_overview("market_overview")
     return jsonify(payload)
 
 
@@ -736,12 +746,15 @@ def market_bootstrap():
     }
 
     try:
-        fetch_market_overview(
+        overview_payload = fetch_market_overview(
             api_key,
             snapshot_loader=load_market_snapshot,
             snapshot_saver=save_market_snapshot,
         )
-        results["overview_seeded"] = True
+        results["overview_seeded"] = any(
+            isinstance(index, dict) and index.get("available")
+            for index in (overview_payload.get("indices") or [])
+        )
     except Exception:
         pass
 
