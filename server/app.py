@@ -719,6 +719,7 @@ def market_debug():
     payload["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
     payload["supported_universe"] = get_supported_market_universe()
     payload["bootstrap_symbols"] = get_bootstrap_symbols()
+    payload["primary_baseline_symbol"] = get_bootstrap_symbols()[0] if get_bootstrap_symbols() else None
     payload["stored_quote_snapshots"] = list_stored_quote_snapshot_symbols(snapshot_loader=load_market_snapshot)
     return jsonify(payload)
 

@@ -56,7 +56,7 @@ MARKET_OVERVIEW_INDICES = [
     {"name": "S&P 500", "ticker": "S&P 500", "region": "US", "source_symbol": "SPY", "source_type": "proxy_etf", "source_label": "SPDR S&P 500 ETF Trust proxy"},
 ]
 
-MARKET_BOOTSTRAP_SYMBOLS = ["SPY", "EWU", "BARC", "LLOY", "SHEL"]
+PRIMARY_BASELINE_SYMBOL = "SPY"
 
 market_cache = {}
 top_movers_cache = {}
@@ -949,26 +949,18 @@ def _build_quote_payload(symbol: str, parsed_daily: dict):
     }
 
 
-def _available_quote_payload(symbol: str, quote_data, updated_at, source_message=None):
-    return {
-        **quote_data,
-        "marketDataStatus": _snapshot_status(
-            updated_at,
-            True,
-            message=source_message or "Showing most recent available data.",
-        ),
-    }
-
-
-def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
+def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_saver=None):
     normalized = canonicalize_symbol(symbol)
     if not is_supported_symbol(normalized):
         return {
             "symbol": normalized or normalize_symbol(symbol),
             "provider_symbol": None,
             "status": "failed",
+            "quote_attempted": False,
+            "history_attempted": False,
             "quote_refreshed": False,
             "history_refreshed": False,
+            "snapshot_stored": False,
             "counted_budget": False,
             "reached_upstream": False,
             "error_class": "unsupported_symbol",
@@ -981,8 +973,11 @@ def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, sna
         "symbol": normalized,
         "provider_symbol": provider_symbol,
         "status": "failed",
+        "quote_attempted": True,
+        "history_attempted": False,
         "quote_refreshed": False,
         "history_refreshed": False,
+        "snapshot_stored": False,
         "counted_budget": False,
         "reached_upstream": False,
         "error_class": None,
@@ -1000,23 +995,18 @@ def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, sna
         )
         parsed_daily = _parse_daily_time_series(payload)
         quote_payload = _build_quote_payload(normalized, parsed_daily)
-        history_payload = parsed_daily["history_points"]
-
         _store_cache_entry(stock_quote_cache, normalized, quote_payload, now + STOCK_QUOTE_CACHE_TTL_SECONDS, now)
-        _store_cache_entry(stock_history_cache, normalized, history_payload, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
         _persist_snapshot(snapshot_saver, _build_quote_snapshot_key(normalized), quote_payload, now)
-        _persist_snapshot(snapshot_saver, _build_history_snapshot_key(normalized), history_payload, now)
         _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
-        _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
 
         result.update(
             {
                 "status": "success",
                 "quote_refreshed": True,
-                "history_refreshed": True,
+                "snapshot_stored": True,
                 "counted_budget": True,
                 "reached_upstream": True,
-                "message": "daily snapshot refreshed",
+                "message": "quote snapshot refreshed",
                 "updated_at": _isoformat_timestamp(now),
             }
         )
@@ -1052,6 +1042,136 @@ def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, sna
             }
         )
         return result
+
+
+def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
+    normalized = canonicalize_symbol(symbol)
+    if not is_supported_symbol(normalized):
+        return {
+            "symbol": normalized or normalize_symbol(symbol),
+            "provider_symbol": None,
+            "status": "failed",
+            "quote_attempted": False,
+            "history_attempted": False,
+            "quote_refreshed": False,
+            "history_refreshed": False,
+            "snapshot_stored": False,
+            "counted_budget": False,
+            "reached_upstream": False,
+            "error_class": "unsupported_symbol",
+            "message": "This ticker is not part of the supported prototype universe.",
+        }
+
+    quote_snapshot, _ = get_snapshot_quote(normalized, snapshot_loader=snapshot_loader)
+    if not quote_snapshot:
+        return {
+            "symbol": normalized,
+            "provider_symbol": get_provider_symbol(normalized),
+            "status": "skipped",
+            "quote_attempted": False,
+            "history_attempted": False,
+            "quote_refreshed": False,
+            "history_refreshed": False,
+            "snapshot_stored": False,
+            "counted_budget": False,
+            "reached_upstream": False,
+            "error_class": None,
+            "message": "history skipped until a quote snapshot exists",
+        }
+
+    provider_symbol = get_provider_symbol(normalized)
+    now = time.time()
+    result = {
+        "symbol": normalized,
+        "provider_symbol": provider_symbol,
+        "status": "failed",
+        "quote_attempted": False,
+        "history_attempted": True,
+        "quote_refreshed": False,
+        "history_refreshed": False,
+        "snapshot_stored": False,
+        "counted_budget": False,
+        "reached_upstream": False,
+        "error_class": None,
+        "message": None,
+    }
+
+    try:
+        payload = _alpha_vantage_request(
+            {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": provider_symbol,
+                "outputsize": "compact",
+                "apikey": api_key,
+            }
+        )
+        parsed_daily = _parse_daily_time_series(payload)
+        history_payload = parsed_daily["history_points"]
+        _store_cache_entry(stock_history_cache, normalized, history_payload, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
+        _persist_snapshot(snapshot_saver, _build_history_snapshot_key(normalized), history_payload, now)
+        _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
+        result.update(
+            {
+                "status": "success",
+                "history_refreshed": True,
+                "snapshot_stored": True,
+                "counted_budget": True,
+                "reached_upstream": True,
+                "message": "history snapshot refreshed",
+                "updated_at": _isoformat_timestamp(now),
+            }
+        )
+        return result
+    except RateLimitError as exc:
+        result.update(
+            {
+                "error_class": "rate_limit",
+                "message": str(exc),
+                "counted_budget": "budget exhausted" not in str(exc).lower(),
+                "reached_upstream": "budget exhausted" not in str(exc).lower(),
+            }
+        )
+        return result
+    except AlphaVantageRequestError as exc:
+        result.update(
+            {
+                "error_class": exc.error_class,
+                "message": exc.reason,
+                "counted_budget": exc.counted_budget,
+                "reached_upstream": exc.reached_upstream,
+                "upstream_status": exc.upstream_status,
+            }
+        )
+        return result
+    except Exception as exc:
+        result.update(
+            {
+                "error_class": exc.__class__.__name__,
+                "message": str(exc) or "history snapshot refresh failed",
+                "counted_budget": False,
+                "reached_upstream": False,
+            }
+        )
+        return result
+
+
+def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
+    quote_result = refresh_quote_snapshot(api_key, symbol, snapshot_saver=snapshot_saver)
+    if quote_result.get("status") != "success":
+        return quote_result
+    history_result = refresh_history_snapshot(
+        api_key,
+        symbol,
+        snapshot_loader=snapshot_loader,
+        snapshot_saver=snapshot_saver,
+    )
+    merged = dict(quote_result)
+    merged["history_attempted"] = history_result.get("history_attempted", False)
+    merged["history_refreshed"] = history_result.get("history_refreshed", False)
+    if history_result.get("status") == "failed":
+        merged["message"] = history_result.get("message") or merged.get("message")
+        merged["error_class"] = history_result.get("error_class")
+    return merged
 
 
 def _build_overview_from_snapshot_loader(snapshot_loader=None):
@@ -1290,7 +1410,7 @@ def get_supported_market_universe():
 
 
 def get_bootstrap_symbols():
-    return list(MARKET_BOOTSTRAP_SYMBOLS)
+    return [PRIMARY_BASELINE_SYMBOL]
 
 
 def list_stored_quote_snapshot_symbols(snapshot_loader=None):
@@ -1311,58 +1431,58 @@ def list_stored_quote_snapshot_symbols(snapshot_loader=None):
 
 
 def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=None):
+    attempted_symbol = PRIMARY_BASELINE_SYMBOL
     results = []
     if _budget_remaining(time.time()) <= 0:
         return {
             "status": "rate_limited",
             "rate_limited_mode": True,
             "symbols": results,
+            "attempted_symbol": attempted_symbol,
             "overview_result": {
                 "status": "skipped",
                 "saved": False,
                 "available": snapshot_loader is not None and _overview_has_available_data(
                 (_load_snapshot_entry(snapshot_loader, "market_overview") or {}).get("data")
                 ),
+                "message": "overview skipped because the system is rate-limited",
             },
             "overview_seeded": snapshot_loader is not None and _overview_has_available_data(
                 (_load_snapshot_entry(snapshot_loader, "market_overview") or {}).get("data")
             ),
-            "baseline_symbols": MARKET_BOOTSTRAP_SYMBOLS,
+            "baseline_symbols": [attempted_symbol],
         }
 
     baseline_seeded = False
-    for symbol in MARKET_BOOTSTRAP_SYMBOLS:
-        if _budget_remaining(time.time()) <= MARKET_REFRESH_BUFFER:
-            break
-        try:
-            refresh_result = refresh_symbol_snapshot(
-                api_key,
-                symbol,
-                snapshot_loader=snapshot_loader,
-                snapshot_saver=snapshot_saver,
-            )
-        except Exception as exc:
-            refresh_result = {
-                "symbol": symbol,
-                "provider_symbol": None,
-                "status": "failed",
-                "quote_refreshed": False,
-                "history_refreshed": False,
-                "counted_budget": False,
-                "reached_upstream": False,
-                "error_class": exc.__class__.__name__,
-                "message": str(exc) or "bootstrap symbol refresh crashed",
-            }
-        results.append(refresh_result)
-        if refresh_result["status"] == "success":
-            baseline_seeded = True
-            break
+    try:
+        refresh_result = refresh_quote_snapshot(
+            api_key,
+            attempted_symbol,
+            snapshot_saver=snapshot_saver,
+        )
+    except Exception as exc:
+        refresh_result = {
+            "symbol": attempted_symbol,
+            "provider_symbol": None,
+            "status": "failed",
+            "quote_attempted": True,
+            "history_attempted": False,
+            "quote_refreshed": False,
+            "history_refreshed": False,
+            "snapshot_stored": False,
+            "counted_budget": False,
+            "reached_upstream": False,
+            "error_class": exc.__class__.__name__,
+            "message": str(exc) or "bootstrap quote refresh crashed",
+        }
+    results.append(refresh_result)
+    baseline_seeded = refresh_result["status"] == "success" and refresh_result.get("snapshot_stored", False)
 
     overview_result = {
         "status": "skipped",
         "saved": False,
         "available": False,
-        "message": "No successful baseline quote yet.",
+        "message": "overview skipped because no baseline quote exists yet",
     }
     overview_seeded = False
     if baseline_seeded:
@@ -1380,11 +1500,12 @@ def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_save
     return {
         "status": "success" if any(item["status"] == "success" for item in results) else "failed",
         "rate_limited_mode": _budget_remaining(time.time()) <= 0,
+        "attempted_symbol": attempted_symbol,
         "symbols": results,
         "overview_seeded": overview_seeded,
         "overview_result": overview_result,
         "baseline_seeded": baseline_seeded,
-        "baseline_symbols": MARKET_BOOTSTRAP_SYMBOLS,
+        "baseline_symbols": [attempted_symbol],
     }
 
 
