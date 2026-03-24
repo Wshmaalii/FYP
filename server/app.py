@@ -23,12 +23,14 @@ try:
     from .market_service import (
         MARKET_OVERVIEW_INDICES,
         RateLimitError,
+        diagnose_quote_request,
         fetch_bulk_quotes,
         fetch_history,
         fetch_market_overview,
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
+        get_alpha_vantage_env_diagnostics,
         get_market_debug_status,
         get_supported_symbol_name,
         get_supported_symbols,
@@ -41,12 +43,14 @@ except ImportError:
     from market_service import (
         MARKET_OVERVIEW_INDICES,
         RateLimitError,
+        diagnose_quote_request,
         fetch_bulk_quotes,
         fetch_history,
         fetch_market_overview,
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
+        get_alpha_vantage_env_diagnostics,
         get_market_debug_status,
         get_supported_symbol_name,
         get_supported_symbols,
@@ -717,6 +721,7 @@ def market_debug():
     ensure_database_schema()
     cleanup_legacy_hru_data()
     payload = get_market_debug_status()
+    api_key = get_alpha_vantage_api_key()
     payload["persistent_snapshots"] = list_market_snapshot_keys()
     payload["overview_symbols"] = [
         {
@@ -728,6 +733,14 @@ def market_debug():
         for item in MARKET_OVERVIEW_INDICES
     ]
     payload["overview_snapshot_available"] = snapshot_has_available_overview("market_overview")
+    payload["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
+    payload["quote_probe"] = diagnose_quote_request(api_key, "AAPL") if api_key else {
+        "symbol": "AAPL",
+        "normalized_symbol": "AAPL",
+        "supported": True,
+        "status": "env_missing",
+        "message": "ALPHA_VANTAGE_API_KEY is not set",
+    }
     return jsonify(payload)
 
 
@@ -743,7 +756,15 @@ def market_bootstrap():
         "overview_seeded": False,
         "earnings_seeded": False,
         "message": None,
+        "alpha_vantage_env": get_alpha_vantage_env_diagnostics(),
+        "quote_probe": diagnose_quote_request(api_key, "AAPL"),
+        "symbol_diagnostics": [],
     }
+
+    for item in MARKET_OVERVIEW_INDICES:
+        results["symbol_diagnostics"].append(
+            diagnose_quote_request(api_key, item["source_symbol"])
+        )
 
     try:
         overview_payload = fetch_market_overview(

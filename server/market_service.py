@@ -14,6 +14,8 @@ STOCK_HISTORY_CACHE_TTL_SECONDS = 3600
 EARNINGS_CACHE_TTL_SECONDS = 43200
 ALPHA_VANTAGE_DAILY_BUDGET = 25
 ALPHA_VANTAGE_BUDGET_WINDOW_SECONDS = 86400
+ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS = 21600
+ALPHA_VANTAGE_DIAGNOSTIC_HISTORY_LIMIT = 25
 
 SUPPORTED_TICKERS = {
     "BARC.L": {"name": "Barclays PLC", "bucket": "FTSE100"},
@@ -68,9 +70,37 @@ alpha_vantage_budget_state = {
     "daily_budget": ALPHA_VANTAGE_DAILY_BUDGET,
     "last_request_at": None,
 }
+alpha_vantage_failure_state = {}
+alpha_vantage_diagnostic_history = []
 
 
 class RateLimitError(RuntimeError):
+    pass
+
+
+class AlphaVantageRequestError(RuntimeError):
+    def __init__(
+        self,
+        reason: str,
+        error_class: str,
+        *,
+        reached_upstream: bool,
+        counted_budget: bool,
+        upstream_status: int | None = None,
+        symbol: str | None = None,
+        function: str | None = None,
+    ):
+        super().__init__(reason)
+        self.reason = reason
+        self.error_class = error_class
+        self.reached_upstream = reached_upstream
+        self.counted_budget = counted_budget
+        self.upstream_status = upstream_status
+        self.symbol = symbol
+        self.function = function
+
+
+class AlphaVantageBackoffError(AlphaVantageRequestError):
     pass
 
 
@@ -106,6 +136,63 @@ def _record_refresh_state(key, cache_name, expires_at):
     }
 
 
+def _append_diagnostic_entry(entry):
+    alpha_vantage_diagnostic_history.insert(0, entry)
+    del alpha_vantage_diagnostic_history[ALPHA_VANTAGE_DIAGNOSTIC_HISTORY_LIMIT:]
+
+
+def _failure_state_key(function_name: str | None, symbol: str | None):
+    return f"{function_name or 'unknown'}:{symbol or '*'}"
+
+
+def _register_failure(function_name: str | None, symbol: str | None, reason: str, error_class: str):
+    alpha_vantage_failure_state[_failure_state_key(function_name, symbol)] = {
+        "reason": reason,
+        "error_class": error_class,
+        "failed_at": time.time(),
+    }
+
+
+def _clear_failure(function_name: str | None, symbol: str | None):
+    alpha_vantage_failure_state.pop(_failure_state_key(function_name, symbol), None)
+
+
+def _failure_backoff_entry(function_name: str | None, symbol: str | None):
+    entry = alpha_vantage_failure_state.get(_failure_state_key(function_name, symbol))
+    if not entry:
+        return None
+    if time.time() - entry["failed_at"] > ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS:
+        _clear_failure(function_name, symbol)
+        return None
+    return entry
+
+
+def _record_diagnostic(
+    *,
+    symbol: str | None,
+    function_name: str | None,
+    reached_upstream: bool,
+    counted_budget: bool,
+    status: str,
+    error_class: str | None = None,
+    message: str | None = None,
+    upstream_status: int | None = None,
+):
+    _append_diagnostic_entry(
+        {
+            "timestamp": _isoformat_timestamp(time.time()),
+            "symbol": symbol,
+            "function": function_name,
+            "reached_upstream": reached_upstream,
+            "counted_budget": counted_budget,
+            "status": status,
+            "error_class": error_class,
+            "message": message,
+            "upstream_status": upstream_status,
+        }
+    )
+
+
 def get_market_debug_status():
     now = time.time()
     remaining = _budget_remaining(now)
@@ -116,12 +203,37 @@ def get_market_debug_status():
         "window_started_at": _isoformat_timestamp(alpha_vantage_budget_state["window_started_at"]),
         "last_request_at": _isoformat_timestamp(alpha_vantage_budget_state["last_request_at"]),
         "last_refresh": market_refresh_state,
+        "recent_diagnostics": alpha_vantage_diagnostic_history,
+        "failure_backoff_seconds": ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS,
+        "active_failure_backoffs": [
+            {
+                "request_key": request_key,
+                "reason": entry["reason"],
+                "error_class": entry["error_class"],
+                "failed_at": _isoformat_timestamp(entry["failed_at"]),
+            }
+            for request_key, entry in alpha_vantage_failure_state.items()
+            if time.time() - entry["failed_at"] <= ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS
+        ],
     }
 
 
 def get_alpha_vantage_api_key():
     from os import getenv
     return (getenv("ALPHA_VANTAGE_API_KEY") or "").strip()
+
+
+def get_alpha_vantage_env_diagnostics():
+    from os import getenv
+
+    raw_value = getenv("ALPHA_VANTAGE_API_KEY")
+    normalized = (raw_value or "").strip()
+    return {
+        "env_var_name": "ALPHA_VANTAGE_API_KEY",
+        "present": raw_value is not None,
+        "non_empty": bool(normalized),
+        "key_length": len(normalized),
+    }
 
 
 def normalize_symbol(symbol: str) -> str:
@@ -225,7 +337,40 @@ def _to_float(value, default=0.0):
 
 def _alpha_vantage_request(params):
     now = time.time()
+    function_name = params.get("function")
+    symbol = normalize_symbol(params.get("symbol", "")) or None
+
+    backoff_entry = _failure_backoff_entry(function_name, symbol)
+    if backoff_entry:
+        reason = f"request backoff active after previous {backoff_entry['error_class']}"
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=False,
+            counted_budget=False,
+            status="backoff_blocked",
+            error_class="backoff",
+            message=reason,
+        )
+        raise AlphaVantageBackoffError(
+            reason,
+            "backoff",
+            reached_upstream=False,
+            counted_budget=False,
+            symbol=symbol,
+            function=function_name,
+        )
+
     if _budget_remaining(now) <= 0:
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=False,
+            counted_budget=False,
+            status="budget_exhausted",
+            error_class="rate_limit",
+            message="daily budget exhausted",
+        )
         raise RateLimitError("daily budget exhausted")
 
     query = parse.urlencode(params)
@@ -249,21 +394,237 @@ def _alpha_vantage_request(params):
             message = error_payload.get("message") or error_payload.get("error")
         except Exception:
             message = None
-        raise RuntimeError(message or f"HTTP Error {exc.code}: {exc.reason}") from exc
+        _record_alpha_vantage_request(now)
+        reason = message or f"HTTP Error {exc.code}: {exc.reason}"
+        error_class = "unauthorized" if exc.code in {401, 403} else "http_error"
+        _register_failure(function_name, symbol, reason, error_class)
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=True,
+            counted_budget=True,
+            status="failed",
+            error_class=error_class,
+            message=reason,
+            upstream_status=exc.code,
+        )
+        raise AlphaVantageRequestError(
+            reason,
+            error_class,
+            reached_upstream=True,
+            counted_budget=True,
+            upstream_status=exc.code,
+            symbol=symbol,
+            function=function_name,
+        ) from exc
+    except TimeoutError as exc:
+        reason = "request timed out"
+        _register_failure(function_name, symbol, reason, "timeout")
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=False,
+            counted_budget=False,
+            status="failed",
+            error_class="timeout",
+            message=reason,
+        )
+        raise AlphaVantageRequestError(
+            reason,
+            "timeout",
+            reached_upstream=False,
+            counted_budget=False,
+            symbol=symbol,
+            function=function_name,
+        ) from exc
+    except Exception as exc:
+        reason = str(exc) or exc.__class__.__name__
+        _register_failure(function_name, symbol, reason, "network_error")
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=False,
+            counted_budget=False,
+            status="failed",
+            error_class="network_error",
+            message=reason,
+        )
+        raise AlphaVantageRequestError(
+            reason,
+            "network_error",
+            reached_upstream=False,
+            counted_budget=False,
+            symbol=symbol,
+            function=function_name,
+        ) from exc
 
     _record_alpha_vantage_request(now)
 
     if "csv" in content_type.lower():
+        _clear_failure(function_name, symbol)
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=True,
+            counted_budget=True,
+            status="success",
+            message="csv payload received",
+        )
         return body
 
     payload = json.loads(body)
     if payload.get("Note"):
-        raise RateLimitError("rate limit exceeded")
+        reason = "rate limit exceeded"
+        _register_failure(function_name, symbol, reason, "rate_limit")
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=True,
+            counted_budget=True,
+            status="failed",
+            error_class="rate_limit",
+            message=reason,
+        )
+        raise RateLimitError(reason)
     if payload.get("Error Message"):
-        raise RuntimeError(payload.get("Error Message"))
+        reason = payload.get("Error Message")
+        _register_failure(function_name, symbol, reason, "invalid_symbol")
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=True,
+            counted_budget=True,
+            status="failed",
+            error_class="invalid_symbol",
+            message=reason,
+        )
+        raise AlphaVantageRequestError(
+            reason,
+            "invalid_symbol",
+            reached_upstream=True,
+            counted_budget=True,
+            symbol=symbol,
+            function=function_name,
+        )
     if payload.get("Information"):
-        raise RuntimeError(payload.get("Information"))
+        reason = payload.get("Information")
+        _register_failure(function_name, symbol, reason, "information")
+        _record_diagnostic(
+            symbol=symbol,
+            function_name=function_name,
+            reached_upstream=True,
+            counted_budget=True,
+            status="failed",
+            error_class="information",
+            message=reason,
+        )
+        raise AlphaVantageRequestError(
+            reason,
+            "information",
+            reached_upstream=True,
+            counted_budget=True,
+            symbol=symbol,
+            function=function_name,
+        )
+    _clear_failure(function_name, symbol)
+    _record_diagnostic(
+        symbol=symbol,
+        function_name=function_name,
+        reached_upstream=True,
+        counted_budget=True,
+        status="success",
+        message="json payload received",
+    )
     return payload
+
+
+def diagnose_quote_request(api_key: str, symbol: str):
+    normalized = normalize_symbol(symbol)
+    if not normalized:
+        return {
+            "symbol": symbol,
+            "normalized_symbol": normalized,
+            "supported": False,
+            "status": "invalid",
+            "message": "symbol is required",
+        }
+    if not is_supported_symbol(normalized):
+        return {
+            "symbol": symbol,
+            "normalized_symbol": normalized,
+            "supported": False,
+            "status": "unsupported",
+            "message": "unsupported symbol",
+        }
+
+    functions_to_try = [
+        ("GLOBAL_QUOTE", {"function": "GLOBAL_QUOTE", "symbol": normalized, "apikey": api_key}),
+        ("TIME_SERIES_DAILY", {"function": "TIME_SERIES_DAILY", "symbol": normalized, "outputsize": "compact", "apikey": api_key}),
+    ]
+    attempts = []
+    for function_name, params in functions_to_try:
+        try:
+            payload = _alpha_vantage_request(params)
+            attempts.append(
+                {
+                    "function": function_name,
+                    "status": "success",
+                    "reached_upstream": True,
+                    "counted_budget": True,
+                    "message": "request succeeded",
+                }
+            )
+            return {
+                "symbol": symbol,
+                "normalized_symbol": normalized,
+                "supported": True,
+                "status": "success",
+                "attempts": attempts,
+                "payload_shape": list(payload.keys())[:5] if isinstance(payload, dict) else "csv",
+            }
+        except RateLimitError as exc:
+            attempts.append(
+                {
+                    "function": function_name,
+                    "status": "failed",
+                    "error_class": "rate_limit",
+                    "reached_upstream": False if "budget exhausted" in str(exc).lower() else True,
+                    "counted_budget": False if "budget exhausted" in str(exc).lower() else True,
+                    "message": str(exc),
+                }
+            )
+            break
+        except AlphaVantageRequestError as exc:
+            attempts.append(
+                {
+                    "function": function_name,
+                    "status": "failed",
+                    "error_class": exc.error_class,
+                    "reached_upstream": exc.reached_upstream,
+                    "counted_budget": exc.counted_budget,
+                    "upstream_status": exc.upstream_status,
+                    "message": exc.reason,
+                }
+            )
+        except Exception as exc:
+            attempts.append(
+                {
+                    "function": function_name,
+                    "status": "failed",
+                    "error_class": exc.__class__.__name__,
+                    "reached_upstream": False,
+                    "counted_budget": False,
+                    "message": str(exc),
+                }
+            )
+
+    return {
+        "symbol": symbol,
+        "normalized_symbol": normalized,
+        "supported": True,
+        "status": "failed",
+        "attempts": attempts,
+    }
 
 
 def fetch_quote(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
@@ -304,6 +665,47 @@ def fetch_quote(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=
                 "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
             }
         raise
+    except AlphaVantageRequestError as exc:
+        if exc.error_class in {"unauthorized", "network_error", "timeout", "backoff", "rate_limit", "information"}:
+            if cache_entry:
+                return {
+                    **cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
+            raise
+        try:
+            payload = _alpha_vantage_request(
+                {
+                    "function": "TIME_SERIES_DAILY",
+                    "symbol": normalized,
+                    "outputsize": "compact",
+                    "apikey": api_key,
+                }
+            )
+            series = payload.get("Time Series (Daily)") or {}
+            if not isinstance(series, dict) or len(series) < 2:
+                raise RuntimeError("No quote data available")
+
+            sorted_points = sorted(series.items(), key=lambda item: item[0], reverse=True)
+            latest = sorted_points[0][1]
+            previous = sorted_points[1][1]
+            latest_close = _to_float(latest.get("4. close"))
+            previous_close = _to_float(previous.get("4. close"))
+            change = latest_close - previous_close
+            change_percent = ((change / previous_close) * 100) if previous_close else 0.0
+            data = {
+                "symbol": normalized,
+                "price": latest_close,
+                "change": change,
+                "change_percent": f"{change_percent:.2f}%",
+            }
+        except Exception:
+            if cache_entry:
+                return {
+                    **cache_entry["data"],
+                    "marketDataStatus": _cache_status_payload(cache_entry, "cache", now),
+                }
+            raise
     except Exception:
         try:
             payload = _alpha_vantage_request(
