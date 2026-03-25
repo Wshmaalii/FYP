@@ -1381,10 +1381,11 @@ def refresh_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=
             "status": "rate_limited",
             "rate_limited_mode": True,
             "symbols": results,
+            "attempted_symbols": [],
             "refreshed_count": 0,
         }
 
-    symbols_to_refresh = list(MARKET_BOOTSTRAP_SYMBOLS)
+    symbols_to_refresh = list(get_bootstrap_symbols())
     for symbol in get_supported_market_universe():
         if symbol not in symbols_to_refresh:
             symbols_to_refresh.append(symbol)
@@ -1394,10 +1395,37 @@ def refresh_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=
         key=lambda symbol: _snapshot_updated_at(snapshot_loader, _build_quote_snapshot_key(symbol)) or 0,
     )
 
+    attempted_symbols = []
     for symbol in symbols_to_refresh[:MARKET_REFRESH_BATCH_LIMIT]:
         if _budget_remaining(time.time()) <= MARKET_REFRESH_BUFFER:
             break
-        results.append(refresh_symbol_snapshot(api_key, symbol, snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver))
+        attempted_symbols.append(symbol)
+        try:
+            results.append(
+                refresh_symbol_snapshot(
+                    api_key,
+                    symbol,
+                    snapshot_loader=snapshot_loader,
+                    snapshot_saver=snapshot_saver,
+                )
+            )
+        except Exception as exc:
+            results.append(
+                {
+                    "symbol": symbol,
+                    "provider_symbol": get_provider_symbol(symbol),
+                    "status": "failed",
+                    "quote_attempted": False,
+                    "history_attempted": False,
+                    "quote_refreshed": False,
+                    "history_refreshed": False,
+                    "snapshot_stored": False,
+                    "counted_budget": False,
+                    "reached_upstream": False,
+                    "error_class": exc.__class__.__name__,
+                    "message": str(exc) or "refresh crashed",
+                }
+            )
 
     try:
         overview_result = refresh_market_overview_snapshot(snapshot_loader=snapshot_loader, snapshot_saver=snapshot_saver)
@@ -1418,6 +1446,7 @@ def refresh_market_snapshots(api_key: str, snapshot_loader=None, snapshot_saver=
         "status": "success" if any(item["status"] == "success" for item in results) or overview_seeded else "failed",
         "rate_limited_mode": _budget_remaining(time.time()) <= 0,
         "symbols": results,
+        "attempted_symbols": attempted_symbols,
         "overview_seeded": overview_seeded,
         "overview_result": overview_result,
         "earnings": earnings_result,
