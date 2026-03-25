@@ -30,14 +30,14 @@ try:
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
-        get_alpha_vantage_env_diagnostics,
+        get_finnhub_env_diagnostics,
         get_bootstrap_symbols,
         get_market_debug_status,
         list_stored_quote_snapshot_symbols,
         get_supported_symbol_name,
         get_supported_symbols,
         is_supported_symbol,
-        get_alpha_vantage_api_key,
+        get_finnhub_api_key,
         get_supported_market_universe,
         refresh_market_snapshots,
     )
@@ -54,14 +54,14 @@ except ImportError:
         fetch_quote,
         fetch_top_movers,
         fetch_upcoming_earnings,
-        get_alpha_vantage_env_diagnostics,
+        get_finnhub_env_diagnostics,
         get_bootstrap_symbols,
         get_market_debug_status,
         list_stored_quote_snapshot_symbols,
         get_supported_symbol_name,
         get_supported_symbols,
         is_supported_symbol,
-        get_alpha_vantage_api_key,
+        get_finnhub_api_key,
         get_supported_market_universe,
         refresh_market_snapshots,
     )
@@ -707,7 +707,7 @@ def market_debug():
     cleanup_legacy_hru_data()
     payload = get_market_debug_status()
     payload["market_ingest_mode"] = MARKET_INGEST_MODE
-    payload["alpha_vantage_manual_routes"] = [
+    payload["finnhub_manual_routes"] = [
         "POST /api/market/bootstrap",
         "POST /api/market/refresh",
     ]
@@ -722,7 +722,7 @@ def market_debug():
         for item in MARKET_OVERVIEW_INDICES
     ]
     payload["overview_snapshot_available"] = snapshot_has_available_overview("market_overview")
-    payload["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
+    payload["finnhub_env"] = get_finnhub_env_diagnostics()
     payload["supported_universe"] = get_supported_market_universe()
     payload["bootstrap_symbols"] = get_bootstrap_symbols()
     payload["primary_baseline_symbol"] = get_bootstrap_symbols()[0] if get_bootstrap_symbols() else None
@@ -734,9 +734,9 @@ def market_debug():
 def market_bootstrap():
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
+    api_key = get_finnhub_api_key()
     if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
+        return json_error("FINNHUB_API_KEY is not set", 500)
 
     try:
         results = bootstrap_market_snapshots(
@@ -758,7 +758,7 @@ def market_bootstrap():
                 "message": str(exc) or "bootstrap route crashed",
             },
         }
-    results["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
+    results["finnhub_env"] = get_finnhub_env_diagnostics()
     if results.get("status") == "failed" and not results.get("overview_seeded"):
         results["message"] = MARKET_DATA_UNAVAILABLE_MESSAGE
         return jsonify(results), 503
@@ -771,9 +771,9 @@ def market_bootstrap():
 def market_refresh():
     ensure_database_schema()
     cleanup_legacy_hru_data()
-    api_key = get_alpha_vantage_api_key()
+    api_key = get_finnhub_api_key()
     if not api_key:
-        return json_error("ALPHA_VANTAGE_API_KEY is not set", 500)
+        return json_error("FINNHUB_API_KEY is not set", 500)
 
     try:
         results = refresh_market_snapshots(
@@ -795,7 +795,7 @@ def market_refresh():
                 "message": str(exc) or "refresh route crashed",
             },
         }
-    results["alpha_vantage_env"] = get_alpha_vantage_env_diagnostics()
+    results["finnhub_env"] = get_finnhub_env_diagnostics()
     if results.get("status") == "failed":
         results["message"] = MARKET_DATA_UNAVAILABLE_MESSAGE
         return jsonify(results), 503

@@ -1,5 +1,3 @@
-import csv
-import io
 import json
 import time
 from datetime import datetime, timezone
@@ -7,7 +5,7 @@ from urllib import parse, request as urlrequest
 from urllib.error import HTTPError
 
 
-ALPHA_VANTAGE_BASE_URL = "https://www.alphavantage.co/query"
+FINNHUB_BASE_URL = "https://finnhub.io/api/v1"
 MARKET_CACHE_TTL_SECONDS = 21600
 STOCK_QUOTE_CACHE_TTL_SECONDS = 43200
 STOCK_HISTORY_CACHE_TTL_SECONDS = 43200
@@ -21,26 +19,26 @@ MARKET_REFRESH_BATCH_LIMIT = 5
 MARKET_REFRESH_BUFFER = 5
 
 SUPPORTED_TICKERS = {
-    "LLOY": {"name": "Lloyds Banking Group", "bucket": "FTSE100", "provider_symbol": "LLOY.LON", "aliases": ["LLOY", "LLOY.L", "LLOY.LON"]},
-    "LGEN": {"name": "Legal & General", "bucket": "FTSE100", "provider_symbol": "LGEN.LON", "aliases": ["LGEN", "LGEN.L", "LGEN.LON"]},
-    "BP.": {"name": "BP", "bucket": "FTSE100", "provider_symbol": "BP.LON", "aliases": ["BP.", "BP", "BP.L", "BP.LON"]},
-    "RR.": {"name": "Rolls-Royce Holdings", "bucket": "FTSE100", "provider_symbol": "RR.LON", "aliases": ["RR.", "RR", "RR.L", "RR.LON"]},
-    "SHEL": {"name": "Shell", "bucket": "FTSE100", "provider_symbol": "SHEL.LON", "aliases": ["SHEL", "SHEL.L", "SHEL.LON"]},
-    "BARC": {"name": "Barclays", "bucket": "FTSE100", "provider_symbol": "BARC.LON", "aliases": ["BARC", "BARC.L", "BARC.LON"]},
-    "NWG": {"name": "NatWest Group", "bucket": "FTSE100", "provider_symbol": "NWG.LON", "aliases": ["NWG", "NWG.L", "NWG.LON"]},
-    "HSBA": {"name": "HSBC Holdings", "bucket": "FTSE100", "provider_symbol": "HSBA.LON", "aliases": ["HSBA", "HSBA.L", "HSBA.LON"]},
-    "AZN": {"name": "AstraZeneca", "bucket": "FTSE100", "provider_symbol": "AZN.LON", "aliases": ["AZN", "AZN.L", "AZN.LON"]},
-    "VOD": {"name": "Vodafone Group", "bucket": "FTSE100", "provider_symbol": "VOD.LON", "aliases": ["VOD", "VOD.L", "VOD.LON"]},
-    "BT.A": {"name": "BT Group", "bucket": "FTSE100", "provider_symbol": "BTA.LON", "aliases": ["BT.A", "BTA", "BT-A.L", "BTA.LON"]},
-    "GSK": {"name": "GSK", "bucket": "FTSE100", "provider_symbol": "GSK.LON", "aliases": ["GSK", "GSK.L", "GSK.LON"]},
-    "AV.": {"name": "Aviva", "bucket": "FTSE100", "provider_symbol": "AV.LON", "aliases": ["AV.", "AV", "AV.L", "AV.LON"]},
-    "TSCO": {"name": "Tesco", "bucket": "FTSE100", "provider_symbol": "TSCO.LON", "aliases": ["TSCO", "TSCO.L", "TSCO.LON"]},
-    "ULVR": {"name": "Unilever", "bucket": "FTSE100", "provider_symbol": "ULVR.LON", "aliases": ["ULVR", "ULVR.L", "ULVR.LON"]},
-    "RIO": {"name": "Rio Tinto", "bucket": "FTSE100", "provider_symbol": "RIO.LON", "aliases": ["RIO", "RIO.L", "RIO.LON"]},
-    "GLEN": {"name": "Glencore", "bucket": "FTSE100", "provider_symbol": "GLEN.LON", "aliases": ["GLEN", "GLEN.L", "GLEN.LON"]},
-    "BATS": {"name": "British American Tobacco", "bucket": "FTSE100", "provider_symbol": "BATS.LON", "aliases": ["BATS", "BATS.L", "BATS.LON"]},
-    "STAN": {"name": "Standard Chartered", "bucket": "FTSE100", "provider_symbol": "STAN.LON", "aliases": ["STAN", "STAN.L", "STAN.LON"]},
-    "MNG": {"name": "M&G", "bucket": "FTSE100", "provider_symbol": "MNG.LON", "aliases": ["MNG", "MNG.L", "MNG.LON"]},
+    "LLOY": {"name": "Lloyds Banking Group", "bucket": "FTSE100", "provider_symbol": "LLOY.L", "aliases": ["LLOY", "LLOY.L", "LLOY.LON"]},
+    "LGEN": {"name": "Legal & General", "bucket": "FTSE100", "provider_symbol": "LGEN.L", "aliases": ["LGEN", "LGEN.L", "LGEN.LON"]},
+    "BP.": {"name": "BP", "bucket": "FTSE100", "provider_symbol": "BP.L", "aliases": ["BP.", "BP", "BP.L", "BP.LON"]},
+    "RR.": {"name": "Rolls-Royce Holdings", "bucket": "FTSE100", "provider_symbol": "RR.L", "aliases": ["RR.", "RR", "RR.L", "RR.LON"]},
+    "SHEL": {"name": "Shell", "bucket": "FTSE100", "provider_symbol": "SHEL.L", "aliases": ["SHEL", "SHEL.L", "SHEL.LON"]},
+    "BARC": {"name": "Barclays", "bucket": "FTSE100", "provider_symbol": "BARC.L", "aliases": ["BARC", "BARC.L", "BARC.LON"]},
+    "NWG": {"name": "NatWest Group", "bucket": "FTSE100", "provider_symbol": "NWG.L", "aliases": ["NWG", "NWG.L", "NWG.LON"]},
+    "HSBA": {"name": "HSBC Holdings", "bucket": "FTSE100", "provider_symbol": "HSBA.L", "aliases": ["HSBA", "HSBA.L", "HSBA.LON"]},
+    "AZN": {"name": "AstraZeneca", "bucket": "FTSE100", "provider_symbol": "AZN.L", "aliases": ["AZN", "AZN.L", "AZN.LON"]},
+    "VOD": {"name": "Vodafone Group", "bucket": "FTSE100", "provider_symbol": "VOD.L", "aliases": ["VOD", "VOD.L", "VOD.LON"]},
+    "BT.A": {"name": "BT Group", "bucket": "FTSE100", "provider_symbol": "BTA.L", "aliases": ["BT.A", "BTA", "BT-A.L", "BTA.LON"]},
+    "GSK": {"name": "GSK", "bucket": "FTSE100", "provider_symbol": "GSK.L", "aliases": ["GSK", "GSK.L", "GSK.LON"]},
+    "AV.": {"name": "Aviva", "bucket": "FTSE100", "provider_symbol": "AV.L", "aliases": ["AV.", "AV", "AV.L", "AV.LON"]},
+    "TSCO": {"name": "Tesco", "bucket": "FTSE100", "provider_symbol": "TSCO.L", "aliases": ["TSCO", "TSCO.L", "TSCO.LON"]},
+    "ULVR": {"name": "Unilever", "bucket": "FTSE100", "provider_symbol": "ULVR.L", "aliases": ["ULVR", "ULVR.L", "ULVR.LON"]},
+    "RIO": {"name": "Rio Tinto", "bucket": "FTSE100", "provider_symbol": "RIO.L", "aliases": ["RIO", "RIO.L", "RIO.LON"]},
+    "GLEN": {"name": "Glencore", "bucket": "FTSE100", "provider_symbol": "GLEN.L", "aliases": ["GLEN", "GLEN.L", "GLEN.LON"]},
+    "BATS": {"name": "British American Tobacco", "bucket": "FTSE100", "provider_symbol": "BATS.L", "aliases": ["BATS", "BATS.L", "BATS.LON"]},
+    "STAN": {"name": "Standard Chartered", "bucket": "FTSE100", "provider_symbol": "STAN.L", "aliases": ["STAN", "STAN.L", "STAN.LON"]},
+    "MNG": {"name": "M&G", "bucket": "FTSE100", "provider_symbol": "MNG.L", "aliases": ["MNG", "MNG.L", "MNG.LON"]},
     "EWU": {"name": "iShares MSCI United Kingdom ETF", "bucket": "Proxy", "provider_symbol": "EWU", "aliases": ["EWU"]},
     "SPY": {"name": "SPDR S&P 500 ETF Trust", "bucket": "Proxy", "provider_symbol": "SPY", "aliases": ["SPY"]},
 }
@@ -64,24 +62,24 @@ stock_quote_cache = {}
 stock_history_cache = {}
 earnings_cache = {}
 market_refresh_state = {}
-alpha_vantage_request_state = {
+provider_request_state = {
     "last_started_at": None,
 }
-alpha_vantage_budget_state = {
+provider_budget_state = {
     "window_started_at": time.time(),
     "calls_used": 0,
     "daily_budget": ALPHA_VANTAGE_DAILY_BUDGET,
     "last_request_at": None,
 }
-alpha_vantage_failure_state = {}
-alpha_vantage_diagnostic_history = []
+provider_failure_state = {}
+provider_diagnostic_history = []
 
 
 class RateLimitError(RuntimeError):
     pass
 
 
-class AlphaVantageRequestError(RuntimeError):
+class ProviderRequestError(RuntimeError):
     def __init__(
         self,
         reason: str,
@@ -103,7 +101,7 @@ class AlphaVantageRequestError(RuntimeError):
         self.function = function
 
 
-class AlphaVantageBackoffError(AlphaVantageRequestError):
+class ProviderBackoffError(ProviderRequestError):
     pass
 
 
@@ -114,33 +112,33 @@ def _isoformat_timestamp(timestamp):
 
 
 def _reset_budget_window_if_needed(now):
-    if now - alpha_vantage_budget_state["window_started_at"] >= ALPHA_VANTAGE_BUDGET_WINDOW_SECONDS:
-        alpha_vantage_budget_state["window_started_at"] = now
-        alpha_vantage_budget_state["calls_used"] = 0
-        alpha_vantage_budget_state["last_request_at"] = None
+    if now - provider_budget_state["window_started_at"] >= ALPHA_VANTAGE_BUDGET_WINDOW_SECONDS:
+        provider_budget_state["window_started_at"] = now
+        provider_budget_state["calls_used"] = 0
+        provider_budget_state["last_request_at"] = None
 
 
 def _budget_remaining(now):
     _reset_budget_window_if_needed(now)
-    return max(alpha_vantage_budget_state["daily_budget"] - alpha_vantage_budget_state["calls_used"], 0)
+    return max(provider_budget_state["daily_budget"] - provider_budget_state["calls_used"], 0)
 
 
-def _record_alpha_vantage_request(now):
+def _record_provider_request(now):
     _reset_budget_window_if_needed(now)
-    alpha_vantage_budget_state["calls_used"] += 1
-    alpha_vantage_budget_state["last_request_at"] = now
+    provider_budget_state["calls_used"] += 1
+    provider_budget_state["last_request_at"] = now
 
 
 def _wait_for_request_slot():
-    last_started_at = alpha_vantage_request_state.get("last_started_at")
+    last_started_at = provider_request_state.get("last_started_at")
     now = time.time()
     if last_started_at is None:
-        alpha_vantage_request_state["last_started_at"] = now
+        provider_request_state["last_started_at"] = now
         return
     elapsed = now - last_started_at
     if elapsed < ALPHA_VANTAGE_MIN_REQUEST_SPACING_SECONDS:
         time.sleep(ALPHA_VANTAGE_MIN_REQUEST_SPACING_SECONDS - elapsed)
-    alpha_vantage_request_state["last_started_at"] = time.time()
+    provider_request_state["last_started_at"] = time.time()
 
 
 def _record_refresh_state(key, cache_name, expires_at):
@@ -152,8 +150,8 @@ def _record_refresh_state(key, cache_name, expires_at):
 
 
 def _append_diagnostic_entry(entry):
-    alpha_vantage_diagnostic_history.insert(0, entry)
-    del alpha_vantage_diagnostic_history[ALPHA_VANTAGE_DIAGNOSTIC_HISTORY_LIMIT:]
+    provider_diagnostic_history.insert(0, entry)
+    del provider_diagnostic_history[ALPHA_VANTAGE_DIAGNOSTIC_HISTORY_LIMIT:]
 
 
 def _failure_state_key(function_name: str | None, symbol: str | None):
@@ -161,7 +159,7 @@ def _failure_state_key(function_name: str | None, symbol: str | None):
 
 
 def _register_failure(function_name: str | None, symbol: str | None, reason: str, error_class: str):
-    alpha_vantage_failure_state[_failure_state_key(function_name, symbol)] = {
+    provider_failure_state[_failure_state_key(function_name, symbol)] = {
         "reason": reason,
         "error_class": error_class,
         "failed_at": time.time(),
@@ -169,11 +167,11 @@ def _register_failure(function_name: str | None, symbol: str | None, reason: str
 
 
 def _clear_failure(function_name: str | None, symbol: str | None):
-    alpha_vantage_failure_state.pop(_failure_state_key(function_name, symbol), None)
+    provider_failure_state.pop(_failure_state_key(function_name, symbol), None)
 
 
 def _failure_backoff_entry(function_name: str | None, symbol: str | None):
-    entry = alpha_vantage_failure_state.get(_failure_state_key(function_name, symbol))
+    entry = provider_failure_state.get(_failure_state_key(function_name, symbol))
     if not entry:
         return None
     if time.time() - entry["failed_at"] > ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS:
@@ -212,14 +210,14 @@ def get_market_debug_status():
     now = time.time()
     remaining = _budget_remaining(now)
     return {
-        "daily_calls_used": alpha_vantage_budget_state["calls_used"],
+        "daily_calls_used": provider_budget_state["calls_used"],
         "daily_calls_remaining": remaining,
-        "daily_budget": alpha_vantage_budget_state["daily_budget"],
-        "window_started_at": _isoformat_timestamp(alpha_vantage_budget_state["window_started_at"]),
-        "last_request_at": _isoformat_timestamp(alpha_vantage_budget_state["last_request_at"]),
+        "daily_budget": provider_budget_state["daily_budget"],
+        "window_started_at": _isoformat_timestamp(provider_budget_state["window_started_at"]),
+        "last_request_at": _isoformat_timestamp(provider_budget_state["last_request_at"]),
         "rate_limited_mode": remaining <= 0,
         "last_refresh": market_refresh_state,
-        "recent_diagnostics": alpha_vantage_diagnostic_history,
+        "recent_diagnostics": provider_diagnostic_history,
         "failure_backoff_seconds": ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS,
         "active_failure_backoffs": [
             {
@@ -228,27 +226,30 @@ def get_market_debug_status():
                 "error_class": entry["error_class"],
                 "failed_at": _isoformat_timestamp(entry["failed_at"]),
             }
-            for request_key, entry in alpha_vantage_failure_state.items()
+            for request_key, entry in provider_failure_state.items()
             if time.time() - entry["failed_at"] <= ALPHA_VANTAGE_FAILURE_BACKOFF_SECONDS
         ],
     }
 
 
-def get_alpha_vantage_api_key():
+def get_finnhub_api_key():
     from os import getenv
-    return (getenv("ALPHA_VANTAGE_API_KEY") or "").strip()
+    return (getenv("FINNHUB_API_KEY") or getenv("ALPHA_VANTAGE_API_KEY") or "").strip()
 
 
-def get_alpha_vantage_env_diagnostics():
+def get_finnhub_env_diagnostics():
     from os import getenv
 
-    raw_value = getenv("ALPHA_VANTAGE_API_KEY")
+    finnhub_raw = getenv("FINNHUB_API_KEY")
+    legacy_raw = getenv("ALPHA_VANTAGE_API_KEY")
+    raw_value = finnhub_raw if finnhub_raw is not None else legacy_raw
     normalized = (raw_value or "").strip()
     return {
-        "env_var_name": "ALPHA_VANTAGE_API_KEY",
+        "env_var_name": "FINNHUB_API_KEY",
         "present": raw_value is not None,
         "non_empty": bool(normalized),
         "key_length": len(normalized),
+        "legacy_fallback_used": finnhub_raw is None and legacy_raw is not None,
     }
 
 
@@ -368,16 +369,16 @@ def _to_float(value, default=0.0):
         return default
 
 
-def _alpha_vantage_request(params):
+def _finnhub_request(path, params, *, endpoint_name: str, symbol: str | None = None):
     now = time.time()
-    function_name = params.get("function")
-    symbol = canonicalize_symbol(params.get("symbol", "")) or None
+    normalized_symbol = canonicalize_symbol(symbol or params.get("symbol", "")) or None
+    function_name = endpoint_name
 
-    backoff_entry = _failure_backoff_entry(function_name, symbol)
+    backoff_entry = _failure_backoff_entry(function_name, normalized_symbol)
     if backoff_entry:
         reason = f"request backoff active after previous {backoff_entry['error_class']}"
         _record_diagnostic(
-            symbol=symbol,
+            symbol=normalized_symbol,
             function_name=function_name,
             reached_upstream=False,
             counted_budget=False,
@@ -385,18 +386,18 @@ def _alpha_vantage_request(params):
             error_class="backoff",
             message=reason,
         )
-        raise AlphaVantageBackoffError(
+        raise ProviderBackoffError(
             reason,
             "backoff",
             reached_upstream=False,
             counted_budget=False,
-            symbol=symbol,
+            symbol=normalized_symbol,
             function=function_name,
         )
 
     if _budget_remaining(now) <= 0:
         _record_diagnostic(
-            symbol=symbol,
+            symbol=normalized_symbol,
             function_name=function_name,
             reached_upstream=False,
             counted_budget=False,
@@ -407,12 +408,13 @@ def _alpha_vantage_request(params):
         raise RateLimitError("daily budget exhausted")
 
     _wait_for_request_slot()
-    query = parse.urlencode(params)
-    url = f"{ALPHA_VANTAGE_BASE_URL}?{query}"
+    query = dict(params)
+    query["token"] = get_finnhub_api_key()
+    url = f"{FINNHUB_BASE_URL}{path}?{parse.urlencode(query)}"
     req = urlrequest.Request(
         url,
         headers={
-            "Accept": "application/json,text/csv",
+            "Accept": "application/json",
             "User-Agent": "TradeLink/1.0 (+render-backend)",
         },
     )
@@ -420,7 +422,6 @@ def _alpha_vantage_request(params):
     try:
         with urlrequest.urlopen(req, timeout=8) as response:
             body = response.read().decode("utf-8")
-            content_type = response.headers.get("Content-Type", "")
     except HTTPError as exc:
         raw_body = exc.read().decode("utf-8", errors="ignore")
         try:
@@ -428,12 +429,12 @@ def _alpha_vantage_request(params):
             message = error_payload.get("message") or error_payload.get("error")
         except Exception:
             message = None
-        _record_alpha_vantage_request(now)
+        _record_provider_request(now)
         reason = message or f"HTTP Error {exc.code}: {exc.reason}"
         error_class = "unauthorized" if exc.code in {401, 403} else "http_error"
-        _register_failure(function_name, symbol, reason, error_class)
+        _register_failure(function_name, normalized_symbol, reason, error_class)
         _record_diagnostic(
-            symbol=symbol,
+            symbol=normalized_symbol,
             function_name=function_name,
             reached_upstream=True,
             counted_budget=True,
@@ -442,20 +443,20 @@ def _alpha_vantage_request(params):
             message=reason,
             upstream_status=exc.code,
         )
-        raise AlphaVantageRequestError(
+        raise ProviderRequestError(
             reason,
             error_class,
             reached_upstream=True,
             counted_budget=True,
             upstream_status=exc.code,
-            symbol=symbol,
+            symbol=normalized_symbol,
             function=function_name,
         ) from exc
     except TimeoutError as exc:
         reason = "request timed out"
-        _register_failure(function_name, symbol, reason, "timeout")
+        _register_failure(function_name, normalized_symbol, reason, "timeout")
         _record_diagnostic(
-            symbol=symbol,
+            symbol=normalized_symbol,
             function_name=function_name,
             reached_upstream=False,
             counted_budget=False,
@@ -463,19 +464,19 @@ def _alpha_vantage_request(params):
             error_class="timeout",
             message=reason,
         )
-        raise AlphaVantageRequestError(
+        raise ProviderRequestError(
             reason,
             "timeout",
             reached_upstream=False,
             counted_budget=False,
-            symbol=symbol,
+            symbol=normalized_symbol,
             function=function_name,
         ) from exc
     except Exception as exc:
         reason = str(exc) or exc.__class__.__name__
-        _register_failure(function_name, symbol, reason, "network_error")
+        _register_failure(function_name, normalized_symbol, reason, "network_error")
         _record_diagnostic(
-            symbol=symbol,
+            symbol=normalized_symbol,
             function_name=function_name,
             reached_upstream=False,
             counted_budget=False,
@@ -483,86 +484,45 @@ def _alpha_vantage_request(params):
             error_class="network_error",
             message=reason,
         )
-        raise AlphaVantageRequestError(
+        raise ProviderRequestError(
             reason,
             "network_error",
             reached_upstream=False,
             counted_budget=False,
-            symbol=symbol,
+            symbol=normalized_symbol,
             function=function_name,
         ) from exc
 
-    _record_alpha_vantage_request(now)
-
-    if "csv" in content_type.lower():
-        _clear_failure(function_name, symbol)
-        _record_diagnostic(
-            symbol=symbol,
-            function_name=function_name,
-            reached_upstream=True,
-            counted_budget=True,
-            status="success",
-            message="csv payload received",
-        )
-        return body
+    _record_provider_request(now)
 
     payload = json.loads(body)
-    if payload.get("Note"):
-        reason = "rate limit exceeded"
-        _register_failure(function_name, symbol, reason, "rate_limit")
+    if payload.get("error"):
+        reason = payload.get("error")
+        error_class = "rate_limit" if "limit" in reason.lower() else "provider_error"
+        _register_failure(function_name, normalized_symbol, reason, error_class)
         _record_diagnostic(
-            symbol=symbol,
+            symbol=normalized_symbol,
             function_name=function_name,
             reached_upstream=True,
             counted_budget=True,
             status="failed",
-            error_class="rate_limit",
+            error_class=error_class,
             message=reason,
         )
-        raise RateLimitError(reason)
-    if payload.get("Error Message"):
-        reason = payload.get("Error Message")
-        _register_failure(function_name, symbol, reason, "invalid_symbol")
-        _record_diagnostic(
-            symbol=symbol,
-            function_name=function_name,
-            reached_upstream=True,
-            counted_budget=True,
-            status="failed",
-            error_class="invalid_symbol",
-            message=reason,
-        )
-        raise AlphaVantageRequestError(
+        if error_class == "rate_limit":
+            raise RateLimitError(reason)
+        raise ProviderRequestError(
             reason,
-            "invalid_symbol",
+            error_class,
             reached_upstream=True,
             counted_budget=True,
-            symbol=symbol,
+            symbol=normalized_symbol,
             function=function_name,
         )
-    if payload.get("Information"):
-        reason = payload.get("Information")
-        _register_failure(function_name, symbol, reason, "information")
-        _record_diagnostic(
-            symbol=symbol,
-            function_name=function_name,
-            reached_upstream=True,
-            counted_budget=True,
-            status="failed",
-            error_class="information",
-            message=reason,
-        )
-        raise AlphaVantageRequestError(
-            reason,
-            "information",
-            reached_upstream=True,
-            counted_budget=True,
-            symbol=symbol,
-            function=function_name,
-        )
-    _clear_failure(function_name, symbol)
+
+    _clear_failure(function_name, normalized_symbol)
     _record_diagnostic(
-        symbol=symbol,
+        symbol=normalized_symbol,
         function_name=function_name,
         reached_upstream=True,
         counted_budget=True,
@@ -570,6 +530,28 @@ def _alpha_vantage_request(params):
         message="json payload received",
     )
     return payload
+
+
+def _parse_finnhub_quote(payload):
+    price = _to_float(payload.get("c"), None)
+    previous_close = _to_float(payload.get("pc"), None)
+    if price in (None, 0.0) and previous_close in (None, 0, 0.0):
+        raise ProviderRequestError(
+            "quote payload was empty",
+            "empty_payload",
+            reached_upstream=True,
+            counted_budget=True,
+        )
+    return {
+        "price": price,
+        "change": _to_float(payload.get("d"), None),
+        "change_percent": _to_float(payload.get("dp"), None),
+        "high": _to_float(payload.get("h"), None),
+        "low": _to_float(payload.get("l"), None),
+        "open": _to_float(payload.get("o"), None),
+        "previous_close": previous_close,
+        "timestamp": payload.get("t"),
+    }
 
 
 def diagnose_quote_request(api_key: str, symbol: str):
@@ -592,70 +574,70 @@ def diagnose_quote_request(api_key: str, symbol: str):
         }
 
     provider_symbol = get_provider_symbol(normalized)
-    functions_to_try = [
-        ("GLOBAL_QUOTE", {"function": "GLOBAL_QUOTE", "symbol": provider_symbol, "apikey": api_key}),
-        ("TIME_SERIES_DAILY", {"function": "TIME_SERIES_DAILY", "symbol": provider_symbol, "outputsize": "compact", "apikey": api_key}),
-    ]
     attempts = []
-    for function_name, params in functions_to_try:
-        try:
-            payload = _alpha_vantage_request(params)
-            attempts.append(
-                {
-                    "function": function_name,
-                    "status": "success",
-                    "reached_upstream": True,
-                    "counted_budget": True,
-                    "message": "request succeeded",
-                    "provider_symbol": provider_symbol,
-                }
-            )
-            return {
-                "symbol": symbol,
-                "normalized_symbol": normalized,
-                "supported": True,
+    try:
+        payload = _finnhub_request(
+            "/quote",
+            {"symbol": provider_symbol},
+            endpoint_name="quote",
+            symbol=normalized,
+        )
+        _parse_finnhub_quote(payload)
+        attempts.append(
+            {
+                "function": "quote",
                 "status": "success",
-                "attempts": attempts,
-                "payload_shape": list(payload.keys())[:5] if isinstance(payload, dict) else "csv",
+                "reached_upstream": True,
+                "counted_budget": True,
+                "message": "request succeeded",
+                "provider_symbol": provider_symbol,
             }
-        except RateLimitError as exc:
-            attempts.append(
-                {
-                    "function": function_name,
-                    "status": "failed",
-                    "error_class": "rate_limit",
-                    "reached_upstream": False if "budget exhausted" in str(exc).lower() else True,
-                    "counted_budget": False if "budget exhausted" in str(exc).lower() else True,
-                    "message": str(exc),
-                    "provider_symbol": provider_symbol,
-                }
-            )
-            break
-        except AlphaVantageRequestError as exc:
-            attempts.append(
-                {
-                    "function": function_name,
-                    "status": "failed",
-                    "error_class": exc.error_class,
-                    "reached_upstream": exc.reached_upstream,
-                    "counted_budget": exc.counted_budget,
-                    "upstream_status": exc.upstream_status,
-                    "message": exc.reason,
-                    "provider_symbol": provider_symbol,
-                }
-            )
-        except Exception as exc:
-            attempts.append(
-                {
-                    "function": function_name,
-                    "status": "failed",
-                    "error_class": exc.__class__.__name__,
-                    "reached_upstream": False,
-                    "counted_budget": False,
-                    "message": str(exc),
-                    "provider_symbol": provider_symbol,
-                }
-            )
+        )
+        return {
+            "symbol": symbol,
+            "normalized_symbol": normalized,
+            "supported": True,
+            "status": "success",
+            "attempts": attempts,
+            "payload_shape": list(payload.keys())[:8] if isinstance(payload, dict) else None,
+        }
+    except RateLimitError as exc:
+        attempts.append(
+            {
+                "function": "quote",
+                "status": "failed",
+                "error_class": "rate_limit",
+                "reached_upstream": False if "budget exhausted" in str(exc).lower() else True,
+                "counted_budget": False if "budget exhausted" in str(exc).lower() else True,
+                "message": str(exc),
+                "provider_symbol": provider_symbol,
+            }
+        )
+    except ProviderRequestError as exc:
+        attempts.append(
+            {
+                "function": "quote",
+                "status": "failed",
+                "error_class": exc.error_class,
+                "reached_upstream": exc.reached_upstream,
+                "counted_budget": exc.counted_budget,
+                "upstream_status": exc.upstream_status,
+                "message": exc.reason,
+                "provider_symbol": provider_symbol,
+            }
+        )
+    except Exception as exc:
+        attempts.append(
+            {
+                "function": "quote",
+                "status": "failed",
+                "error_class": exc.__class__.__name__,
+                "reached_upstream": False,
+                "counted_budget": False,
+                "message": str(exc),
+                "provider_symbol": provider_symbol,
+            }
+        )
 
     return {
         "symbol": symbol,
@@ -883,57 +865,7 @@ def _daily_series_key(payload):
 
 
 def _parse_daily_time_series(payload):
-    series_key = _daily_series_key(payload)
-    if not series_key:
-        raise AlphaVantageRequestError(
-            "daily time series missing",
-            "invalid_payload",
-            reached_upstream=True,
-            counted_budget=True,
-        )
-
-    series = payload.get(series_key) or {}
-    if not isinstance(series, dict) or not series:
-        raise AlphaVantageRequestError(
-            "daily time series empty",
-            "empty_payload",
-            reached_upstream=True,
-            counted_budget=True,
-        )
-
-    ordered_dates = sorted(series.keys(), reverse=True)
-    latest = series.get(ordered_dates[0]) or {}
-    previous = series.get(ordered_dates[1]) or latest
-    latest_close = _to_float(latest.get("4. close"), None)
-    previous_close = _to_float(previous.get("4. close"), latest_close)
-    if latest_close is None:
-        raise AlphaVantageRequestError(
-            "latest close missing",
-            "invalid_payload",
-            reached_upstream=True,
-            counted_budget=True,
-        )
-
-    change = None if previous_close in (None, 0) else latest_close - previous_close
-    change_percent = None if previous_close in (None, 0) else (change / previous_close) * 100
-    volume = _to_float(latest.get("5. volume"), None)
-
-    history_points = []
-    for date_key in reversed(ordered_dates[:30]):
-        daily_row = series.get(date_key) or {}
-        price = _to_float(daily_row.get("4. close"), None)
-        if price is None:
-            continue
-        history_points.append({"time": date_key, "price": price})
-
-    return {
-        "latest_close": latest_close,
-        "change": change,
-        "change_percent": change_percent,
-        "volume": volume,
-        "history_points": history_points,
-        "latest_date": ordered_dates[0],
-    }
+    return _parse_finnhub_quote(payload)
 
 
 def _build_quote_payload(symbol: str, parsed_daily: dict):
@@ -941,10 +873,14 @@ def _build_quote_payload(symbol: str, parsed_daily: dict):
     return {
         "symbol": normalized,
         "name": get_supported_symbol_name(normalized),
-        "price": parsed_daily["latest_close"],
+        "price": parsed_daily["price"],
         "change": parsed_daily["change"],
         "change_percent": parsed_daily["change_percent"],
-        "volume": parsed_daily["volume"],
+        "high": parsed_daily["high"],
+        "low": parsed_daily["low"],
+        "open": parsed_daily["open"],
+        "previous_close": parsed_daily["previous_close"],
+        "volume": None,
         "providerSymbol": get_provider_symbol(normalized),
     }
 
@@ -985,13 +921,11 @@ def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_saver=None):
     }
 
     try:
-        payload = _alpha_vantage_request(
-            {
-                "function": "TIME_SERIES_DAILY",
-                "symbol": provider_symbol,
-                "outputsize": "compact",
-                "apikey": api_key,
-            }
+        payload = _finnhub_request(
+            "/quote",
+            {"symbol": provider_symbol},
+            endpoint_name="quote",
+            symbol=normalized,
         )
         parsed_daily = _parse_daily_time_series(payload)
         quote_payload = _build_quote_payload(normalized, parsed_daily)
@@ -1021,7 +955,7 @@ def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_saver=None):
             }
         )
         return result
-    except AlphaVantageRequestError as exc:
+    except ProviderRequestError as exc:
         result.update(
             {
                 "error_class": exc.error_class,
@@ -1097,16 +1031,20 @@ def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, sn
     }
 
     try:
-        payload = _alpha_vantage_request(
+        end_ts = int(time.time())
+        start_ts = end_ts - (60 * 60 * 24 * 45)
+        payload = _finnhub_request(
+            "/stock/candle",
             {
-                "function": "TIME_SERIES_DAILY",
                 "symbol": provider_symbol,
-                "outputsize": "compact",
-                "apikey": api_key,
-            }
+                "resolution": "D",
+                "from": start_ts,
+                "to": end_ts,
+            },
+            endpoint_name="candle",
+            symbol=normalized,
         )
-        parsed_daily = _parse_daily_time_series(payload)
-        history_payload = parsed_daily["history_points"]
+        history_payload = _parse_finnhub_candles(payload)
         _store_cache_entry(stock_history_cache, normalized, history_payload, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
         _persist_snapshot(snapshot_saver, _build_history_snapshot_key(normalized), history_payload, now)
         _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
@@ -1132,7 +1070,7 @@ def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, sn
             }
         )
         return result
-    except AlphaVantageRequestError as exc:
+    except ProviderRequestError as exc:
         result.update(
             {
                 "error_class": exc.error_class,
@@ -1320,86 +1258,13 @@ def fetch_upcoming_earnings(api_key: str, snapshot_loader=None, snapshot_saver=N
 
 
 def refresh_earnings_snapshot(api_key: str, snapshot_saver=None):
-    now = time.time()
-    result = {
-        "status": "failed",
+    return {
+        "status": "skipped",
         "counted_budget": False,
         "reached_upstream": False,
         "error_class": None,
-        "message": None,
+        "message": "earnings refresh is not implemented for the Finnhub provider in this prototype",
     }
-    try:
-        payload = _alpha_vantage_request(
-            {
-                "function": "EARNINGS_CALENDAR",
-                "horizon": "3month",
-                "apikey": api_key,
-            }
-        )
-        rows = []
-        if isinstance(payload, str):
-            reader = csv.DictReader(io.StringIO(payload))
-            for row in reader:
-                if row:
-                    rows.append(row)
-
-        normalized = []
-        for row in rows[:12]:
-            normalized.append(
-                {
-                    "ticker": row.get("symbol") or "",
-                    "company": row.get("name") or row.get("symbol") or "",
-                    "report_date": row.get("reportDate") or "",
-                    "estimate": _to_float(row.get("estimate"), None),
-                    "currency": row.get("currency") or "",
-                }
-            )
-
-        data = {"items": normalized, "updatedAt": datetime.now(timezone.utc).isoformat()}
-        _store_cache_entry(earnings_cache, "upcoming", data, now + EARNINGS_CACHE_TTL_SECONDS, now)
-        _persist_snapshot(snapshot_saver, "earnings_upcoming", data, now)
-        _record_refresh_state("earnings_upcoming", "earnings_cache", now + EARNINGS_CACHE_TTL_SECONDS)
-        result.update(
-            {
-                "status": "success",
-                "counted_budget": True,
-                "reached_upstream": True,
-                "message": "earnings snapshot refreshed",
-                "updated_at": _isoformat_timestamp(now),
-            }
-        )
-        return result
-    except RateLimitError as exc:
-        result.update(
-            {
-                "error_class": "rate_limit",
-                "message": str(exc),
-                "counted_budget": "budget exhausted" not in str(exc).lower(),
-                "reached_upstream": "budget exhausted" not in str(exc).lower(),
-            }
-        )
-        return result
-    except AlphaVantageRequestError as exc:
-        result.update(
-            {
-                "error_class": exc.error_class,
-                "message": exc.reason,
-                "counted_budget": exc.counted_budget,
-                "reached_upstream": exc.reached_upstream,
-                "upstream_status": exc.upstream_status,
-            }
-        )
-        return result
-    except Exception as exc:
-        result.update(
-            {
-                "error_class": exc.__class__.__name__,
-                "message": str(exc) or "earnings snapshot refresh failed",
-                "counted_budget": False,
-                "reached_upstream": False,
-            }
-        )
-        return result
 
 
 def get_supported_market_universe():
