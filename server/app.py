@@ -138,6 +138,7 @@ CORS(
 
 JWT_EXPIRATION_DAYS = 7
 MARKET_DATA_UNAVAILABLE_MESSAGE = "Live market data is limited in this prototype and may not be available right now."
+MARKET_INGEST_MODE = "manual_only"
 
 
 def create_token(user_id: str) -> str:
@@ -705,6 +706,11 @@ def market_debug():
     ensure_database_schema()
     cleanup_legacy_hru_data()
     payload = get_market_debug_status()
+    payload["market_ingest_mode"] = MARKET_INGEST_MODE
+    payload["alpha_vantage_manual_routes"] = [
+        "POST /api/market/bootstrap",
+        "POST /api/market/refresh",
+    ]
     payload["persistent_snapshots"] = list_market_snapshot_keys()
     payload["overview_symbols"] = [
         {
