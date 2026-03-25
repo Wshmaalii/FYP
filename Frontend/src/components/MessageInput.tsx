@@ -34,7 +34,7 @@ function getSensitiveContentPrompt(message: string) {
 export function MessageInput({
   onSend,
   isSending = false,
-  placeholder = 'Type a message... Use $AAPL or #BARC.L for tickers',
+  placeholder = 'Type a message... Use $AAPL or #BARC for tickers',
   privacyMode = 'public',
   contextLabel = 'channel',
 }: MessageInputProps) {
@@ -118,8 +118,8 @@ export function MessageInput({
       {/* Help Text */}
       <div className="mt-2 text-xs text-zinc-600 px-1">
         {privacyMode === 'public'
-          ? `Public ${contextLabel}: your display name, timestamp, and explicit ticker mentions are visible here. Use $AAPL or #BARC.L for ticker cards. Press Enter to send, Shift+Enter for new line.`
-          : `Private ${contextLabel}: only members can see your message metadata here. Use $AAPL or #BARC.L for ticker cards. Press Enter to send, Shift+Enter for new line.`}
+          ? `Public ${contextLabel}: your display name, timestamp, and explicit ticker mentions are visible here. Use $AAPL or #BARC for ticker cards. Press Enter to send, Shift+Enter for new line.`
+          : `Private ${contextLabel}: only members can see your message metadata here. Use $AAPL or #BARC for ticker cards. Press Enter to send, Shift+Enter for new line.`}
       </div>
     </div>
   );
