@@ -35,11 +35,8 @@ SUPPORTED_TICKERS = {
     "COIN": {"name": "Coinbase", "bucket": "US", "provider_symbol": "COIN", "aliases": ["COIN"]},
     "PLTR": {"name": "Palantir", "bucket": "US", "provider_symbol": "PLTR", "aliases": ["PLTR"]},
     "DIS": {"name": "Disney", "bucket": "US", "provider_symbol": "DIS", "aliases": ["DIS"]},
-    "NKE": {"name": "Nike", "bucket": "US", "provider_symbol": "NKE", "aliases": ["NKE"]},
-    "BABA": {"name": "Alibaba", "bucket": "US", "provider_symbol": "BABA", "aliases": ["BABA"]},
-    "PFE": {"name": "Pfizer", "bucket": "US", "provider_symbol": "PFE", "aliases": ["PFE"]},
-    "XOM": {"name": "Exxon Mobil", "bucket": "US", "provider_symbol": "XOM", "aliases": ["XOM"]},
-    "EWU": {"name": "iShares MSCI United Kingdom ETF", "bucket": "Proxy", "provider_symbol": "EWU", "aliases": ["EWU"]},
+    "SHOP": {"name": "Shopify", "bucket": "US", "provider_symbol": "SHOP", "aliases": ["SHOP"]},
+    "UBER": {"name": "Uber", "bucket": "US", "provider_symbol": "UBER", "aliases": ["UBER"]},
 }
 
 SUPPORTED_SYMBOL_ALIASES = {}
@@ -49,8 +46,12 @@ for canonical_symbol, metadata in SUPPORTED_TICKERS.items():
         SUPPORTED_SYMBOL_ALIASES[alias.upper()] = canonical_symbol
 
 MARKET_OVERVIEW_INDICES = [
-    {"name": "FTSE 100", "ticker": "FTSE 100", "region": "Europe", "source_symbol": "EWU", "source_type": "proxy_etf", "source_label": "iShares MSCI United Kingdom ETF proxy"},
-    {"name": "S&P 500", "ticker": "S&P 500", "region": "US", "source_symbol": "SPY", "source_type": "proxy_etf", "source_label": "SPDR S&P 500 ETF Trust proxy"},
+    {"name": "SPY", "ticker": "SPY", "region": "US", "source_symbol": "SPY", "source_type": "direct", "source_label": "SPDR S&P 500 ETF Trust"},
+    {"name": "Apple", "ticker": "AAPL", "region": "US", "source_symbol": "AAPL", "source_type": "direct", "source_label": "Apple Inc."},
+    {"name": "Microsoft", "ticker": "MSFT", "region": "US", "source_symbol": "MSFT", "source_type": "direct", "source_label": "Microsoft Corp."},
+    {"name": "NVIDIA", "ticker": "NVDA", "region": "US", "source_symbol": "NVDA", "source_type": "direct", "source_label": "NVIDIA Corp."},
+    {"name": "Amazon", "ticker": "AMZN", "region": "US", "source_symbol": "AMZN", "source_type": "direct", "source_label": "Amazon.com Inc."},
+    {"name": "Tesla", "ticker": "TSLA", "region": "US", "source_symbol": "TSLA", "source_type": "direct", "source_label": "Tesla Inc."},
 ]
 
 PRIMARY_BASELINE_SYMBOL = "SPY"
@@ -769,7 +770,7 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
     if fresh_data is not None:
         return fresh_data
 
-    supported_bucket = get_supported_symbols(index)
+    supported_bucket = get_supported_symbols() - {"SPY"}
     ranked_entries = [
         entry for entry in (community_entries or [])
         if entry["symbol"] in supported_bucket
@@ -777,11 +778,6 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
     ranked_symbols = [entry["symbol"] for entry in ranked_entries]
 
     if not ranked_symbols:
-        scope_label = {
-            "FTSE100": "supported prototype names",
-            "FTSE250": "supported prototype names",
-            "Global": "curated global names",
-        }[index]
         payload = {
             "items": [],
             "updatedAt": datetime.now(timezone.utc).isoformat(),
@@ -817,11 +813,7 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
             }
         )
 
-    scope_message = {
-        "FTSE100": "Most discussed supported prototype names in TradeLink over the last 7 days.",
-        "FTSE250": "Most discussed supported FTSE 250 names in TradeLink over the last 7 days.",
-        "Global": "Most discussed curated global names in TradeLink over the last 7 days.",
-    }[index]
+    scope_message = "Most discussed supported prototype names in TradeLink over the last 7 days."
     payload = {
         "items": discussed_items,
         "updatedAt": datetime.now(timezone.utc).isoformat(),

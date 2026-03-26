@@ -19,7 +19,7 @@ function formatVolume(volume: number | null) {
 }
 
 export function FTSE100Channel() {
-  const [ftseIndex, setFtseIndex] = useState<MarketOverviewIndex | null>(null);
+  const [featuredIndices, setFeaturedIndices] = useState<MarketOverviewIndex[]>([]);
   const [topMovers, setTopMovers] = useState<TopMoverView[]>([]);
   const [history, setHistory] = useState<StockHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,15 +37,15 @@ export function FTSE100Channel() {
       try {
         const [overview, movers] = await Promise.all([
           getMarketOverview(),
-          getTopMovers('FTSE100'),
+          getTopMovers('Global'),
         ]);
 
         if (!isMounted) {
           return;
         }
 
-        const nextFtseIndex = overview.indices.find((index) => index.name === 'FTSE 100') || null;
-        setFtseIndex(nextFtseIndex);
+        const nextFeaturedIndices = overview.indices.filter((index) => ['SPY', 'AAPL', 'MSFT'].includes(index.ticker));
+        setFeaturedIndices(nextFeaturedIndices);
         setMarketDataStatus(overview.marketDataStatus || null);
         setTopMoversMessage(movers.message);
         setTopMovers(
@@ -54,8 +54,8 @@ export function FTSE100Channel() {
             discussionLabel: `${stock.uniqueUsers} members • ${stock.mentionCount} mentions`,
           })),
         );
-        if (nextFtseIndex?.sourceSymbol) {
-          const historyData = await fetchHistory(nextFtseIndex.sourceSymbol);
+        if (nextFeaturedIndices[0]?.sourceSymbol) {
+          const historyData = await fetchHistory(nextFeaturedIndices[0].sourceSymbol);
           if (isMounted) {
             setHistory(historyData.points);
           }
@@ -81,7 +81,8 @@ export function FTSE100Channel() {
     };
   }, []);
 
-  const isPositive = (ftseIndex?.change ?? 0) >= 0;
+  const primaryIndex = featuredIndices[0] || null;
+  const isPositive = (primaryIndex?.change ?? 0) >= 0;
   const chartValues = history;
   const availableChartPrices = chartValues.map((point) => point.price);
   const minPrice = availableChartPrices.length > 0 ? Math.min(...availableChartPrices) * 0.995 : 0;
@@ -90,25 +91,25 @@ export function FTSE100Channel() {
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950">
       <div className="border-b border-zinc-800 p-6">
-        {loading && !ftseIndex ? (
-          <div className="text-zinc-400 text-sm">Loading FTSE 100 data...</div>
+        {loading && featuredIndices.length === 0 ? (
+          <div className="text-zinc-400 text-sm">Loading curated market data...</div>
         ) : error ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">{MARKET_DATA_LIMITED_MESSAGE}</div>
-        ) : ftseIndex && ftseIndex.available ? (
+        ) : primaryIndex && primaryIndex.available ? (
           <div className="flex items-end gap-6">
             <div>
-              <h2 className="text-zinc-500 text-sm mb-2">FTSE 100 Index</h2>
+              <h2 className="text-zinc-500 text-sm mb-2">Featured Market Snapshot</h2>
               <div className="flex items-baseline gap-3">
-                <span className="text-white text-4xl">{ftseIndex.price?.toFixed(2)}</span>
+                <span className="text-white text-4xl">{primaryIndex.price?.toFixed(2)}</span>
                 <div className={`flex items-center gap-2 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
                   {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
-                  <span className="text-xl">{isPositive ? '+' : ''}{(ftseIndex.change ?? 0).toFixed(2)}</span>
-                  <span className="text-lg">({isPositive ? '+' : ''}{(ftseIndex.changePercent ?? 0).toFixed(2)}%)</span>
+                  <span className="text-xl">{isPositive ? '+' : ''}{(primaryIndex.change ?? 0).toFixed(2)}</span>
+                  <span className="text-lg">({isPositive ? '+' : ''}{(primaryIndex.changePercent ?? 0).toFixed(2)}%)</span>
                 </div>
               </div>
-              <p className="text-zinc-500 text-sm mt-2">Status: {ftseIndex.status}</p>
-              {ftseIndex.sourceLabel && (
-                <p className="text-zinc-500 text-xs mt-1">Source: {ftseIndex.sourceLabel}</p>
+              <p className="text-zinc-500 text-sm mt-2">{primaryIndex.name} • {primaryIndex.status}</p>
+              {primaryIndex.sourceLabel && (
+                <p className="text-zinc-500 text-xs mt-1">Source: {primaryIndex.sourceLabel}</p>
               )}
               {marketDataStatus?.isCachedFallback && (
                 <p className="text-zinc-500 text-xs mt-1">
@@ -120,25 +121,25 @@ export function FTSE100Channel() {
             <div className="flex gap-6 pb-2">
               <div>
                 <p className="text-zinc-500 text-xs">Open</p>
-                <p className="text-zinc-100">{ftseIndex.open !== null ? ftseIndex.open.toFixed(2) : '--'}</p>
+                <p className="text-zinc-100">{primaryIndex.open !== null ? primaryIndex.open.toFixed(2) : '--'}</p>
               </div>
               <div>
                 <p className="text-zinc-500 text-xs">High</p>
-                <p className="text-zinc-100">{ftseIndex.high !== null ? ftseIndex.high.toFixed(2) : '--'}</p>
+                <p className="text-zinc-100">{primaryIndex.high !== null ? primaryIndex.high.toFixed(2) : '--'}</p>
               </div>
               <div>
                 <p className="text-zinc-500 text-xs">Low</p>
-                <p className="text-zinc-100">{ftseIndex.low !== null ? ftseIndex.low.toFixed(2) : '--'}</p>
+                <p className="text-zinc-100">{primaryIndex.low !== null ? primaryIndex.low.toFixed(2) : '--'}</p>
               </div>
               <div>
                 <p className="text-zinc-500 text-xs">Volume</p>
-                <p className="text-zinc-100">{formatVolume(ftseIndex.volume)}</p>
+                <p className="text-zinc-100">{formatVolume(primaryIndex.volume)}</p>
               </div>
             </div>
           </div>
         ) : (
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-500 text-sm">
-            FTSE 100 live data is temporarily unavailable.
+            Curated market data is temporarily unavailable.
           </div>
         )}
       </div>
@@ -146,10 +147,10 @@ export function FTSE100Channel() {
       <ChannelPrivacyCard
         scopeLabel="Public Channel"
         audienceLabel="Members Visible"
-        visibilitySummary="FTSE100 is a public community space. Shared market context here is visible to signed-in TradeLink members."
-        membershipVisibility="Participation in linked FTSE discussions is visible to other members in the channel."
-        tickerVisibility="Any explicit ticker mentions shared in FTSE discussions are visible to all members in that channel."
-        metadataVisibility="Display name, verification badge, timestamps, and explicit ticker mentions are visible in FTSE discussions."
+        visibilitySummary="This public market space is visible to signed-in TradeLink members discussing large-cap and widely followed names."
+        membershipVisibility="Participation in this channel is visible to other members in the space."
+        tickerVisibility="Any explicit ticker mentions shared here are visible to all members in this channel."
+        metadataVisibility="Display name, verification badge, timestamps, and explicit ticker mentions are visible in this channel."
       />
 
       <div className="grid grid-cols-3 gap-6 p-6">

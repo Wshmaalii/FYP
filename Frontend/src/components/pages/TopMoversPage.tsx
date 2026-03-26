@@ -1,4 +1,4 @@
-import { ArrowLeft, TrendingUp, Plus } from 'lucide-react';
+import { ArrowLeft, TrendingDown, TrendingUp, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getTopMovers, MARKET_DATA_LIMITED_MESSAGE, TopMoverItem } from '../../api/market';
 import { addWatchlistItem } from '../../api/watchlist';
@@ -6,6 +6,16 @@ import { addWatchlistItem } from '../../api/watchlist';
 interface TopMoversPageProps {
   onBack: () => void;
 }
+
+type DiscussedFilter = 'All' | 'Big Tech' | 'AI' | 'Consumer / Media' | 'Finance' | 'High Volatility';
+
+const DISCUSSED_FILTER_SYMBOLS: Record<Exclude<DiscussedFilter, 'All'>, string[]> = {
+  'Big Tech': ['AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL'],
+  'AI': ['NVDA', 'AMD', 'PLTR', 'MSFT'],
+  'Consumer / Media': ['NFLX', 'DIS', 'AMZN', 'UBER'],
+  'Finance': ['JPM', 'V', 'MA', 'COIN'],
+  'High Volatility': ['TSLA', 'COIN', 'PLTR', 'AMD', 'NVDA', 'UBER'],
+};
 
 interface Stock {
   ticker: string;
@@ -126,7 +136,7 @@ function StockRow({
 }
 
 export function TopMoversPage({ onBack }: TopMoversPageProps) {
-  const [selectedFilter, setSelectedFilter] = useState<'FTSE100' | 'FTSE250' | 'Global'>('FTSE100');
+  const [selectedFilter, setSelectedFilter] = useState<DiscussedFilter>('All');
   const [discussed, setDiscussed] = useState<Stock[]>([]);
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
@@ -146,6 +156,10 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
     watchlistAdds: mover.watchlistAdds,
   });
 
+  const filteredDiscussed = selectedFilter === 'All'
+    ? discussed
+    : discussed.filter((stock) => DISCUSSED_FILTER_SYMBOLS[selectedFilter].includes(stock.ticker));
+
   useEffect(() => {
     let isMounted = true;
 
@@ -156,7 +170,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
       }
 
       try {
-        const data = await getTopMovers(selectedFilter);
+        const data = await getTopMovers('Global');
         if (!isMounted) {
           return;
         }
@@ -185,7 +199,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
     return () => {
       isMounted = false;
     };
-  }, [selectedFilter]);
+  }, []);
 
   const toggleExpanded = (ticker: string) => {
     setExpandedTicker((current) => (current === ticker ? null : ticker));
@@ -211,7 +225,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
           className="flex items-center gap-2 text-zinc-400 hover:text-zinc-100 mb-4 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Back to FTSE100</span>
+          <span className="text-sm">Back to Dashboard</span>
         </button>
 
         <div className="flex items-center justify-between">
@@ -222,7 +236,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
 
           {/* Filter Buttons */}
           <div className="flex gap-2">
-            {(['FTSE100', 'FTSE250', 'Global'] as const).map((filter) => (
+            {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setSelectedFilter(filter)}
@@ -259,19 +273,19 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-cyan-400" />
             <h2 className="text-zinc-100">Most Discussed</h2>
-            <span className="text-zinc-500 text-sm">({discussed.length} tickers)</span>
+            <span className="text-zinc-500 text-sm">({filteredDiscussed.length} tickers)</span>
           </div>
           <div className="space-y-3">
             {loading ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
                 Loading discussed tickers...
               </div>
-            ) : discussed.length === 0 ? (
+            ) : filteredDiscussed.length === 0 ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                Mention a ticker like #SPY or $AAPL to start.
+                {providerMessage || 'Mention a ticker like #SPY or $AAPL to start.'}
               </div>
             ) : (
-              discussed.map((stock) => (
+              filteredDiscussed.map((stock) => (
                 <StockRow
                   key={stock.ticker}
                   stock={stock}

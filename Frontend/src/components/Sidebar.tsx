@@ -8,7 +8,7 @@ interface SidebarProps {
 }
 
 const channels = [
-  { id: 'FTSE100' as View, name: 'FTSE100', icon: TrendingUp, public: true },
+  { id: 'FTSE100' as View, name: 'Markets', icon: TrendingUp, public: true },
   { id: 'Earnings Watch' as View, name: 'Earnings Watch', icon: Hash, public: true },
   { id: 'Market Chat' as View, name: 'Market Chat', icon: MessageSquare, public: true },
   { id: 'Private Rooms' as View, name: 'Private Rooms', icon: Lock, public: false },

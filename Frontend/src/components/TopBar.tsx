@@ -29,7 +29,8 @@ export function TopBar({ currentView, onNavigate, onLogout, userName, userHandle
 
   const isProfileView = currentView === 'My Profile' || currentView === 'Account Settings';
   const displayTitle = isProfileView ? currentView : 'TradeLink';
-  const displaySubtitle = !isProfileView ? `#${currentView}` : undefined;
+  const displayChannelName = currentView === 'FTSE100' ? 'Markets' : currentView;
+  const displaySubtitle = !isProfileView ? `#${displayChannelName}` : undefined;
   const displayName = userName || 'Trader';
   const initials = avatarSeed || displayName
     .split(' ')

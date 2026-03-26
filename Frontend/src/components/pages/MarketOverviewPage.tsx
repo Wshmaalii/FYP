@@ -6,6 +6,16 @@ interface MarketOverviewPageProps {
   onBack: () => void;
 }
 
+type MarketFilter = 'All' | 'Big Tech' | 'AI' | 'Consumer / Media' | 'Finance' | 'High Volatility';
+
+const MARKET_FILTER_SYMBOLS: Record<Exclude<MarketFilter, 'All'>, string[]> = {
+  'Big Tech': ['AAPL', 'MSFT', 'AMZN', 'META', 'GOOGL'],
+  'AI': ['NVDA', 'AMD', 'PLTR', 'MSFT'],
+  'Consumer / Media': ['NFLX', 'DIS', 'AMZN', 'UBER'],
+  'Finance': ['JPM', 'V', 'MA', 'COIN'],
+  'High Volatility': ['TSLA', 'COIN', 'PLTR', 'AMD', 'NVDA', 'UBER'],
+};
+
 function formatVolume(volume: number | null) {
   if (!volume) {
     return '--';
@@ -38,11 +48,7 @@ function IndexCard({ index }: { index: MarketOverviewIndex }) {
           <p className="text-zinc-500 text-sm">{index.ticker}</p>
           {index.sourceLabel && <p className="text-zinc-600 text-xs mt-1">Source: {index.sourceLabel}</p>}
         </div>
-        <Globe className={`w-4 h-4 ${
-          index.region === 'Europe' ? 'text-blue-400' :
-          index.region === 'US' ? 'text-cyan-400' :
-          'text-orange-400'
-        }`} />
+        <Globe className="w-4 h-4 text-cyan-400" />
       </div>
 
       {index.available ? (
@@ -76,6 +82,9 @@ function IndexCard({ index }: { index: MarketOverviewIndex }) {
               <p className="text-red-400">{index.low !== null ? index.low.toFixed(2) : '--'}</p>
             </div>
           </div>
+          {index.history.length === 0 && (
+            <p className="text-zinc-500 text-xs mt-3">Chart history is not available for this snapshot yet.</p>
+          )}
         </>
       ) : (
         <div className="text-zinc-500 text-sm">Live market data is not available for this item in the prototype right now.</div>
@@ -86,7 +95,7 @@ function IndexCard({ index }: { index: MarketOverviewIndex }) {
 
 export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedRegion, setSelectedRegion] = useState<'All' | 'Europe' | 'US' | 'Asia'>('All');
+  const [selectedFilter, setSelectedFilter] = useState<MarketFilter>('All');
   const [indices, setIndices] = useState<MarketOverviewIndex[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,9 +141,9 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
     };
   }, []);
 
-  const filteredIndices = selectedRegion === 'All'
+  const filteredIndices = selectedFilter === 'All'
     ? indices
-    : indices.filter((index) => index.region === selectedRegion);
+    : indices.filter((index) => MARKET_FILTER_SYMBOLS[selectedFilter].includes(index.ticker));
 
   const openMarkets = indices.filter((index) => index.status === 'Open').length;
   const closedMarkets = indices.filter((index) => index.status !== 'Open').length;
@@ -173,17 +182,17 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
           </div>
 
           <div className="flex gap-2">
-            {(['All', 'Europe', 'US', 'Asia'] as const).map((region) => (
+            {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
               <button
-                key={region}
-                onClick={() => setSelectedRegion(region)}
+                key={filter}
+                onClick={() => setSelectedFilter(filter)}
                 className={`px-4 py-2 rounded transition-colors ${
-                  selectedRegion === region
+                  selectedFilter === filter
                     ? 'bg-cyan-600 text-white'
                     : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
               >
-                {region}
+                {filter}
               </button>
             ))}
           </div>

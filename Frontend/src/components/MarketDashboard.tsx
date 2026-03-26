@@ -68,7 +68,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
       try {
         const [overview, movers, watchlistItems] = await Promise.all([
           getMarketOverview(),
-          getTopMovers('FTSE100'),
+          getTopMovers('Global'),
           fetchWatchlist().catch(() => []),
         ]);
 
@@ -89,10 +89,10 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
 
         setMarketIndices(
           overview.indices
-            .filter((index) => ['FTSE 100', 'S&P 500'].includes(index.name))
+            .filter((index) => ['SPY', 'AAPL', 'MSFT'].includes(index.ticker))
             .map((index: MarketOverviewIndex) => ({
               ticker: index.ticker,
-              name: index.sourceType === 'proxy_etf' ? `${index.name} (proxy)` : index.name,
+              name: index.name,
               price: index.price,
               change: index.change,
               changePercent: index.changePercent,

@@ -28,7 +28,7 @@ export interface MarketOverviewIndex {
   high: number | null;
   low: number | null;
   volume: number | null;
-  region: 'Europe' | 'US' | 'Asia';
+  region: string;
   status: string;
   history: StockHistoryPoint[];
   available: boolean;
