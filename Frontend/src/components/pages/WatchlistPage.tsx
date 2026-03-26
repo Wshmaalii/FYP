@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Bell, Star, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { getQuotes, type MarketDataStatus } from '../../api/market';
-import { fetchWatchlist, removeWatchlistItem, type WatchlistItem } from '../../api/watchlist';
+import { WATCHLIST_UPDATED_EVENT, fetchWatchlist, removeWatchlistItem, type WatchlistItem } from '../../api/watchlist';
 
 interface WatchlistPageProps {
   onBack: () => void;
@@ -144,8 +144,14 @@ export function WatchlistPage({ onBack, onSelectStock }: WatchlistPageProps) {
 
     void loadWatchlist();
 
+    const handleWatchlistUpdated = () => {
+      void loadWatchlist();
+    };
+    window.addEventListener(WATCHLIST_UPDATED_EVENT, handleWatchlistUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener(WATCHLIST_UPDATED_EVENT, handleWatchlistUpdated);
     };
   }, []);
 
@@ -199,8 +205,8 @@ export function WatchlistPage({ onBack, onSelectStock }: WatchlistPageProps) {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-zinc-100">Tracked Tickers</h2>
           <div className="flex items-center gap-2 text-zinc-500 text-sm">
-            <span>On-demand quote updates</span>
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+            <span>Stored market snapshots</span>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full" />
           </div>
         </div>
 
@@ -209,6 +215,11 @@ export function WatchlistPage({ onBack, onSelectStock }: WatchlistPageProps) {
           <div className="mb-4 bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">
             {marketDataStatus.message || 'Showing most recent available data.'}
             {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+          </div>
+        )}
+        {!error && !marketDataStatus?.isCachedFallback && stocks.length > 0 && (
+          <div className="mb-4 bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">
+            Showing most recent available data for your tracked stocks.
           </div>
         )}
 

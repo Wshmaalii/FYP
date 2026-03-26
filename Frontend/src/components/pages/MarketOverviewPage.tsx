@@ -1,4 +1,4 @@
-import { ArrowLeft, TrendingUp, TrendingDown, Clock, Globe } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, SUPPORTED_MARKET_SYMBOLS, type MarketDataStatus, type MarketOverviewIndex } from '../../api/market';
 
@@ -120,20 +120,11 @@ function IndexCard({ index, onSelectStock }: { index: MarketOverviewIndex; onSel
 }
 
 export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPageProps) {
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedFilter, setSelectedFilter] = useState<MarketFilter>('All');
   const [indices, setIndices] = useState<MarketOverviewIndex[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sectorsAvailable, setSectorsAvailable] = useState(false);
   const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -161,7 +152,6 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
             .filter((index): index is MarketOverviewIndex => index !== null);
 
           setIndices([...orderedPrimary, ...remainingSupported]);
-          setSectorsAvailable(false);
           setMarketDataStatus(data.marketDataStatus || null);
         }
       } catch (err) {
@@ -205,10 +195,7 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
           <div>
             <h1 className="text-white text-2xl mb-2">Market Overview</h1>
             <div className="flex items-center gap-4 text-zinc-400">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span className="text-sm">{currentTime.toLocaleString('en-GB')}</span>
-              </div>
+              <span className="text-sm">Snapshot-based market data for tracked stocks</span>
               <div className="flex items-center gap-3 text-sm">
                 <span className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-emerald-400 rounded-full" />
@@ -248,6 +235,11 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
             {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </div>
         )}
+        {!error && !marketDataStatus?.isCachedFallback && indices.length > 0 && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">
+            Showing most recent available data for selected tracked stocks.
+          </div>
+        )}
 
         <div>
           <h2 className="text-zinc-100 mb-4">Curated Market Snapshot</h2>
@@ -265,9 +257,9 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
         </div>
 
         <div>
-          <h2 className="text-zinc-100 mb-4">Sector Performance Heatmap</h2>
+          <h2 className="text-zinc-100 mb-4">Snapshot Notes</h2>
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-            <div className="text-zinc-500 text-sm">Market data is available for selected tracked stocks.</div>
+            <div className="text-zinc-500 text-sm">Market data is stored and refreshed manually for selected tracked stocks. Prices remain visible until a newer snapshot replaces them.</div>
           </div>
         </div>
 
@@ -283,7 +275,7 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
               <p className="text-red-400 text-2xl">{availableIndices.filter((index) => (index.change ?? 0) < 0).length}</p>
             </div>
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-              <p className="text-zinc-500 text-sm mb-2">Live Indices</p>
+              <p className="text-zinc-500 text-sm mb-2">Stored Snapshots</p>
               <p className="text-cyan-400 text-2xl">{availableIndices.length}</p>
             </div>
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">

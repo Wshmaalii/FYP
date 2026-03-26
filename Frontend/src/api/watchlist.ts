@@ -2,6 +2,7 @@ import { getApiBaseUrl } from './config';
 import { getStoredToken } from './auth';
 
 const API_BASE_URL = getApiBaseUrl();
+export const WATCHLIST_UPDATED_EVENT = 'tradelink:watchlist-updated';
 
 export interface WatchlistItem {
   ticker: string;
@@ -49,6 +50,7 @@ export async function addWatchlistItem(ticker: string, company_name?: string): P
     method: 'POST',
     body: JSON.stringify({ ticker, company_name }),
   });
+  window.dispatchEvent(new CustomEvent(WATCHLIST_UPDATED_EVENT, { detail: { action: 'added', ticker } }));
   return data.item;
 }
 
@@ -56,4 +58,5 @@ export async function removeWatchlistItem(ticker: string): Promise<void> {
   await request<{ message: string }>(`/api/watchlist/${encodeURIComponent(ticker)}`, {
     method: 'DELETE',
   });
+  window.dispatchEvent(new CustomEvent(WATCHLIST_UPDATED_EVENT, { detail: { action: 'removed', ticker } }));
 }

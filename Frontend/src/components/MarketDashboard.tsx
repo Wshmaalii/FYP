@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
 import { getTopMovers, getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, type MarketDataStatus, type TopMoverItem } from '../api/market';
-import { fetchWatchlist } from '../api/watchlist';
+import { WATCHLIST_UPDATED_EVENT, fetchWatchlist } from '../api/watchlist';
 
 interface Stock {
   ticker: string;
@@ -48,7 +48,6 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
 }
 
 export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProps) {
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [marketIndices, setMarketIndices] = useState<Stock[]>([]);
   const [topMovers, setTopMovers] = useState<Stock[]>([]);
   const [watchlist, setWatchlist] = useState<Stock[]>([]);
@@ -57,18 +56,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   const [overviewStatus, setOverviewStatus] = useState<MarketDataStatus | null>(null);
   const [watchlistStatus, setWatchlistStatus] = useState<MarketDataStatus | null>(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async (isMountedRef?: { current: boolean }) => {
       try {
         const [overviewQuotes, movers, watchlistItems] = await Promise.all([
           getQuotes([...PRIMARY_MARKET_SYMBOLS]),
@@ -87,7 +75,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         const quoteResponse = watchlistStocks.length > 0 ? await getQuotes(watchlistStocks.map((item) => item.ticker)) : { quotes: {} };
         const quotes = quoteResponse.quotes;
 
-        if (!isMounted) {
+        if (isMountedRef && !isMountedRef.current) {
           return;
         }
 
@@ -135,21 +123,29 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
 
         setLiveDataError(false);
       } catch {
-        if (isMounted) {
+        if (!isMountedRef || isMountedRef.current) {
           setLiveDataError(true);
           setMarketIndices([]);
           setTopMovers([]);
           setTopMoversMessage(null);
         }
       }
-    };
+    }, []);
 
-    void loadDashboardData();
+  useEffect(() => {
+    const mounted = { current: true };
+    void loadDashboardData(mounted);
+
+    const handleWatchlistUpdated = () => {
+      void loadDashboardData(mounted);
+    };
+    window.addEventListener(WATCHLIST_UPDATED_EVENT, handleWatchlistUpdated);
 
     return () => {
-      isMounted = false;
+      mounted.current = false;
+      window.removeEventListener(WATCHLIST_UPDATED_EVENT, handleWatchlistUpdated);
     };
-  }, []);
+  }, [loadDashboardData]);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -158,12 +154,15 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-zinc-400 text-xs uppercase tracking-wider group-hover:text-cyan-400 transition-colors">Market Overview</h3>
             <div className="flex items-center gap-1">
-              <span className="text-cyan-400 text-xs">{currentTime.toLocaleTimeString('en-GB')}</span>
+              <span className="text-cyan-400 text-xs">Stored snapshots</span>
               <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
             </div>
           </div>
         </button>
         {liveDataError && <p className="text-zinc-500 text-xs mb-2">{MARKET_DATA_LIMITED_MESSAGE}</p>}
+        {!liveDataError && !overviewStatus?.isCachedFallback && marketIndices.length > 0 && (
+          <p className="text-zinc-500 text-xs mb-2">Showing most recent available data for tracked stocks.</p>
+        )}
         {!liveDataError && overviewStatus?.isCachedFallback && (
           <p className="text-zinc-500 text-xs mb-2">
             {overviewStatus.message || 'Showing most recent available data.'}
