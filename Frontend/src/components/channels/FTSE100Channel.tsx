@@ -190,7 +190,7 @@ export function FTSE100Channel() {
         <div className="col-span-3 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <h3 className="text-zinc-100 mb-4">Most Discussed</h3>
           {topMovers.length === 0 ? (
-            <div className="text-zinc-500 text-sm">{topMoversMessage || 'Mention a ticker like #BARC or $AAPL to start.'}</div>
+            <div className="text-zinc-500 text-sm">{topMoversMessage || 'Mention a ticker like #SPY or $AAPL to start.'}</div>
           ) : (
             <div className="space-y-3">
               {topMovers.map((stock) => {

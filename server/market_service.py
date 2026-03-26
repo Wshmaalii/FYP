@@ -19,28 +19,27 @@ MARKET_REFRESH_BATCH_LIMIT = 5
 MARKET_REFRESH_BUFFER = 5
 
 SUPPORTED_TICKERS = {
-    "LLOY": {"name": "Lloyds Banking Group", "bucket": "FTSE100", "provider_symbol": "LLOY.L", "aliases": ["LLOY", "LLOY.L", "LLOY.LON"]},
-    "LGEN": {"name": "Legal & General", "bucket": "FTSE100", "provider_symbol": "LGEN.L", "aliases": ["LGEN", "LGEN.L", "LGEN.LON"]},
-    "BP.": {"name": "BP", "bucket": "FTSE100", "provider_symbol": "BP.L", "aliases": ["BP.", "BP", "BP.L", "BP.LON"]},
-    "RR.": {"name": "Rolls-Royce Holdings", "bucket": "FTSE100", "provider_symbol": "RR.L", "aliases": ["RR.", "RR", "RR.L", "RR.LON"]},
-    "SHEL": {"name": "Shell", "bucket": "FTSE100", "provider_symbol": "SHEL.L", "aliases": ["SHEL", "SHEL.L", "SHEL.LON"]},
-    "BARC": {"name": "Barclays", "bucket": "FTSE100", "provider_symbol": "BARC.L", "aliases": ["BARC", "BARC.L", "BARC.LON"]},
-    "NWG": {"name": "NatWest Group", "bucket": "FTSE100", "provider_symbol": "NWG.L", "aliases": ["NWG", "NWG.L", "NWG.LON"]},
-    "HSBA": {"name": "HSBC Holdings", "bucket": "FTSE100", "provider_symbol": "HSBA.L", "aliases": ["HSBA", "HSBA.L", "HSBA.LON"]},
-    "AZN": {"name": "AstraZeneca", "bucket": "FTSE100", "provider_symbol": "AZN.L", "aliases": ["AZN", "AZN.L", "AZN.LON"]},
-    "VOD": {"name": "Vodafone Group", "bucket": "FTSE100", "provider_symbol": "VOD.L", "aliases": ["VOD", "VOD.L", "VOD.LON"]},
-    "BT.A": {"name": "BT Group", "bucket": "FTSE100", "provider_symbol": "BTA.L", "aliases": ["BT.A", "BTA", "BT-A.L", "BTA.LON"]},
-    "GSK": {"name": "GSK", "bucket": "FTSE100", "provider_symbol": "GSK.L", "aliases": ["GSK", "GSK.L", "GSK.LON"]},
-    "AV.": {"name": "Aviva", "bucket": "FTSE100", "provider_symbol": "AV.L", "aliases": ["AV.", "AV", "AV.L", "AV.LON"]},
-    "TSCO": {"name": "Tesco", "bucket": "FTSE100", "provider_symbol": "TSCO.L", "aliases": ["TSCO", "TSCO.L", "TSCO.LON"]},
-    "ULVR": {"name": "Unilever", "bucket": "FTSE100", "provider_symbol": "ULVR.L", "aliases": ["ULVR", "ULVR.L", "ULVR.LON"]},
-    "RIO": {"name": "Rio Tinto", "bucket": "FTSE100", "provider_symbol": "RIO.L", "aliases": ["RIO", "RIO.L", "RIO.LON"]},
-    "GLEN": {"name": "Glencore", "bucket": "FTSE100", "provider_symbol": "GLEN.L", "aliases": ["GLEN", "GLEN.L", "GLEN.LON"]},
-    "BATS": {"name": "British American Tobacco", "bucket": "FTSE100", "provider_symbol": "BATS.L", "aliases": ["BATS", "BATS.L", "BATS.LON"]},
-    "STAN": {"name": "Standard Chartered", "bucket": "FTSE100", "provider_symbol": "STAN.L", "aliases": ["STAN", "STAN.L", "STAN.LON"]},
-    "MNG": {"name": "M&G", "bucket": "FTSE100", "provider_symbol": "MNG.L", "aliases": ["MNG", "MNG.L", "MNG.LON"]},
+    "SPY": {"name": "SPDR S&P 500 ETF Trust", "bucket": "US", "provider_symbol": "SPY", "aliases": ["SPY"]},
+    "AAPL": {"name": "Apple", "bucket": "US", "provider_symbol": "AAPL", "aliases": ["AAPL"]},
+    "MSFT": {"name": "Microsoft", "bucket": "US", "provider_symbol": "MSFT", "aliases": ["MSFT"]},
+    "NVDA": {"name": "NVIDIA", "bucket": "US", "provider_symbol": "NVDA", "aliases": ["NVDA"]},
+    "AMZN": {"name": "Amazon", "bucket": "US", "provider_symbol": "AMZN", "aliases": ["AMZN"]},
+    "TSLA": {"name": "Tesla", "bucket": "US", "provider_symbol": "TSLA", "aliases": ["TSLA"]},
+    "META": {"name": "Meta Platforms", "bucket": "US", "provider_symbol": "META", "aliases": ["META"]},
+    "GOOGL": {"name": "Alphabet", "bucket": "US", "provider_symbol": "GOOGL", "aliases": ["GOOGL"]},
+    "NFLX": {"name": "Netflix", "bucket": "US", "provider_symbol": "NFLX", "aliases": ["NFLX"]},
+    "JPM": {"name": "JPMorgan Chase", "bucket": "US", "provider_symbol": "JPM", "aliases": ["JPM"]},
+    "V": {"name": "Visa", "bucket": "US", "provider_symbol": "V", "aliases": ["V"]},
+    "MA": {"name": "Mastercard", "bucket": "US", "provider_symbol": "MA", "aliases": ["MA"]},
+    "AMD": {"name": "AMD", "bucket": "US", "provider_symbol": "AMD", "aliases": ["AMD"]},
+    "COIN": {"name": "Coinbase", "bucket": "US", "provider_symbol": "COIN", "aliases": ["COIN"]},
+    "PLTR": {"name": "Palantir", "bucket": "US", "provider_symbol": "PLTR", "aliases": ["PLTR"]},
+    "DIS": {"name": "Disney", "bucket": "US", "provider_symbol": "DIS", "aliases": ["DIS"]},
+    "NKE": {"name": "Nike", "bucket": "US", "provider_symbol": "NKE", "aliases": ["NKE"]},
+    "BABA": {"name": "Alibaba", "bucket": "US", "provider_symbol": "BABA", "aliases": ["BABA"]},
+    "PFE": {"name": "Pfizer", "bucket": "US", "provider_symbol": "PFE", "aliases": ["PFE"]},
+    "XOM": {"name": "Exxon Mobil", "bucket": "US", "provider_symbol": "XOM", "aliases": ["XOM"]},
     "EWU": {"name": "iShares MSCI United Kingdom ETF", "bucket": "Proxy", "provider_symbol": "EWU", "aliases": ["EWU"]},
-    "SPY": {"name": "SPDR S&P 500 ETF Trust", "bucket": "Proxy", "provider_symbol": "SPY", "aliases": ["SPY"]},
 }
 
 SUPPORTED_SYMBOL_ALIASES = {}
@@ -779,15 +778,15 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
 
     if not ranked_symbols:
         scope_label = {
-            "FTSE100": "supported FTSE 100 names",
-            "FTSE250": "supported FTSE 250 names",
+            "FTSE100": "supported prototype names",
+            "FTSE250": "supported prototype names",
             "Global": "curated global names",
         }[index]
         payload = {
             "items": [],
             "updatedAt": datetime.now(timezone.utc).isoformat(),
             "supported": False,
-            "message": "Mention a ticker like #BARC or $AAPL to start.",
+            "message": "Mention a ticker like #SPY or $AAPL to start.",
             "windowDays": window_days,
             "marketDataStatus": {
                 "source": "internal",
@@ -819,7 +818,7 @@ def fetch_top_movers(api_key: str, index: str, community_entries: list[dict] | N
         )
 
     scope_message = {
-        "FTSE100": "Most discussed supported FTSE 100 names in TradeLink over the last 7 days.",
+        "FTSE100": "Most discussed supported prototype names in TradeLink over the last 7 days.",
         "FTSE250": "Most discussed supported FTSE 250 names in TradeLink over the last 7 days.",
         "Global": "Most discussed curated global names in TradeLink over the last 7 days.",
     }[index]
@@ -1270,7 +1269,7 @@ def refresh_earnings_snapshot(api_key: str, snapshot_saver=None):
 def get_supported_market_universe():
     return [
         symbol for symbol, metadata in SUPPORTED_TICKERS.items()
-        if metadata["bucket"] == "FTSE100"
+        if metadata["bucket"] == "US"
     ]
 
 

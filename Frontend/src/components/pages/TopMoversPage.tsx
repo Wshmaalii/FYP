@@ -268,7 +268,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
               </div>
             ) : discussed.length === 0 ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                Mention a ticker like #BARC or $AAPL to start.
+                Mention a ticker like #SPY or $AAPL to start.
               </div>
             ) : (
               discussed.map((stock) => (

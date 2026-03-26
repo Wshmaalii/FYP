@@ -90,7 +90,7 @@ export function MarketChatChannel() {
         audienceLabel="Members Visible"
         visibilitySummary="Messages in Market Chat are visible to signed-in TradeLink members who can access this channel."
         membershipVisibility="Channel participation is visible to other members in this space."
-        tickerVisibility="Explicit ticker mentions like $AAPL or #BARC are visible to everyone in this channel."
+        tickerVisibility="Explicit ticker mentions like $AAPL or #SPY are visible to everyone in this channel."
         metadataVisibility="Display name, verification badge, timestamp, and mentioned tickers are visible in this channel."
       />
 
