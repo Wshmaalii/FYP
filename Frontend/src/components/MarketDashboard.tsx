@@ -14,13 +14,18 @@ interface Stock {
 
 interface MarketDashboardProps {
   onNavigate: (view: View) => void;
+  onOpenStock: (ticker: string) => void;
 }
 
-function StockItem({ stock }: { stock: Stock }) {
+function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker: string) => void }) {
   const isPositive = (stock.change ?? 0) >= 0;
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 hover:bg-zinc-900 rounded transition-colors cursor-pointer">
+    <button
+      type="button"
+      onClick={() => onOpenStock(stock.ticker)}
+      className="w-full flex items-center justify-between py-2 px-3 hover:bg-zinc-900 rounded transition-colors cursor-pointer text-left"
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-zinc-100 text-sm">{stock.ticker}</span>
@@ -38,11 +43,11 @@ function StockItem({ stock }: { stock: Stock }) {
           {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
         </p>
       </div>
-    </div>
+    </button>
   );
 }
 
-export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
+export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [marketIndices, setMarketIndices] = useState<Stock[]>([]);
   const [topMovers, setTopMovers] = useState<Stock[]>([]);
@@ -169,7 +174,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           {marketIndices.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">No stored market snapshots yet.</p>
           ) : (
-            marketIndices.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
+            marketIndices.map((stock) => <StockItem key={stock.ticker} stock={stock} onOpenStock={onOpenStock} />)
           )}
         </div>
       </div>
@@ -188,7 +193,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           {topMovers.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">{topMoversMessage || 'Loading discussed names...'}</p>
           ) : (
-            topMovers.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
+            topMovers.map((stock) => <StockItem key={stock.ticker} stock={stock} onOpenStock={onOpenStock} />)
           )}
         </div>
       </div>
@@ -213,7 +218,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           {watchlist.length === 0 ? (
             <p className="text-zinc-500 text-xs">No watchlist items yet</p>
           ) : (
-            watchlist.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
+            watchlist.map((stock) => <StockItem key={stock.ticker} stock={stock} onOpenStock={onOpenStock} />)
           )}
         </div>
       </div>

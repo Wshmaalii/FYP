@@ -5,6 +5,7 @@ import { View } from '../App';
 interface SidebarProps {
   selectedChannel: View;
   onChannelSelect: (channel: View) => void;
+  onOpenStock: (ticker: string) => void;
 }
 
 const channels = [
@@ -14,7 +15,7 @@ const channels = [
   { id: 'Private Rooms' as View, name: 'Private Rooms', icon: Lock, public: false },
 ];
 
-export function Sidebar({ selectedChannel, onChannelSelect }: SidebarProps) {
+export function Sidebar({ selectedChannel, onChannelSelect, onOpenStock }: SidebarProps) {
   return (
     <div className="w-80 bg-zinc-950 border-r border-zinc-800 text-zinc-100 flex flex-col">
       {/* Workspace Header */}
@@ -56,7 +57,7 @@ export function Sidebar({ selectedChannel, onChannelSelect }: SidebarProps) {
       </div>
 
       {/* Market Dashboard */}
-      <MarketDashboard onNavigate={onChannelSelect} />
+      <MarketDashboard onNavigate={onChannelSelect} onOpenStock={onOpenStock} />
     </div>
   );
 }

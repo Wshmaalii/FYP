@@ -1,8 +1,9 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { fetchHistory, getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketDataStatus, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
+import { fetchHistory, getQuotes, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, type MarketDataStatus, type MarketOverviewIndex, type StockHistoryPoint, type TopMoverItem } from '../../api/market';
 import { ChannelPrivacyCard } from './ChannelPrivacyCard';
+import { addWatchlistItem } from '../../api/watchlist';
 
 interface TopMoverView extends TopMoverItem {
   discussionLabel: string;
@@ -18,7 +19,32 @@ function formatVolume(volume: number | null) {
   return `${Math.round(volume)}`;
 }
 
-export function FTSE100Channel() {
+interface FTSE100ChannelProps {
+  onSelectStock: (ticker: string) => void;
+}
+
+function buildFeaturedIndex(ticker: string, quote: { price: number; change: number; changePercent: number; updatedAt: string }): MarketOverviewIndex {
+  return {
+    name: MARKET_SYMBOL_NAMES[ticker] || ticker,
+    ticker,
+    price: quote.price,
+    change: quote.change,
+    changePercent: quote.changePercent,
+    open: null,
+    high: null,
+    low: null,
+    volume: null,
+    region: 'US',
+    status: 'Tracked',
+    history: [],
+    available: true,
+    sourceSymbol: ticker,
+    sourceType: 'direct',
+    sourceLabel: 'Stored market snapshot',
+  };
+}
+
+export function FTSE100Channel({ onSelectStock }: FTSE100ChannelProps) {
   const [featuredIndices, setFeaturedIndices] = useState<MarketOverviewIndex[]>([]);
   const [topMovers, setTopMovers] = useState<TopMoverView[]>([]);
   const [history, setHistory] = useState<StockHistoryPoint[]>([]);
@@ -26,6 +52,7 @@ export function FTSE100Channel() {
   const [error, setError] = useState<string | null>(null);
   const [topMoversMessage, setTopMoversMessage] = useState<string | null>(null);
   const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
+  const [watchlistMessage, setWatchlistMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,7 +63,7 @@ export function FTSE100Channel() {
 
       try {
         const [overview, movers] = await Promise.all([
-          getMarketOverview(),
+          getQuotes([...PRIMARY_MARKET_SYMBOLS]),
           getTopMovers('Global'),
         ]);
 
@@ -44,7 +71,12 @@ export function FTSE100Channel() {
           return;
         }
 
-        const nextFeaturedIndices = overview.indices.filter((index) => ['SPY', 'AAPL', 'MSFT'].includes(index.ticker));
+        const nextFeaturedIndices = ['SPY', 'AAPL', 'MSFT']
+          .map((ticker) => {
+            const quote = overview.quotes[ticker];
+            return quote ? buildFeaturedIndex(ticker, quote) : null;
+          })
+          .filter((index): index is MarketOverviewIndex => index !== null);
         setFeaturedIndices(nextFeaturedIndices);
         setMarketDataStatus(overview.marketDataStatus || null);
         setTopMoversMessage(movers.message);
@@ -87,6 +119,17 @@ export function FTSE100Channel() {
   const availableChartPrices = chartValues.map((point) => point.price);
   const minPrice = availableChartPrices.length > 0 ? Math.min(...availableChartPrices) * 0.995 : 0;
   const maxPrice = availableChartPrices.length > 0 ? Math.max(...availableChartPrices) * 1.005 : 1;
+
+  const handleAddToWatchlist = async (ticker: string) => {
+    const stock = topMovers.find((item) => item.ticker === ticker);
+
+    try {
+      await addWatchlistItem(ticker, stock?.name || MARKET_SYMBOL_NAMES[ticker] || ticker);
+      setWatchlistMessage(`${ticker} added to your watchlist.`);
+    } catch (err) {
+      setWatchlistMessage(err instanceof Error ? err.message : 'Failed to add watchlist item');
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950">
@@ -155,11 +198,11 @@ export function FTSE100Channel() {
 
       <div className="grid grid-cols-3 gap-6 p-6">
         <div className="col-span-2 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-          <h3 className="text-zinc-100 mb-4">Intraday Performance</h3>
+          <h3 className="text-zinc-100 mb-4">Selected Stock Detail</h3>
           <div className="h-80">
             {chartValues.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
-                Intraday chart is available only when selected ticker history can be loaded in the prototype.
+              <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+                Price chart will appear once enough stored snapshots have been collected.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -182,14 +225,43 @@ export function FTSE100Channel() {
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-          <h3 className="text-zinc-100 mb-4">Sector Heatmap</h3>
-          <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
-            Live sector heatmap unavailable from the current market data source.
+          <h3 className="text-zinc-100 mb-4">Tracked Stocks</h3>
+          <div className="space-y-3">
+            {featuredIndices.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+                No stored market snapshots are available yet.
+              </div>
+            ) : (
+              featuredIndices.map((stock) => (
+                <button
+                  key={stock.ticker}
+                  type="button"
+                  onClick={() => onSelectStock(stock.ticker)}
+                  className="w-full flex items-center justify-between rounded border border-zinc-800 bg-zinc-950 px-4 py-3 text-left hover:border-cyan-600 transition-colors"
+                >
+                  <div>
+                    <p className="text-zinc-100">{stock.ticker}</p>
+                    <p className="text-zinc-500 text-sm">{stock.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-zinc-100">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
+                    <p className={`text-sm ${(stock.change ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {stock.changePercent !== null ? `${(stock.changePercent ?? 0) >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
+                    </p>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
         <div className="col-span-3 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <h3 className="text-zinc-100 mb-4">Most Discussed</h3>
+          {watchlistMessage && (
+            <div className="mb-4 rounded border border-zinc-800 bg-zinc-950 p-3 text-sm text-zinc-300">
+              {watchlistMessage}
+            </div>
+          )}
           {topMovers.length === 0 ? (
             <div className="text-zinc-500 text-sm">{topMoversMessage || 'Mention a ticker like #SPY or $AAPL to start.'}</div>
           ) : (
@@ -208,7 +280,13 @@ export function FTSE100Channel() {
                         <span className="text-white text-sm">{stock.ticker.substring(0, 2)}</span>
                       </div>
                       <div>
-                        <h4 className="text-zinc-100">{stock.ticker}</h4>
+                        <button
+                          type="button"
+                          onClick={() => onSelectStock(stock.ticker)}
+                          className="text-zinc-100 hover:text-cyan-400 transition-colors"
+                        >
+                          {stock.ticker}
+                        </button>
                         <p className="text-zinc-500 text-sm">{stock.name}</p>
                       </div>
                     </div>
@@ -233,6 +311,13 @@ export function FTSE100Channel() {
                           </div>
                         )}
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => void handleAddToWatchlist(stock.ticker)}
+                        className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 hover:border-cyan-600 hover:text-white transition-colors"
+                      >
+                        Watch
+                      </button>
                     </div>
                   </div>
                 );

@@ -10,12 +10,14 @@ import { AccountSettingsPage } from './components/profile/AccountSettingsPage';
 import { TopMoversPage } from './components/pages/TopMoversPage';
 import { WatchlistPage } from './components/pages/WatchlistPage';
 import { MarketOverviewPage } from './components/pages/MarketOverviewPage';
+import { StockDetailPage } from './components/pages/StockDetailPage';
 import { LoginPage } from './components/auth/LoginPage';
 import { SignupPage } from './components/auth/SignupPage';
 import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
 import { fetchMyProfile, type UserProfile } from './api/profile';
 
-export type View = 'FTSE100' | 'Earnings Watch' | 'Market Chat' | 'Private Rooms' | 'My Profile' | 'Account Settings' | 'Top Movers' | 'Watchlist' | 'Market Overview';
+export type View = 'FTSE100' | 'Earnings Watch' | 'Market Chat' | 'Private Rooms' | 'My Profile' | 'Account Settings' | 'Top Movers' | 'Watchlist' | 'Market Overview' | 'Stock Detail';
+type NavigableView = Exclude<View, 'Stock Detail'>;
 type AuthView = 'login' | 'signup';
 type AuthStatus = 'loading' | 'guest' | 'authed';
 
@@ -25,6 +27,9 @@ export default function App() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
+  const [selectedStock, setSelectedStock] = useState<string | null>(null);
+  const [marketChatDraft, setMarketChatDraft] = useState<string | null>(null);
+  const [stockDetailBackView, setStockDetailBackView] = useState<NavigableView>('Market Overview');
 
   useEffect(() => {
     const bootstrapAuth = async () => {
@@ -75,14 +80,27 @@ export default function App() {
     setCurrentView('Market Chat');
   };
 
+  const openStockDetail = (ticker: string) => {
+    if (currentView !== 'Stock Detail') {
+      setStockDetailBackView(currentView);
+    }
+    setSelectedStock(ticker);
+    setCurrentView('Stock Detail');
+  };
+
+  const handleMentionInChat = (ticker: string) => {
+    setMarketChatDraft(`$${ticker} `);
+    setCurrentView('Market Chat');
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'FTSE100':
-        return <FTSE100Channel />;
+        return <FTSE100Channel onSelectStock={openStockDetail} />;
       case 'Earnings Watch':
         return <EarningsWatchChannel />;
       case 'Market Chat':
-        return <MarketChatChannel />;
+        return <MarketChatChannel prefilledMessage={marketChatDraft} onDraftConsumed={() => setMarketChatDraft(null)} />;
       case 'Private Rooms':
         return <PrivateRoomsChannel />;
       case 'My Profile':
@@ -98,11 +116,21 @@ export default function App() {
       case 'Top Movers':
         return <TopMoversPage onBack={() => setCurrentView('FTSE100')} />;
       case 'Watchlist':
-        return <WatchlistPage onBack={() => setCurrentView('FTSE100')} />;
+        return <WatchlistPage onBack={() => setCurrentView('FTSE100')} onSelectStock={openStockDetail} />;
       case 'Market Overview':
-        return <MarketOverviewPage onBack={() => setCurrentView('FTSE100')} />;
+        return <MarketOverviewPage onBack={() => setCurrentView('FTSE100')} onSelectStock={openStockDetail} />;
+      case 'Stock Detail':
+        return selectedStock ? (
+          <StockDetailPage
+            ticker={selectedStock}
+            onBack={() => setCurrentView(stockDetailBackView)}
+            onMentionInChat={handleMentionInChat}
+          />
+        ) : (
+          <MarketOverviewPage onBack={() => setCurrentView('FTSE100')} onSelectStock={openStockDetail} />
+        );
       default:
-        return <MarketChatChannel />;
+        return <MarketChatChannel prefilledMessage={marketChatDraft} onDraftConsumed={() => setMarketChatDraft(null)} />;
     }
   };
 
@@ -124,7 +152,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-black">
-      <Sidebar selectedChannel={currentView} onChannelSelect={setCurrentView} />
+      <Sidebar selectedChannel={currentView} onChannelSelect={setCurrentView} onOpenStock={openStockDetail} />
       <div className="flex-1 flex flex-col">
         <TopBar
           currentView={currentView}

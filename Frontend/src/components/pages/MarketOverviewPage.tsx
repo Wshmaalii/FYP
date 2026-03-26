@@ -4,6 +4,7 @@ import { getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MA
 
 interface MarketOverviewPageProps {
   onBack: () => void;
+  onSelectStock: (ticker: string) => void;
 }
 
 type MarketFilter = 'All' | 'Big Tech' | 'AI' | 'Consumer / Media' | 'Finance' | 'High Volatility';
@@ -47,11 +48,15 @@ function formatVolume(volume: number | null) {
   return `${Math.round(volume)}`;
 }
 
-function IndexCard({ index }: { index: MarketOverviewIndex }) {
+function IndexCard({ index, onSelectStock }: { index: MarketOverviewIndex; onSelectStock: (ticker: string) => void }) {
   const isPositive = (index.change ?? 0) >= 0;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:border-cyan-600 transition-colors">
+    <button
+      type="button"
+      onClick={() => onSelectStock(index.ticker)}
+      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:border-cyan-600 transition-colors text-left"
+    >
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -110,11 +115,11 @@ function IndexCard({ index }: { index: MarketOverviewIndex }) {
       ) : (
         <div className="text-zinc-500 text-sm">Live market data is not available for this item in the prototype right now.</div>
       )}
-    </div>
+    </button>
   );
 }
 
-export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
+export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPageProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedFilter, setSelectedFilter] = useState<MarketFilter>('All');
   const [indices, setIndices] = useState<MarketOverviewIndex[]>([]);
@@ -253,7 +258,7 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
           ) : (
             <div className="grid grid-cols-3 gap-4">
               {filteredIndices.map((index) => (
-                <IndexCard key={index.ticker} index={index} />
+                <IndexCard key={index.ticker} index={index} onSelectStock={onSelectStock} />
               ))}
             </div>
           )}

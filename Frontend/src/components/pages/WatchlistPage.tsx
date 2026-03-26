@@ -5,6 +5,7 @@ import { fetchWatchlist, removeWatchlistItem, type WatchlistItem } from '../../a
 
 interface WatchlistPageProps {
   onBack: () => void;
+  onSelectStock: (ticker: string) => void;
 }
 
 interface WatchlistStock extends WatchlistItem {
@@ -16,14 +17,27 @@ interface WatchlistStock extends WatchlistItem {
 function WatchlistRow({
   stock,
   onRemove,
+  onSelectStock,
 }: {
   stock: WatchlistStock;
   onRemove: (ticker: string) => void;
+  onSelectStock: (ticker: string) => void;
 }) {
   const isPositive = stock.changePercent >= 0;
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded hover:border-cyan-600 transition-colors">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelectStock(stock.ticker)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelectStock(stock.ticker);
+        }
+      }}
+      className="w-full flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded hover:border-cyan-600 transition-colors text-left"
+    >
       <Star className="w-5 h-5 text-amber-400 fill-amber-400 flex-shrink-0" />
 
       <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded flex items-center justify-center flex-shrink-0">
@@ -58,11 +72,17 @@ function WatchlistRow({
         <button
           className="p-2 bg-zinc-950 hover:bg-cyan-600 border border-zinc-800 hover:border-cyan-600 rounded transition-colors"
           title="Set Alert"
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
         >
           <Bell className="w-4 h-4 text-zinc-400" />
         </button>
         <button
-          onClick={() => onRemove(stock.ticker)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove(stock.ticker);
+          }}
           className="p-2 bg-zinc-950 hover:bg-red-600 border border-zinc-800 hover:border-red-600 rounded transition-colors"
           title="Remove from Watchlist"
         >
@@ -73,7 +93,7 @@ function WatchlistRow({
   );
 }
 
-export function WatchlistPage({ onBack }: WatchlistPageProps) {
+export function WatchlistPage({ onBack, onSelectStock }: WatchlistPageProps) {
   const [stocks, setStocks] = useState<WatchlistStock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -207,7 +227,7 @@ export function WatchlistPage({ onBack }: WatchlistPageProps) {
         ) : (
           <div className="space-y-3">
             {stocks.map((stock) => (
-              <WatchlistRow key={stock.ticker} stock={stock} onRemove={handleRemove} />
+              <WatchlistRow key={stock.ticker} stock={stock} onRemove={handleRemove} onSelectStock={onSelectStock} />
             ))}
           </div>
         )}

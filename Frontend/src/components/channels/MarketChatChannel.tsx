@@ -7,7 +7,12 @@ import { TradeTicketDrawer } from '../TradeTicketDrawer';
 import type { TradeTicketInput } from '../TradeTicketDrawer';
 import { ChannelPrivacyCard } from './ChannelPrivacyCard';
 
-export function MarketChatChannel() {
+interface MarketChatChannelProps {
+  prefilledMessage?: string | null;
+  onDraftConsumed?: () => void;
+}
+
+export function MarketChatChannel({ prefilledMessage = null, onDraftConsumed }: MarketChatChannelProps) {
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
   const [activeTicket, setActiveTicket] = useState<TradeTicketInput | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +118,14 @@ export function MarketChatChannel() {
         )}
       </div>
 
-      <MessageInput onSend={handleSend} isSending={isSending} privacyMode="public" contextLabel="channel" />
+      <MessageInput
+        onSend={handleSend}
+        isSending={isSending}
+        privacyMode="public"
+        contextLabel="channel"
+        externalDraft={prefilledMessage}
+        onExternalDraftApplied={onDraftConsumed}
+      />
 
       <TradeTicketDrawer
         isOpen={activeTicket !== null}

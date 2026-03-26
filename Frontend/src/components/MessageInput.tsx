@@ -1,5 +1,5 @@
 import { Send, Paperclip, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface MessageInputProps {
   onSend?: (message: string) => Promise<void> | void;
@@ -7,6 +7,8 @@ interface MessageInputProps {
   placeholder?: string;
   privacyMode?: 'public' | 'private';
   contextLabel?: string;
+  externalDraft?: string | null;
+  onExternalDraftApplied?: () => void;
 }
 
 function getSensitiveContentPrompt(message: string) {
@@ -37,9 +39,21 @@ export function MessageInput({
   placeholder = 'Type a message... Use $AAPL or #SPY for tickers',
   privacyMode = 'public',
   contextLabel = 'channel',
+  externalDraft = null,
+  onExternalDraftApplied,
 }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [sendWarning, setSendWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!externalDraft) {
+      return;
+    }
+
+    setMessage(externalDraft);
+    setSendWarning(null);
+    onExternalDraftApplied?.();
+  }, [externalDraft, onExternalDraftApplied]);
 
   const handleSend = async () => {
     if (message.trim() && onSend) {
