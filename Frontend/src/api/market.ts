@@ -3,6 +3,28 @@ import { getApiBaseUrl } from './config';
 const API_BASE_URL = getApiBaseUrl();
 export const MARKET_DATA_LIMITED_MESSAGE = 'Live market data is limited in this prototype. Data is provided on-demand for selected tickers.';
 const MARKET_DATA_UNAVAILABLE_MESSAGE = 'Live market data is temporarily unavailable for the selected tickers.';
+export const PRIMARY_MARKET_SYMBOLS = ['SPY', 'AAPL', 'MSFT', 'NVDA', 'AMZN', 'TSLA'] as const;
+export const SUPPORTED_MARKET_SYMBOLS = ['SPY', 'AAPL', 'MSFT', 'NVDA', 'AMZN', 'TSLA', 'META', 'GOOGL', 'AMD', 'PLTR', 'COIN', 'NFLX', 'DIS', 'JPM', 'V', 'MA', 'SHOP', 'UBER'] as const;
+export const MARKET_SYMBOL_NAMES: Record<string, string> = {
+  SPY: 'SPDR S&P 500 ETF Trust',
+  AAPL: 'Apple',
+  MSFT: 'Microsoft',
+  NVDA: 'NVIDIA',
+  AMZN: 'Amazon',
+  TSLA: 'Tesla',
+  META: 'Meta Platforms',
+  GOOGL: 'Alphabet',
+  AMD: 'AMD',
+  PLTR: 'Palantir',
+  COIN: 'Coinbase',
+  NFLX: 'Netflix',
+  DIS: 'Disney',
+  JPM: 'JPMorgan Chase',
+  V: 'Visa',
+  MA: 'Mastercard',
+  SHOP: 'Shopify',
+  UBER: 'Uber',
+};
 
 export interface MarketQuote {
   price: number;

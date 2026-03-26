@@ -1,6 +1,6 @@
 import { ArrowLeft, TrendingUp, TrendingDown, Clock, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getMarketOverview, MARKET_DATA_LIMITED_MESSAGE, type MarketOverviewIndex } from '../../api/market';
+import { getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, SUPPORTED_MARKET_SYMBOLS, type MarketDataStatus, type MarketOverviewIndex } from '../../api/market';
 
 interface MarketOverviewPageProps {
   onBack: () => void;
@@ -15,6 +15,27 @@ const MARKET_FILTER_SYMBOLS: Record<Exclude<MarketFilter, 'All'>, string[]> = {
   'Finance': ['JPM', 'V', 'MA', 'COIN'],
   'High Volatility': ['TSLA', 'COIN', 'PLTR', 'AMD', 'NVDA', 'UBER'],
 };
+
+function buildSnapshotCard(ticker: string, quote: { price: number; change: number; changePercent: number; updatedAt: string }): MarketOverviewIndex {
+  return {
+    name: MARKET_SYMBOL_NAMES[ticker] || ticker,
+    ticker,
+    price: quote.price,
+    change: quote.change,
+    changePercent: quote.changePercent,
+    open: null,
+    high: null,
+    low: null,
+    volume: null,
+    region: 'US',
+    status: 'Tracked',
+    history: [],
+    available: true,
+    sourceSymbol: ticker,
+    sourceType: 'direct',
+    sourceLabel: 'Stored market snapshot',
+  };
+}
 
 function formatVolume(volume: number | null) {
   if (!volume) {
@@ -100,7 +121,7 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sectorsAvailable, setSectorsAvailable] = useState(false);
-  const [marketDataStatus, setMarketDataStatus] = useState<import('../../api/market').MarketDataStatus | null>(null);
+  const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -117,10 +138,25 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
       setError(null);
 
       try {
-        const data = await getMarketOverview();
+        const data = await getQuotes([...SUPPORTED_MARKET_SYMBOLS]);
         if (isMounted) {
-          setIndices(data.indices);
-          setSectorsAvailable(data.sectors_available);
+          const orderedPrimary = PRIMARY_MARKET_SYMBOLS
+            .map((ticker) => {
+              const quote = data.quotes[ticker];
+              return quote ? buildSnapshotCard(ticker, quote) : null;
+            })
+            .filter((index): index is MarketOverviewIndex => index !== null);
+
+          const remainingSupported = SUPPORTED_MARKET_SYMBOLS
+            .filter((ticker) => !PRIMARY_MARKET_SYMBOLS.includes(ticker as typeof PRIMARY_MARKET_SYMBOLS[number]))
+            .map((ticker) => {
+              const quote = data.quotes[ticker];
+              return quote ? buildSnapshotCard(ticker, quote) : null;
+            })
+            .filter((index): index is MarketOverviewIndex => index !== null);
+
+          setIndices([...orderedPrimary, ...remainingSupported]);
+          setSectorsAvailable(false);
           setMarketDataStatus(data.marketDataStatus || null);
         }
       } catch (err) {
@@ -142,11 +178,11 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
   }, []);
 
   const filteredIndices = selectedFilter === 'All'
-    ? indices
+    ? indices.filter((index) => PRIMARY_MARKET_SYMBOLS.includes(index.ticker as typeof PRIMARY_MARKET_SYMBOLS[number]))
     : indices.filter((index) => MARKET_FILTER_SYMBOLS[selectedFilter].includes(index.ticker));
 
-  const openMarkets = indices.filter((index) => index.status === 'Open').length;
-  const closedMarkets = indices.filter((index) => index.status !== 'Open').length;
+  const openMarkets = indices.filter((index) => index.available).length;
+  const closedMarkets = indices.filter((index) => !index.available).length;
   const availableIndices = indices.filter((index) => index.available);
 
   return (
@@ -171,11 +207,11 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
               <div className="flex items-center gap-3 text-sm">
                 <span className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-emerald-400 rounded-full" />
-                  {openMarkets} Open
+                  {openMarkets} Available
                 </span>
                 <span className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-zinc-600 rounded-full" />
-                  {closedMarkets} Closed / Unavailable
+                  {closedMarkets} Unavailable
                 </span>
               </div>
             </div>
@@ -211,9 +247,9 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
         <div>
           <h2 className="text-zinc-100 mb-4">Curated Market Snapshot</h2>
           {loading && indices.length === 0 ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">Loading market overview...</div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">Loading stored market snapshots...</div>
           ) : filteredIndices.length === 0 ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">No tracked market items are available for this filter.</div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-zinc-500 text-sm">No stored market snapshots are available for this filter yet.</div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
               {filteredIndices.map((index) => (
@@ -226,11 +262,7 @@ export function MarketOverviewPage({ onBack }: MarketOverviewPageProps) {
         <div>
           <h2 className="text-zinc-100 mb-4">Sector Performance Heatmap</h2>
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-            {sectorsAvailable ? (
-              <div className="text-zinc-500 text-sm">Sector data loaded.</div>
-            ) : (
-              <div className="text-zinc-500 text-sm">{MARKET_DATA_LIMITED_MESSAGE}</div>
-            )}
+            <div className="text-zinc-500 text-sm">Market data is available for selected tracked stocks.</div>
           </div>
         </div>
 

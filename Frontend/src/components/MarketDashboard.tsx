@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
-import { getMarketOverview, getTopMovers, MARKET_DATA_LIMITED_MESSAGE, type MarketDataStatus, type MarketOverviewIndex, type TopMoverItem } from '../api/market';
+import { getTopMovers, getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, type MarketDataStatus, type TopMoverItem } from '../api/market';
 import { fetchWatchlist } from '../api/watchlist';
-import { getQuotes } from '../api/market';
 
 interface Stock {
   ticker: string;
@@ -66,8 +65,8 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
 
     const loadDashboardData = async () => {
       try {
-        const [overview, movers, watchlistItems] = await Promise.all([
-          getMarketOverview(),
+        const [overviewQuotes, movers, watchlistItems] = await Promise.all([
+          getQuotes([...PRIMARY_MARKET_SYMBOLS]),
           getTopMovers('Global'),
           fetchWatchlist().catch(() => []),
         ]);
@@ -88,15 +87,22 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
         }
 
         setMarketIndices(
-          overview.indices
-            .filter((index) => ['SPY', 'AAPL', 'MSFT'].includes(index.ticker))
-            .map((index: MarketOverviewIndex) => ({
-              ticker: index.ticker,
-              name: index.name,
-              price: index.price,
-              change: index.change,
-              changePercent: index.changePercent,
-            })),
+          [...PRIMARY_MARKET_SYMBOLS]
+            .map((ticker) => {
+              const quote = overviewQuotes.quotes[ticker];
+              if (!quote) {
+                return null;
+              }
+              return {
+                ticker,
+                name: MARKET_SYMBOL_NAMES[ticker] || ticker,
+                price: quote.price,
+                change: quote.change,
+                changePercent: quote.changePercent,
+              };
+            })
+            .filter((stock): stock is Stock => stock !== null)
+            .slice(0, 3),
         );
 
         const combinedMovers = movers.items
@@ -110,7 +116,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
           }));
         setTopMovers(combinedMovers);
         setTopMoversMessage(movers.message);
-        setOverviewStatus(overview.marketDataStatus || null);
+        setOverviewStatus(overviewQuotes.marketDataStatus || null);
         setWatchlistStatus(quoteResponse.marketDataStatus || null);
 
         setWatchlist(
@@ -161,7 +167,7 @@ export function MarketDashboard({ onNavigate }: MarketDashboardProps) {
         )}
         <div className="space-y-1">
           {marketIndices.length === 0 && !liveDataError ? (
-            <p className="text-zinc-500 text-xs">Loading market overview...</p>
+            <p className="text-zinc-500 text-xs">No stored market snapshots yet.</p>
           ) : (
             marketIndices.map((stock) => <StockItem key={stock.ticker} stock={stock} />)
           )}
