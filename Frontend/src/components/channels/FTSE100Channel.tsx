@@ -64,7 +64,7 @@ export function FTSE100Channel() {
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load FTSE data');
+          setError(err instanceof Error ? err.message : 'Failed to load market data');
           setHistory([]);
         }
       } finally {
