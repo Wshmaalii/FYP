@@ -10,9 +10,23 @@ interface TopBarProps {
   userHandle?: string;
   avatarUrl?: string;
   avatarSeed?: string;
+  headerTitle?: string;
+  headerSubtitle?: string;
+  isPrivateConversation?: boolean;
 }
 
-export function TopBar({ currentView, onNavigate, onLogout, userName, userHandle, avatarUrl, avatarSeed }: TopBarProps) {
+export function TopBar({
+  currentView,
+  onNavigate,
+  onLogout,
+  userName,
+  userHandle,
+  avatarUrl,
+  avatarSeed,
+  headerTitle,
+  headerSubtitle,
+  isPrivateConversation = false,
+}: TopBarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -28,9 +42,8 @@ export function TopBar({ currentView, onNavigate, onLogout, userName, userHandle
   }, []);
 
   const isProfileView = currentView === 'My Profile' || currentView === 'Account Settings';
-  const displayTitle = isProfileView ? currentView : 'TradeLink';
-  const displayChannelName = currentView === 'FTSE100' ? 'Markets' : currentView;
-  const displaySubtitle = !isProfileView ? `#${displayChannelName}` : undefined;
+  const displayTitle = headerTitle || (isProfileView ? currentView : 'TradeLink');
+  const displaySubtitle = headerSubtitle || undefined;
   const displayName = userName || 'Trader';
   const initials = avatarSeed || displayName
     .split(' ')
@@ -48,7 +61,7 @@ export function TopBar({ currentView, onNavigate, onLogout, userName, userHandle
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-zinc-100">{displayTitle}</h1>
-            {currentView === 'Private Rooms' && (
+            {isPrivateConversation && (
               <Lock className="w-4 h-4 text-cyan-400" />
             )}
           </div>

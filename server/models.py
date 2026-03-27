@@ -23,6 +23,8 @@ class User(db.Model):
     messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     watchlist_items = db.relationship("WatchlistItem", back_populates="user", cascade="all, delete-orphan")
     activities = db.relationship("UserActivity", back_populates="user", cascade="all, delete-orphan")
+    owned_conversations = db.relationship("Conversation", back_populates="owner", cascade="all, delete-orphan")
+    conversation_memberships = db.relationship("ConversationMember", back_populates="user", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -126,6 +128,55 @@ class ChatMessage(db.Model):
             "tickers": self.ticker_list(),
             "channel": self.channel,
         }
+
+
+class Conversation(db.Model):
+    __tablename__ = "conversations"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_key = db.Column(String(32), unique=True, nullable=False, index=True)
+    kind = db.Column(String(32), nullable=False, index=True)
+    name = db.Column(String(255), nullable=False)
+    description = db.Column(Text, nullable=False, default="")
+    visibility = db.Column(String(32), nullable=False, default="public")
+    owner_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+    owner = db.relationship("User", back_populates="owned_conversations")
+    channels = db.relationship("ConversationChannel", back_populates="conversation", cascade="all, delete-orphan")
+    members = db.relationship("ConversationMember", back_populates="conversation", cascade="all, delete-orphan")
+
+
+class ConversationChannel(db.Model):
+    __tablename__ = "conversation_channels"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id = db.Column(UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False, index=True)
+    channel_key = db.Column(String(32), unique=True, nullable=False, index=True)
+    name = db.Column(String(64), nullable=False)
+    slug = db.Column(String(32), nullable=False)
+    position = db.Column(Integer, nullable=False, default=0)
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    conversation = db.relationship("Conversation", back_populates="channels")
+
+
+class ConversationMember(db.Model):
+    __tablename__ = "conversation_members"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id = db.Column(UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False, index=True)
+    user_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    role = db.Column(String(32), nullable=False, default="member")
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    conversation = db.relationship("Conversation", back_populates="members")
+    user = db.relationship("User", back_populates="conversation_memberships")
+
+    __table_args__ = (
+        db.UniqueConstraint("conversation_id", "user_id", name="uq_conversation_member"),
+    )
 
 
 class WatchlistItem(db.Model):

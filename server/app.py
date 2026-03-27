@@ -41,7 +41,19 @@ try:
         get_supported_market_universe,
         refresh_market_snapshots,
     )
-    from .models import ChatMessage, MarketSnapshot, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
+    from .models import (
+        ChatMessage,
+        Conversation,
+        ConversationChannel,
+        ConversationMember,
+        MarketSnapshot,
+        RevokedToken,
+        User,
+        UserActivity,
+        UserProfile,
+        UserSettings,
+        WatchlistItem,
+    )
 except ImportError:
     from extensions import db, migrate
     from market_service import (
@@ -65,7 +77,19 @@ except ImportError:
         get_supported_market_universe,
         refresh_market_snapshots,
     )
-    from models import ChatMessage, MarketSnapshot, RevokedToken, User, UserActivity, UserProfile, UserSettings, WatchlistItem
+    from models import (
+        ChatMessage,
+        Conversation,
+        ConversationChannel,
+        ConversationMember,
+        MarketSnapshot,
+        RevokedToken,
+        User,
+        UserActivity,
+        UserProfile,
+        UserSettings,
+        WatchlistItem,
+    )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -200,6 +224,7 @@ def ensure_database_schema():
         return
 
     db.create_all()
+    ensure_messaging_seed_data()
     schema_initialized = True
 
 
@@ -334,6 +359,238 @@ def ensure_user_settings(user: User) -> UserSettings:
     db.session.add(settings)
     db.session.flush()
     return settings
+
+
+PUBLIC_SPACE_TEMPLATES = [
+    {
+        "key": "large_caps",
+        "name": "Large Caps",
+        "description": "Discuss major index names, broad market moves, and large-cap setups.",
+        "channels": ["General", "Trading", "Earnings"],
+    },
+    {
+        "key": "ai_traders",
+        "name": "AI Traders",
+        "description": "Focused discussion for AI-linked names, semiconductor momentum, and macro AI themes.",
+        "channels": ["General", "Trading", "Earnings"],
+    },
+    {
+        "key": "earnings_desk",
+        "name": "Earnings Desk",
+        "description": "Follow earnings season, reaction trades, and event-driven conversations.",
+        "channels": ["General", "Trading", "Earnings"],
+    },
+]
+
+
+def _slugify(value: str, max_length: int = 20) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "_", (value or "").strip().lower()).strip("_")
+    return normalized[:max_length] or "channel"
+
+
+def _conversation_key(prefix: str, value: str) -> str:
+    slug = _slugify(value, max_length=20)
+    return f"{prefix}_{slug}"[:32]
+
+
+def _channel_key(prefix: str, value: str, slug: str) -> str:
+    base = f"{prefix}_{_slugify(value, 12)}_{_slugify(slug, 12)}"
+    return base[:32]
+
+
+def _member_exists(conversation_id, user_id) -> bool:
+    return ConversationMember.query.filter_by(conversation_id=conversation_id, user_id=user_id).first() is not None
+
+
+def _ensure_conversation_member(conversation: Conversation, user: User, role: str = "member"):
+    membership = ConversationMember.query.filter_by(conversation_id=conversation.id, user_id=user.id).first()
+    if membership:
+        return membership
+
+    membership = ConversationMember(
+        conversation_id=conversation.id,
+        user_id=user.id,
+        role=role,
+    )
+    db.session.add(membership)
+    db.session.flush()
+    return membership
+
+
+def _create_conversation_channel(conversation: Conversation, name: str, position: int):
+    slug = _slugify(name, max_length=16)
+    channel = ConversationChannel(
+        conversation_id=conversation.id,
+        channel_key=_channel_key(conversation.conversation_key[:10], conversation.name, slug),
+        name=name,
+        slug=slug,
+        position=position,
+    )
+    db.session.add(channel)
+    db.session.flush()
+    return channel
+
+
+def ensure_messaging_seed_data():
+    changed = False
+
+    for template in PUBLIC_SPACE_TEMPLATES:
+        conversation = Conversation.query.filter_by(conversation_key=template["key"]).first()
+        if conversation is None:
+            conversation = Conversation(
+                conversation_key=template["key"],
+                kind="public_space",
+                name=template["name"],
+                description=template["description"],
+                visibility="public",
+            )
+            db.session.add(conversation)
+            db.session.flush()
+            changed = True
+
+        existing_slugs = {channel.slug for channel in conversation.channels}
+        for position, channel_name in enumerate(template["channels"]):
+            slug = _slugify(channel_name, max_length=16)
+            if slug in existing_slugs:
+                continue
+            _create_conversation_channel(conversation, channel_name, position)
+            changed = True
+
+    if changed:
+        db.session.commit()
+
+
+def _conversation_member_count(conversation_id) -> int:
+    return ConversationMember.query.filter_by(conversation_id=conversation_id).count()
+
+
+def _conversation_members(conversation: Conversation):
+    memberships = (
+        ConversationMember.query
+        .filter_by(conversation_id=conversation.id)
+        .join(UserProfile, ConversationMember.user_id == UserProfile.user_id)
+        .order_by(UserProfile.username.asc())
+        .all()
+    )
+    return [
+        {
+            "user_id": str(membership.user_id),
+            "username": membership.user.profile.username if membership.user and membership.user.profile else membership.user.name,
+            "display_name": membership.user.profile.full_name if membership.user and membership.user.profile else membership.user.name,
+            "role": membership.role,
+        }
+        for membership in memberships
+    ]
+
+
+def _conversation_payload(conversation: Conversation, user: User | None = None):
+    channels = sorted(conversation.channels, key=lambda channel: (channel.position, channel.name.lower()))
+    is_member = user is not None and _member_exists(conversation.id, user.id)
+    payload = {
+        "conversation_key": conversation.conversation_key,
+        "kind": conversation.kind,
+        "name": conversation.name,
+        "description": conversation.description,
+        "visibility": conversation.visibility,
+        "member_count": _conversation_member_count(conversation.id),
+        "is_member": is_member,
+        "channels": [
+            {
+                "channel_key": channel.channel_key,
+                "name": channel.name,
+                "slug": channel.slug,
+            }
+            for channel in channels
+        ],
+    }
+    if conversation.kind in {"private_group", "direct_message"}:
+        payload["members"] = _conversation_members(conversation)
+    if conversation.kind == "direct_message" and user is not None:
+        other_members = [member for member in payload.get("members", []) if member["user_id"] != str(user.id)]
+        if other_members:
+            payload["name"] = other_members[0]["display_name"]
+            payload["handle"] = other_members[0]["username"]
+    return payload
+
+
+def _channel_access(channel_key: str, user: User):
+    channel = ConversationChannel.query.filter_by(channel_key=channel_key).first()
+    if channel is None:
+        return None, None, json_error("Conversation channel not found", 404)
+
+    conversation = channel.conversation
+    is_member = _member_exists(conversation.id, user.id)
+    if conversation.kind != "public_space" and not is_member:
+        return None, None, json_error("You do not have access to this conversation", 403)
+    if conversation.kind == "public_space" and not is_member:
+        return None, None, json_error("Join this space to read and send messages", 403)
+    return conversation, channel, None
+
+
+def _build_dm_key(user_a_id, user_b_id) -> str:
+    ordered = sorted([str(user_a_id), str(user_b_id)])
+    digest = uuid.uuid5(uuid.NAMESPACE_DNS, ":".join(ordered)).hex[:12]
+    return f"dm_{digest}"
+
+
+def _get_or_create_dm(user: User, other_user: User) -> Conversation:
+    conversation_key = _build_dm_key(user.id, other_user.id)
+    conversation = Conversation.query.filter_by(conversation_key=conversation_key).first()
+    if conversation:
+        _ensure_conversation_member(conversation, user)
+        _ensure_conversation_member(conversation, other_user)
+        db.session.commit()
+        return conversation
+
+    other_profile = ensure_user_profile(other_user)
+    conversation = Conversation(
+        conversation_key=conversation_key,
+        kind="direct_message",
+        name=other_profile.full_name or other_profile.username,
+        description=f"Direct message with @{other_profile.username}",
+        visibility="private",
+        owner_id=user.id,
+    )
+    db.session.add(conversation)
+    db.session.flush()
+    _create_conversation_channel(conversation, "Messages", 0)
+    _ensure_conversation_member(conversation, user, role="owner")
+    _ensure_conversation_member(conversation, other_user, role="member")
+    db.session.commit()
+    return conversation
+
+
+def _build_conversation_sidebar_payload(user: User):
+    memberships = (
+        ConversationMember.query
+        .filter_by(user_id=user.id)
+        .join(Conversation, ConversationMember.conversation_id == Conversation.id)
+        .all()
+    )
+
+    my_spaces: list[dict] = []
+    direct_messages: list[dict] = []
+    private_groups: list[dict] = []
+
+    for membership in memberships:
+        conversation = membership.conversation
+        payload = _conversation_payload(conversation, user)
+        if conversation.kind == "public_space":
+            my_spaces.append(payload)
+        elif conversation.kind == "direct_message":
+            direct_messages.append(payload)
+        elif conversation.kind == "private_group":
+            private_groups.append(payload)
+
+    my_spaces.sort(key=lambda item: item["name"].lower())
+    direct_messages.sort(key=lambda item: item["name"].lower())
+    private_groups.sort(key=lambda item: item["name"].lower())
+
+    return {
+        "my_spaces": my_spaces,
+        "direct_messages": direct_messages,
+        "private_groups": private_groups,
+    }
 
 
 def get_authenticated_user():
@@ -1013,6 +1270,220 @@ def settings_me():
     db.session.commit()
 
     return jsonify({"settings": build_settings_payload(user)})
+
+
+@app.route("/api/users/search", methods=["GET"])
+def user_search():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    query = (request.args.get("q") or "").strip().lower()
+    if len(query) < 2:
+        return jsonify({"users": []})
+
+    profiles = (
+        UserProfile.query
+        .filter(
+            UserProfile.user_id != user.id,
+            (UserProfile.username.ilike(f"{query}%")) | (UserProfile.full_name.ilike(f"%{query}%")),
+        )
+        .order_by(UserProfile.username.asc())
+        .limit(8)
+        .all()
+    )
+
+    return jsonify({
+        "users": [
+            {
+                "user_id": str(profile.user_id),
+                "username": profile.username,
+                "display_name": profile.full_name,
+            }
+            for profile in profiles
+        ]
+    })
+
+
+@app.route("/api/messaging/sidebar", methods=["GET"])
+def messaging_sidebar():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    return jsonify(_build_conversation_sidebar_payload(user))
+
+
+@app.route("/api/spaces", methods=["GET"])
+def spaces():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    public_spaces = (
+        Conversation.query
+        .filter_by(kind="public_space")
+        .order_by(Conversation.name.asc())
+        .all()
+    )
+    return jsonify({"spaces": [_conversation_payload(space, user) for space in public_spaces]})
+
+
+@app.route("/api/spaces/<conversation_key>/join", methods=["POST"])
+def join_space(conversation_key):
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    conversation = Conversation.query.filter_by(conversation_key=conversation_key, kind="public_space").first()
+    if conversation is None:
+        return json_error("Space not found", 404)
+
+    _ensure_conversation_member(conversation, user)
+    _create_activity(user.id, "space_joined", f"Joined {conversation.name}")
+    db.session.commit()
+    return jsonify({"conversation": _conversation_payload(conversation, user)})
+
+
+@app.route("/api/dms", methods=["POST"])
+def create_dm():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip().lower()
+    if not username:
+        return json_error("Username is required", 400)
+
+    profile = UserProfile.query.filter_by(username=username).first()
+    target_user = profile.user if profile else None
+    if target_user is None:
+        return json_error("User not found", 404)
+    if target_user.id == user.id:
+        return json_error("You cannot start a direct message with yourself", 400)
+
+    conversation = _get_or_create_dm(user, target_user)
+    return jsonify({"conversation": _conversation_payload(conversation, user)}), 201
+
+
+@app.route("/api/groups", methods=["POST"])
+def create_group():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    usernames = data.get("usernames") or []
+
+    if not name:
+        return json_error("Group name is required", 400)
+
+    normalized_usernames = []
+    for username in usernames:
+        normalized = (username or "").strip().lower()
+        if normalized and normalized not in normalized_usernames:
+            normalized_usernames.append(normalized)
+
+    profiles = UserProfile.query.filter(UserProfile.username.in_(normalized_usernames)).all() if normalized_usernames else []
+    profile_map = {profile.username: profile.user for profile in profiles}
+    missing = [username for username in normalized_usernames if username not in profile_map]
+    if missing:
+        return json_error(f"Users not found: {', '.join(missing)}", 404)
+
+    conversation = Conversation(
+        conversation_key=f"grp_{uuid.uuid4().hex[:12]}",
+        kind="private_group",
+        name=name[:255],
+        description="Invite-only group",
+        visibility="private",
+        owner_id=user.id,
+    )
+    db.session.add(conversation)
+    db.session.flush()
+    _create_conversation_channel(conversation, "General", 0)
+    _ensure_conversation_member(conversation, user, role="owner")
+    for invited_user in profile_map.values():
+        if invited_user.id == user.id:
+            continue
+        _ensure_conversation_member(conversation, invited_user, role="member")
+
+    _create_activity(user.id, "group_created", f"Created private group {name}")
+    db.session.commit()
+    return jsonify({"conversation": _conversation_payload(conversation, user)}), 201
+
+
+@app.route("/api/conversations/<conversation_key>", methods=["GET"])
+def conversation_detail(conversation_key):
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    conversation = Conversation.query.filter_by(conversation_key=conversation_key).first()
+    if conversation is None:
+        return json_error("Conversation not found", 404)
+
+    if conversation.kind != "public_space" and not _member_exists(conversation.id, user.id):
+        return json_error("You do not have access to this conversation", 403)
+
+    return jsonify({"conversation": _conversation_payload(conversation, user)})
+
+
+@app.route("/api/conversations/<channel_key>/messages", methods=["GET", "POST"])
+def conversation_messages(channel_key):
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    conversation, channel, access_error = _channel_access(channel_key, user)
+    if access_error:
+        return access_error
+
+    if request.method == "GET":
+        try:
+            requested_limit = int(request.args.get("limit", 50))
+        except (TypeError, ValueError):
+            requested_limit = 50
+
+        limit = min(max(requested_limit, 1), 100)
+        messages_query = (
+            ChatMessage.query
+            .filter_by(channel=channel.channel_key)
+            .order_by(ChatMessage.created_at.asc())
+            .limit(limit)
+            .all()
+        )
+        return jsonify({"messages": [message.to_dict() for message in messages_query]})
+
+    data = request.get_json(silent=True) or {}
+    content = (data.get("content") or "").strip()
+    if not content:
+        return json_error("Message content is required", 400)
+
+    tickers = _extract_tickers(content)
+    message = ChatMessage(
+        user_id=user.id,
+        channel=channel.channel_key,
+        content=content,
+        ticker_symbols=",".join(tickers),
+    )
+    db.session.add(message)
+
+    profile = ensure_user_profile(user)
+    profile.messages_sent_count += 1
+    profile.tickers_shared_count += len(tickers)
+
+    activity_type = "message_sent"
+    activity_description = f"Sent a message in {conversation.name}"
+    activity_ticker = tickers[0] if tickers else None
+    if tickers:
+        activity_type = "ticker_shared"
+        activity_description = f"Shared {', '.join(tickers)} in {conversation.name}"
+
+    _create_activity(user.id, activity_type, activity_description, ticker=activity_ticker)
+    db.session.commit()
+    return jsonify({"message": message.to_dict()}), 201
 
 
 @app.route("/api/messages", methods=["GET", "POST"])
