@@ -5,7 +5,6 @@ const API_BASE_URL = getApiBaseUrl();
 
 export interface UserProfile {
   user_id: string;
-  email: string;
   full_name: string;
   username: string;
   bio: string;

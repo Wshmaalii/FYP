@@ -4,7 +4,6 @@ import { getStoredToken } from './auth';
 const API_BASE_URL = getApiBaseUrl();
 
 export interface UserSettings {
-  email: string;
   full_name: string;
   username: string;
   email_notifications: boolean;

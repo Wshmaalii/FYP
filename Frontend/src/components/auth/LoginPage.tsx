@@ -2,12 +2,12 @@ import { Lock } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => Promise<void>;
+  onLogin: (username: string, password: string) => Promise<void>;
   onSwitchToSignup: () => void;
 }
 
 export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
     setIsSubmitting(true);
 
     try {
-      await onLogin(email, password);
+      await onLogin(username, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -46,13 +46,13 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-zinc-300 text-sm mb-2">Email</label>
+            <label className="block text-zinc-300 text-sm mb-2">Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              placeholder="you@example.com"
+              placeholder="Enter your username"
               required
             />
           </div>

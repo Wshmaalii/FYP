@@ -55,16 +55,16 @@ export default function App() {
     void bootstrapAuth();
   }, []);
 
-  const handleLogin = async (email: string, password: string) => {
-    const user = await login(email, password);
+  const handleLogin = async (username: string, password: string) => {
+    const user = await login(username, password);
     const profile = await fetchMyProfile();
     setCurrentUser(user);
     setCurrentProfile(profile);
     setAuthStatus('authed');
   };
 
-  const handleSignup = async (name: string, email: string, password: string) => {
-    const user = await signup(name, email, password);
+  const handleSignup = async (username: string, password: string, name?: string) => {
+    const user = await signup(username, password, name);
     const profile = await fetchMyProfile();
     setCurrentUser(user);
     setCurrentProfile(profile);

@@ -2,13 +2,13 @@ import { Shield } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 interface SignupPageProps {
-  onSignup: (name: string, email: string, password: string) => Promise<void>;
+  onSignup: (username: string, password: string, name?: string) => Promise<void>;
   onSwitchToLogin: () => void;
 }
 
 export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
+  const [username, setUsername] = useState('');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
     setIsSubmitting(true);
 
     try {
-      await onSignup(name, email, password);
+      await onSignup(username, password, name || undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
@@ -47,26 +47,25 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-zinc-300 text-sm mb-2">Full Name</label>
+            <label className="block text-zinc-300 text-sm mb-2">Username</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              placeholder="Full name"
+              placeholder="Choose a username"
               required
             />
           </div>
 
           <div>
-            <label className="block text-zinc-300 text-sm mb-2">Email</label>
+            <label className="block text-zinc-300 text-sm mb-2">Display Name (Optional)</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              placeholder="you@example.com"
-              required
+              placeholder="How your name appears in chat"
             />
           </div>
 

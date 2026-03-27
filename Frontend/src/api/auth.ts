@@ -6,7 +6,7 @@ const TOKEN_KEY = 'tradelink_auth_token';
 export interface AuthUser {
   id: string;
   name: string;
-  email: string;
+  username: string;
 }
 
 interface AuthResponse {
@@ -59,20 +59,20 @@ function storeToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
-export async function signup(name: string, email: string, password: string): Promise<AuthUser> {
+export async function signup(username: string, password: string, name?: string): Promise<AuthUser> {
   const data = await request<AuthResponse>('/api/auth/signup', {
     method: 'POST',
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ username, password, name }),
   });
 
   storeToken(data.token);
   return data.user;
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
+export async function login(username: string, password: string): Promise<AuthUser> {
   const data = await request<AuthResponse>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   });
 
   storeToken(data.token);

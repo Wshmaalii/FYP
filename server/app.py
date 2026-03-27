@@ -244,6 +244,18 @@ def _username_seed(value: str) -> str:
     return normalized[:24] or f"user{uuid.uuid4().hex[:6]}"
 
 
+def _build_internal_email(username: str) -> str:
+    base = _username_seed(username)
+    candidate = f"{base}@users.tradelink.local"
+    suffix = 1
+
+    while User.query.filter_by(email=candidate).first():
+        suffix += 1
+        candidate = f"{base[:20]}{suffix}@users.tradelink.local"
+
+    return candidate
+
+
 def _initials_from_name(name: str) -> str:
     parts = [part for part in (name or "").split() if part]
     if not parts:
@@ -292,7 +304,7 @@ def ensure_user_profile(user: User) -> UserProfile:
     profile = UserProfile(
         user_id=user.id,
         full_name=user.name,
-        username=_generate_unique_username(user.email.split("@")[0] or user.name),
+        username=_generate_unique_username(user.name),
         bio="",
         avatar_seed=_initials_from_name(user.name),
         joined_at=user.created_at,
@@ -352,7 +364,6 @@ def build_profile_payload(user: User):
     profile = ensure_user_profile(user)
     return {
         "user_id": str(user.id),
-        "email": user.email,
         **profile.to_dict(),
     }
 
@@ -361,10 +372,18 @@ def build_settings_payload(user: User):
     settings = ensure_user_settings(user)
     profile = ensure_user_profile(user)
     return {
-        "email": user.email,
         "full_name": profile.full_name,
         "username": profile.username,
         **settings.to_dict(),
+    }
+
+
+def build_auth_user_payload(user: User):
+    profile = ensure_user_profile(user)
+    return {
+        "id": str(user.id),
+        "name": user.name,
+        "username": profile.username,
     }
 
 
@@ -808,52 +827,71 @@ def market_refresh():
 def signup():
     ensure_database_schema()
     data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip().lower()
     name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
-    if not name or not email or not password:
-        return json_error("Name, email, and password are required", 400)
+    if not username or not password:
+        return json_error("Username and password are required", 400)
+
+    if not re.fullmatch(r"[a-z0-9_]{3,24}", username):
+        return json_error("Username must be 3-24 characters using lowercase letters, numbers, or underscores", 400)
 
     if len(password) < 6:
         return json_error("Password must be at least 6 characters", 400)
 
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return json_error("Email is already registered", 409)
+    existing_username = UserProfile.query.filter_by(username=username).first()
+    if existing_username:
+        return json_error("Username is already taken", 409)
+
+    display_name = name or username
 
     user = User(
-        name=name,
-        email=email,
+        name=display_name,
+        email=_build_internal_email(username),
         password_hash=generate_password_hash(password),
     )
     db.session.add(user)
+    db.session.flush()
+
+    profile = UserProfile(
+        user_id=user.id,
+        full_name=display_name,
+        username=username,
+        bio="",
+        avatar_seed=_initials_from_name(display_name),
+        joined_at=user.created_at,
+        verified_trader=False,
+        trust_score=50,
+        messages_sent_count=0,
+        tickers_shared_count=0,
+    )
+    db.session.add(profile)
+    ensure_user_settings(user)
+    _create_activity(user.id, "account_created", "Created account")
 
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return json_error("Email is already registered", 409)
-
-    ensure_user_profile(user)
-    _create_activity(user.id, "account_created", "Created account")
-    db.session.commit()
+        return json_error("Username is already taken", 409)
 
     token = create_token(str(user.id))
-    return jsonify({"token": token, "user": user.to_dict()}), 201
+    return jsonify({"token": token, "user": build_auth_user_payload(user)}), 201
 
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():
     ensure_database_schema()
     data = request.get_json(silent=True) or {}
-    email = (data.get("email") or "").strip().lower()
+    username = (data.get("username") or "").strip().lower()
     password = data.get("password") or ""
 
-    if not email or not password:
-        return json_error("Email and password are required", 400)
+    if not username or not password:
+        return json_error("Username and password are required", 400)
 
-    user = User.query.filter_by(email=email).first()
+    profile = UserProfile.query.filter_by(username=username).first()
+    user = profile.user if profile else None
     if not user or not check_password_hash(user.password_hash, password):
         return json_error("Invalid credentials", 401)
 
@@ -861,7 +899,7 @@ def login():
     ensure_user_settings(user)
     db.session.commit()
     token = create_token(str(user.id))
-    return jsonify({"token": token, "user": user.to_dict()})
+    return jsonify({"token": token, "user": build_auth_user_payload(user)})
 
 
 @app.route("/api/auth/me", methods=["GET"])
@@ -870,7 +908,7 @@ def me():
     if error_response:
         return error_response
 
-    return jsonify({"user": user.to_dict()})
+    return jsonify({"user": build_auth_user_payload(user)})
 
 
 @app.route("/api/profile/me", methods=["GET", "PATCH", "PUT"])

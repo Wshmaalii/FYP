@@ -87,7 +87,7 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
     }
   };
 
-  const toggleSetting = (key: 'email_notifications' | 'push_notifications' | 'message_notifications' | 'dark_mode') => {
+  const toggleSetting = (key: 'push_notifications' | 'message_notifications' | 'dark_mode') => {
     if (!settings) {
       return;
     }
@@ -182,8 +182,8 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-zinc-950 border border-zinc-800 rounded p-4">
-                <p className="text-zinc-500 text-xs mb-1">Email</p>
-                <p className="text-zinc-100">{settings.email}</p>
+                <p className="text-zinc-500 text-xs mb-1">Display Name</p>
+                <p className="text-zinc-100">{settings.full_name}</p>
               </div>
               <div className="bg-zinc-950 border border-zinc-800 rounded p-4">
                 <p className="text-zinc-500 text-xs mb-1">Username</p>
@@ -241,24 +241,6 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
             <p className="text-zinc-500 text-sm">Choose how you want to be notified</p>
           </div>
           <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-zinc-300">Email Notifications</h3>
-                <p className="text-zinc-500 text-sm">Receive email updates about your activity</p>
-              </div>
-              <button
-                onClick={() => toggleSetting('email_notifications')}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  settings.email_notifications ? 'bg-cyan-600' : 'bg-zinc-700'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    settings.email_notifications ? 'translate-x-6' : ''
-                  }`}
-                />
-              </button>
-            </div>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-zinc-300">Push Notifications</h3>
