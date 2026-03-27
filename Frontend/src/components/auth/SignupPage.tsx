@@ -16,6 +16,12 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    if (!/^[a-z0-9_]{3,24}$/.test(username)) {
+      setError('Username must be 3-24 characters using lowercase letters, numbers, or underscores.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -41,8 +47,8 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-zinc-100 text-lg mb-1">Create Account</h2>
-          <p className="text-zinc-500 text-sm">Join your secure trading workspace.</p>
+          <h2 className="text-zinc-100 text-lg mb-1">Create Your TradeLink Username</h2>
+          <p className="text-zinc-500 text-sm">Join the community with a handle you will use across chats and rooms.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,8 +60,12 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               placeholder="Choose a username"
+              minLength={3}
+              maxLength={24}
+              pattern="[a-z0-9_]{3,24}"
               required
             />
+            <p className="text-zinc-500 text-xs mt-2">Use 3-24 lowercase letters, numbers, or underscores.</p>
           </div>
 
           <div>
@@ -94,7 +104,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
             className="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-zinc-700 text-white rounded transition-colors flex items-center justify-center gap-2"
           >
             <Shield className="w-4 h-4" />
-            <span>{isSubmitting ? 'Creating Account...' : 'Sign Up'}</span>
+            <span>{isSubmitting ? 'Creating Username...' : 'Create Account'}</span>
           </button>
         </form>
 

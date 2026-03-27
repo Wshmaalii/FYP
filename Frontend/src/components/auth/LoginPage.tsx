@@ -15,6 +15,12 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    if (!/^[a-z0-9_]{3,24}$/.test(username)) {
+      setError('Enter the username you created using lowercase letters, numbers, or underscores.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -40,8 +46,8 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-zinc-100 text-lg mb-1">Log In</h2>
-          <p className="text-zinc-500 text-sm">Access your trading channels and watchlists.</p>
+          <h2 className="text-zinc-100 text-lg mb-1">Log In With Your Username</h2>
+          <p className="text-zinc-500 text-sm">Access your rooms, watchlist, and profile with your TradeLink handle.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -53,8 +59,12 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               placeholder="Enter your username"
+              minLength={3}
+              maxLength={24}
+              pattern="[a-z0-9_]{3,24}"
               required
             />
+            <p className="text-zinc-500 text-xs mt-2">Usernames are lowercase and case-insensitive at login.</p>
           </div>
 
           <div>
