@@ -24,14 +24,14 @@ export function ExploreSpacesPage({ spaces, joiningKey, onJoin, onOpen }: Explor
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-7 xl:grid-cols-2">
           {spaces.map((space) => (
-            <div key={space.conversation_key} className="rounded-[30px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,27,35,0.98),rgba(17,20,27,1))] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.03)] transition-all duration-200 ease-out hover:border-zinc-700 hover:bg-[linear-gradient(180deg,rgba(27,31,40,0.99),rgba(18,21,29,1))] hover:shadow-[0_24px_52px_rgba(0,0,0,0.24)]">
-              <div className="mb-5 flex items-start justify-between gap-6">
+            <div key={space.conversation_key} className="rounded-[32px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(27,31,40,0.98),rgba(18,21,29,1))] px-7 py-6 shadow-[0_20px_44px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.03)] transition-all duration-200 ease-out hover:border-zinc-700 hover:shadow-[0_26px_56px_rgba(0,0,0,0.26)]">
+              <div className="mb-6 flex items-start justify-between gap-6">
                 <div className="min-w-0 flex-1">
-                  <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2.5">
                     <h3 className="text-xl font-semibold tracking-tight text-zinc-100">{space.name}</h3>
-                    <span className="shrink-0 rounded-full border border-cyan-900/60 bg-cyan-950/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-300">
+                    <span className="shrink-0 rounded-full border border-cyan-900/60 bg-cyan-950/40 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-300">
                       Public Space
                     </span>
                   </div>
@@ -46,15 +46,17 @@ export function ExploreSpacesPage({ spaces, joiningKey, onJoin, onOpen }: Explor
                 </div>
               </div>
 
-              <div className="mb-5 flex flex-wrap gap-2">
+              <div className="mb-6 rounded-[22px] border border-zinc-800/80 bg-zinc-950/55 px-4 py-3.5">
+                <div className="flex flex-wrap gap-2">
                 {space.channels.map((channel) => (
                   <span key={channel.channel_key} className="rounded-full border border-zinc-700 bg-zinc-950/80 px-3 py-1.5 text-[11px] leading-none text-zinc-400">
                     #{channel.slug}
                   </span>
                 ))}
+                </div>
               </div>
 
-              <div className="rounded-[24px] border border-zinc-800/80 bg-zinc-950/60 px-4 py-3.5">
+              <div className="rounded-[24px] border border-zinc-800/80 bg-zinc-950/70 px-4 py-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 text-sm text-zinc-500">
                     <Users className="w-4 h-4" />

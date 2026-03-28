@@ -24,9 +24,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-4 py-2.5">
-      <div className="px-3 pb-2.5">
-        <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600">{title}</h3>
+    <div className="px-4 py-3">
+      <div className="px-3 pb-2">
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90">{title}</h3>
       </div>
       <div className="space-y-1.5 rounded-[26px] border border-zinc-900/80 bg-zinc-900/45 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
         {children}
@@ -57,7 +57,7 @@ function ConversationButton({
       }`}
     >
       <div className="text-sm font-medium leading-5">{label}</div>
-      {meta ? <div className={`text-xs mt-1 leading-4 ${selected ? 'text-cyan-100/90' : 'text-zinc-600'}`}>{meta}</div> : null}
+      {meta ? <div className={`mt-1.5 text-xs leading-4 ${selected ? 'text-cyan-100/90' : 'text-zinc-600'}`}>{meta}</div> : null}
     </button>
   );
 }
@@ -83,7 +83,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="px-4 pb-3 pt-4">
+      <div className="px-4 pb-4 pt-4">
         <button
           type="button"
           onClick={onOpenComposer}
@@ -94,7 +94,7 @@ export function Sidebar({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto pt-1">
+      <div className="flex-1 overflow-y-auto pt-2">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
@@ -153,7 +153,7 @@ export function Sidebar({
         </Section>
       </div>
 
-      <div className="px-4 pb-4 pt-3">
+      <div className="px-4 pb-5 pt-4">
         <div className="overflow-hidden rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(22,25,33,0.94),rgba(14,17,23,0.98))] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
           <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
         </div>
