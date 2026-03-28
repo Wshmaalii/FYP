@@ -24,11 +24,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="border-b border-zinc-800 py-6">
-      <div className="px-4 mb-3">
-        <h3 className="text-zinc-600 text-[11px] uppercase tracking-[0.18em]">{title}</h3>
+    <div className="px-3 py-3">
+      <div className="px-3 pb-2">
+        <h3 className="text-[10px] uppercase tracking-[0.22em] text-zinc-600">{title}</h3>
       </div>
-      <div className="space-y-2 px-3">{children}</div>
+      <div className="space-y-1.5 rounded-2xl bg-zinc-900/55 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">{children}</div>
     </div>
   );
 }
@@ -48,10 +48,10 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 ease-out ${
+      className={`w-full text-left px-4 py-3.5 rounded-2xl border transition-all duration-200 ease-out ${
         selected
-          ? 'bg-cyan-600 text-white shadow-[0_10px_24px_rgba(8,145,178,0.18)]'
-          : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 hover:border-zinc-700 active:translate-y-px'
+          ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
+          : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-zinc-100 active:translate-y-px'
       }`}
     >
       <div className="text-sm font-medium leading-5">{label}</div>
@@ -72,27 +72,27 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="flex w-80 flex-col border-r border-zinc-800 bg-zinc-950 text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-      <div className="flex min-h-20 items-center border-b border-zinc-800 px-5 py-5">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/80">TradeLink</p>
+    <div className="flex w-80 flex-col border-r border-zinc-800 bg-[linear-gradient(180deg,#090b10_0%,#0d1016_100%)] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
+      <div className="px-4 pt-4">
+        <div className="rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(25,29,39,0.92),rgba(17,20,28,0.96))] px-5 py-5 shadow-[0_20px_50px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">TradeLink</p>
           <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">Messaging for trader communities</h2>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
         </div>
       </div>
 
-      <div className="border-b border-zinc-800 px-4 py-5">
+      <div className="px-4 pb-4 pt-4">
         <button
           type="button"
           onClick={onOpenComposer}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-4 py-3.5 text-white shadow-[0_16px_38px_rgba(8,145,178,0.2)] transition-all duration-200 ease-out hover:bg-cyan-500 active:translate-y-px"
+          className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-cyan-600 px-4 py-3.5 text-white shadow-[0_16px_38px_rgba(8,145,178,0.18)] transition-all duration-200 ease-out hover:bg-cyan-500 active:translate-y-px"
         >
           <MessageSquarePlus className="w-4 h-4" />
           <span className="text-sm font-medium">New Chat</span>
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-1">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
@@ -104,7 +104,7 @@ export function Sidebar({
 
         <Section title="My Spaces">
           {mySpaces.length === 0 ? (
-            <p className="text-zinc-600 text-xs px-4 py-2 leading-5">Create or join a space to get started.</p>
+            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Create or join a space to get started.</p>
           ) : (
             mySpaces.map((space) => (
               <ConversationButton
@@ -120,7 +120,7 @@ export function Sidebar({
 
         <Section title="Direct Messages">
           {directMessages.length === 0 ? (
-            <p className="text-zinc-600 text-xs px-4 py-2 leading-5">Start a direct message from New Chat.</p>
+            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Start a direct message from New Chat.</p>
           ) : (
             directMessages.map((dm) => (
               <ConversationButton
@@ -136,7 +136,7 @@ export function Sidebar({
 
         <Section title="Private Groups">
           {privateGroups.length === 0 ? (
-            <p className="text-zinc-600 text-xs px-4 py-2 leading-5">Create a private group for invite-only discussions.</p>
+            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Create a private group for invite-only discussions.</p>
           ) : (
             privateGroups.map((group) => (
               <ConversationButton
@@ -151,7 +151,11 @@ export function Sidebar({
         </Section>
       </div>
 
-      <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
+      <div className="px-4 pb-4 pt-2">
+        <div className="overflow-hidden rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(22,25,33,0.94),rgba(14,17,23,0.98))] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+          <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
+        </div>
+      </div>
     </div>
   );
 }

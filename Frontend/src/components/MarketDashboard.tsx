@@ -24,9 +24,9 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="w-full flex items-center justify-between py-3 px-3 hover:bg-zinc-900 rounded-xl transition-all duration-150 cursor-pointer text-left active:translate-y-px"
+      className="w-full rounded-2xl border border-transparent px-3.5 py-3 transition-all duration-150 cursor-pointer text-left hover:border-zinc-800 hover:bg-zinc-900/90 active:translate-y-px"
     >
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-zinc-100 text-sm font-medium">{stock.ticker}</span>
           {stock.change !== null && (isPositive ? (
@@ -148,11 +148,11 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   }, [loadDashboardData]);
 
   return (
-    <div className="flex-1 overflow-y-auto border-t border-zinc-800 bg-zinc-950">
+    <div className="flex-1 overflow-y-auto border-t border-zinc-800 bg-zinc-950/90">
       <div className="p-4">
         <button onClick={() => onNavigate('Market Overview')} className="w-full group">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Market Snapshot</h3>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[10px] uppercase tracking-[0.22em] text-zinc-500 transition-colors group-hover:text-cyan-400">Market Snapshot</h3>
             <div className="flex items-center gap-1">
               <span className="text-cyan-400 text-xs">Stored snapshots</span>
               <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
@@ -169,7 +169,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
         )}
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-2xl bg-zinc-900/40 p-2">
           {marketIndices.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">No stored market snapshots yet.</p>
           ) : (
@@ -178,7 +178,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="p-4 border-t border-zinc-800">
+      <div className="border-t border-zinc-800 p-4">
         <button onClick={() => onNavigate('Top Movers')} className="w-full group">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-2xl bg-zinc-900/40 p-2">
           {topMovers.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">{topMoversMessage || 'Loading discussed names...'}</p>
           ) : (
@@ -197,7 +197,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="p-4 border-t border-zinc-800">
+      <div className="border-t border-zinc-800 p-4">
         <button onClick={() => onNavigate('Watchlist')} className="w-full group">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-2xl bg-zinc-900/40 p-2">
           {watchlistStatus?.isCachedFallback && (
             <p className="text-zinc-500 text-xs mb-2">
               {watchlistStatus.message || 'Showing most recent available data.'}

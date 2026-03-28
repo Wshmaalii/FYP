@@ -53,9 +53,9 @@ export function TopBar({
     .toUpperCase();
 
   return (
-    <div className="flex h-20 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-6 shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
+    <div className="flex h-20 items-center justify-between border-b border-zinc-800 bg-[linear-gradient(180deg,rgba(24,27,34,0.96),rgba(18,21,28,0.98))] px-6 shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
       <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-zinc-700 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-zinc-700 bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(37,99,235,0.18))] shadow-[0_10px_24px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.05)]">
           <span className="text-sm font-semibold tracking-[0.18em] text-white">TL</span>
         </div>
         <div>
@@ -65,7 +65,7 @@ export function TopBar({
               <Lock className="w-4 h-4 text-cyan-400" />
             )}
           </div>
-          {displaySubtitle && <p className="mt-1 text-xs uppercase tracking-[0.16em] text-zinc-500">{displaySubtitle}</p>}
+          {displaySubtitle && <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-zinc-500">{displaySubtitle}</p>}
         </div>
       </div>
 
@@ -73,7 +73,7 @@ export function TopBar({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowProfileMenu(!showProfileMenu)}
-          className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 transition-all duration-150 hover:border-zinc-700 hover:bg-zinc-800/80"
+          className="flex items-center gap-3 rounded-full border border-zinc-700/80 bg-zinc-950/70 px-3 py-2 transition-all duration-150 hover:border-zinc-600 hover:bg-zinc-800"
         >
           <div className="flex items-center gap-2">
             <span className="text-sm text-zinc-300">{displayName}</span>
@@ -88,8 +88,8 @@ export function TopBar({
         </button>
 
         {showProfileMenu && (
-          <div className="absolute right-0 z-50 mt-3 w-72 overflow-hidden rounded-[24px] border border-zinc-800 bg-zinc-900 shadow-[0_28px_80px_rgba(0,0,0,0.45)]">
-            <div className="border-b border-zinc-800 bg-zinc-950 p-5">
+          <div className="absolute right-0 z-50 mt-3 w-72 overflow-hidden rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,27,36,0.98),rgba(15,18,24,0.98))] shadow-[0_28px_80px_rgba(0,0,0,0.45)]">
+            <div className="border-b border-zinc-800 bg-zinc-950/90 p-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_12px_30px_rgba(8,145,178,0.18)]">
                   {avatarUrl ? (
