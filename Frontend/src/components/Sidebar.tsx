@@ -72,8 +72,8 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="flex w-80 flex-col border-r border-white/6 bg-[linear-gradient(180deg,rgba(12,14,20,0.98),rgba(9,11,17,1))] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-      <div className="flex min-h-20 items-center border-b border-white/6 px-5 py-5">
+    <div className="flex w-80 flex-col border-r border-zinc-800 bg-zinc-950 text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
+      <div className="flex min-h-20 items-center border-b border-zinc-800 px-5 py-5">
         <div>
           <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/80">TradeLink</p>
           <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">Messaging for trader communities</h2>
@@ -81,7 +81,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="border-b border-white/6 px-4 py-5">
+      <div className="border-b border-zinc-800 px-4 py-5">
         <button
           type="button"
           onClick={onOpenComposer}

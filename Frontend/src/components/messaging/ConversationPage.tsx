@@ -125,8 +125,8 @@ export function ConversationPage({
   }, [conversation]);
 
   return (
-    <div className="flex flex-1 flex-col bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.03),transparent_18%),linear-gradient(180deg,#0c0f15_0%,#0a0c12_100%)]">
-      <div className="border-b border-white/6 bg-[linear-gradient(180deg,rgba(20,23,31,0.96),rgba(14,17,24,0.96))] px-8 py-7">
+    <div className="flex flex-1 flex-col bg-zinc-950">
+      <div className="border-b border-zinc-800 bg-zinc-900 px-8 py-7">
         <div className="flex items-start justify-between gap-6">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
@@ -159,7 +159,7 @@ export function ConversationPage({
                 className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
                   channel.channel_key === activeChannelKey
                     ? 'border-cyan-500 bg-cyan-600 text-white shadow-[0_12px_28px_rgba(8,145,178,0.18)]'
-                    : 'border-white/8 bg-zinc-950/90 text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100'
+                    : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
                 }`}
               >
                 <span className="inline-flex items-center gap-2">
@@ -183,7 +183,7 @@ export function ConversationPage({
         {loading ? (
           <div className="text-zinc-400 text-sm">Loading conversation...</div>
         ) : messages.length === 0 ? (
-          <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(22,25,34,0.9),rgba(15,18,25,0.94))] p-8 text-sm leading-6 text-zinc-500 shadow-[0_18px_44px_rgba(0,0,0,0.18)]">
+          <div className="rounded-[24px] border border-zinc-800 bg-zinc-900 p-8 text-sm leading-6 text-zinc-500 shadow-[0_18px_44px_rgba(0,0,0,0.18)]">
             No messages yet. Start the conversation in {activeChannel ? `#${activeChannel.slug}` : conversation.name}.
           </div>
         ) : (

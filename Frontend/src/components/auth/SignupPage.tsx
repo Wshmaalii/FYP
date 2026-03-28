@@ -36,11 +36,11 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.14),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.16),transparent_24%),linear-gradient(180deg,#06070b_0%,#0a0c12_52%,#08090d_100%)] p-6 text-zinc-100">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-7xl overflow-hidden rounded-[32px] border border-white/8 bg-zinc-950/90 shadow-[0_32px_120px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-        <div className="relative hidden flex-1 overflow-hidden border-r border-white/6 xl:flex">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.22),transparent_30%),radial-gradient(circle_at_80%_18%,rgba(59,130,246,0.22),transparent_28%),linear-gradient(180deg,rgba(12,14,22,0.96),rgba(8,10,16,0.98))]" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-[0.08]" />
+    <div className="min-h-screen bg-zinc-950 p-6 text-zinc-100">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-7xl overflow-hidden rounded-[32px] border border-zinc-800 bg-zinc-950 shadow-[0_32px_120px_rgba(0,0,0,0.45)]">
+        <div className="relative hidden flex-1 overflow-hidden border-r border-zinc-800 xl:flex">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_30%),radial-gradient(circle_at_80%_18%,rgba(59,130,246,0.12),transparent_28%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-[0.05]" />
           <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-cyan-400/30 to-transparent" />
           <div className="relative flex w-full flex-col justify-between px-14 py-14">
             <div className="flex items-center gap-4">
@@ -66,7 +66,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                 ].map(([title, body]) => (
                   <div
                     key={title}
-                    className="rounded-2xl border border-white/8 bg-white/[0.035] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    className="rounded-2xl border border-zinc-800 bg-zinc-900/70 px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                   >
                     <p className="text-sm font-medium text-zinc-100">{title}</p>
                     <p className="mt-1 text-sm leading-6 text-zinc-400">{body}</p>
@@ -82,8 +82,8 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
           </div>
         </div>
 
-        <div className="flex w-full items-center justify-center bg-[linear-gradient(180deg,rgba(13,15,22,0.94),rgba(9,11,16,0.98))] px-6 py-10 xl:max-w-[520px]">
-          <div className="w-full max-w-md rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(23,26,36,0.94),rgba(14,17,24,0.98))] p-8 shadow-[0_28px_80px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(255,255,255,0.05)]">
+        <div className="flex w-full items-center justify-center bg-zinc-950 px-6 py-10 xl:max-w-[520px]">
+          <div className="w-full max-w-md rounded-[28px] border border-zinc-800 bg-zinc-900 p-8 shadow-[0_28px_80px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(255,255,255,0.04)]">
             <div className="mb-8 flex items-center gap-4 xl:hidden">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.24),rgba(37,99,235,0.28))]">
                 <span className="font-semibold tracking-[0.2em] text-white">TL</span>
@@ -109,7 +109,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full rounded-2xl border border-white/8 bg-zinc-950/80 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
+                  className="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
                   placeholder="Choose a username"
                   minLength={3}
                   maxLength={24}
@@ -129,7 +129,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-2xl border border-white/8 bg-zinc-950/80 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
+                  className="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
                   placeholder="How your name appears in chat"
                 />
               </div>
@@ -140,7 +140,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-white/8 bg-zinc-950/80 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
+                  className="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
                   placeholder="Create a password"
                   minLength={6}
                   required
@@ -148,7 +148,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
               </div>
 
               {error && (
-                <div className="rounded-2xl border border-red-900/80 bg-red-950/40 px-4 py-3.5">
+                <div className="rounded-2xl border border-red-900/80 bg-red-950/30 px-4 py-3.5">
                   <p className="text-sm text-red-300">{error}</p>
                 </div>
               )}
@@ -163,7 +163,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
               </button>
             </form>
 
-            <div className="mt-8 border-t border-white/8 pt-5 text-sm text-zinc-500">
+            <div className="mt-8 border-t border-zinc-800 pt-5 text-sm text-zinc-500">
               <span>Already have an account? </span>
               <button onClick={onSwitchToLogin} className="font-medium text-cyan-300 transition-colors hover:text-cyan-200">
                 Log in
