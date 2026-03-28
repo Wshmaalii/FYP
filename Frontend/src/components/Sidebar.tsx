@@ -24,11 +24,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-4 py-3">
-      <div className="pb-3">
-        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[var(--text-muted)]">{title}</h3>
+    <div className="px-4 py-1.5">
+      <div className="px-2 pb-1.5">
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90">{title}</h3>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1.5 rounded-[24px] bg-zinc-900/25 p-1.5">
         {children}
       </div>
     </div>
@@ -50,14 +50,14 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-[7px] px-2 py-[7px] text-left transition-colors duration-150 ${
+      className={`w-full rounded-2xl border px-4 py-2.5 text-left transition-all duration-200 ease-out ${
         selected
-          ? 'bg-white/5 text-[var(--text-primary)]'
-          : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
+          ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
+          : 'border-transparent bg-zinc-950/40 text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900/90 hover:text-zinc-100 active:translate-y-px'
       }`}
     >
-      <div className="text-[13px] leading-5">{label}</div>
-      {meta ? <div className={`mt-1 text-[10px] leading-4 ${selected ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'}`}>{meta}</div> : null}
+      <div className="text-sm font-medium leading-5">{label}</div>
+      {meta ? <div className={`mt-1 text-xs leading-4 ${selected ? 'text-cyan-100/90' : 'text-zinc-600'}`}>{meta}</div> : null}
     </button>
   );
 }
@@ -74,24 +74,27 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="flex w-60 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)]">
-      <div className="border-b border-[var(--border-subtle)] px-4 py-4">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[var(--text-primary)]">TradeLink</p>
-          <h2 className="mt-2 text-[15px] font-semibold leading-6 text-[var(--text-primary)]">Messaging for trader communities</h2>
-          <p className="mt-1.5 text-[12px] leading-5 text-[var(--text-secondary)]">Private groups, public spaces, and market context in one calm workspace.</p>
+    <div className="flex w-80 flex-col border-r border-zinc-800 bg-[linear-gradient(180deg,#090b10_0%,#0d1016_100%)] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
+      <div className="px-4 pt-3.5">
+        <div className="rounded-[26px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,28,37,0.96),rgba(16,19,26,0.98))] px-4.5 py-4.5 shadow-[0_16px_34px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">TradeLink</p>
+          <h2 className="mt-2 text-[17px] font-semibold tracking-tight text-white">Messaging for trader communities</h2>
+          <p className="mt-1.5 max-w-[228px] text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
         </div>
+      </div>
+
+      <div className="px-4 pb-2.5 pt-3.5">
         <button
           type="button"
           onClick={onOpenComposer}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--accent-teal-border)] bg-[var(--accent-teal-bg)] px-3 py-2 text-[12px] font-medium text-[var(--accent-teal)] transition-colors hover:bg-[rgba(0,196,160,0.16)]"
+          className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-cyan-600 px-4 py-3 text-white shadow-[0_14px_30px_rgba(8,145,178,0.16)] transition-all duration-200 ease-out hover:bg-cyan-500 active:translate-y-px"
         >
           <MessageSquarePlus className="w-4 h-4" />
-          <span>New Chat</span>
+          <span className="text-sm font-medium">New Chat</span>
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto border-b border-[var(--border-subtle)] py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto pt-1">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
@@ -103,7 +106,7 @@ export function Sidebar({
 
         <Section title="My Spaces">
           {mySpaces.length === 0 ? (
-            <p className="px-2 py-[7px] text-[12px] leading-5 text-[var(--text-secondary)]">Create or join a space to get started.</p>
+            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Create or join a space to get started.</p>
           ) : (
             mySpaces.map((space) => (
               <ConversationButton
@@ -119,7 +122,7 @@ export function Sidebar({
 
         <Section title="Direct Messages">
           {directMessages.length === 0 ? (
-            <p className="px-2 py-[7px] text-[12px] leading-5 text-[var(--text-secondary)]">Start a direct message from New Chat.</p>
+            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Start a direct message from New Chat.</p>
           ) : (
             directMessages.map((dm) => (
               <ConversationButton
@@ -135,7 +138,7 @@ export function Sidebar({
 
         <Section title="Private Groups">
           {privateGroups.length === 0 ? (
-            <p className="px-2 py-[7px] text-[12px] leading-5 text-[var(--text-secondary)]">Create a private group for invite-only discussions.</p>
+            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Create a private group for invite-only discussions.</p>
           ) : (
             privateGroups.map((group) => (
               <ConversationButton
@@ -150,8 +153,8 @@ export function Sidebar({
         </Section>
       </div>
 
-      <div className="mt-auto px-4 py-4">
-        <div className="overflow-hidden">
+      <div className="px-4 pb-3 pt-2">
+        <div className="overflow-hidden rounded-[22px] border border-zinc-800/90 bg-[linear-gradient(180deg,rgba(18,21,28,0.94),rgba(12,15,20,0.98))] shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
           <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
         </div>
       </div>
