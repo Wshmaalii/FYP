@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
 import { View } from '../App';
-import { getTopMovers, getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, type MarketDataStatus, type TopMoverItem } from '../api/market';
-import { WATCHLIST_UPDATED_EVENT, fetchWatchlist } from '../api/watchlist';
+import { getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, type MarketDataStatus } from '../api/market';
 
 interface Stock {
   ticker: string;
@@ -24,22 +22,15 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[14px] bg-zinc-950/75 px-3 py-2 text-left transition-all duration-150 hover:bg-zinc-900/90 active:translate-y-px"
+      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.02)]"
     >
       <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold tracking-tight text-zinc-100">{stock.ticker}</span>
-          {stock.change !== null && (isPositive ? (
-            <TrendingUp className="w-3 h-3 text-emerald-400" />
-          ) : (
-            <TrendingDown className="w-3 h-3 text-red-400" />
-          ))}
-        </div>
-        <p className="mt-0.5 truncate text-[10px] leading-4 text-zinc-500">{stock.name}</p>
+        <p className="text-[12px] font-semibold text-[rgba(255,255,255,0.9)]">{stock.ticker}</p>
+        <p className="mt-0.5 truncate text-[10px] leading-4 text-[rgba(255,255,255,0.45)]">{stock.name}</p>
       </div>
       <div className="text-right">
-        <p className="text-[13px] font-medium tracking-tight text-zinc-100">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
-        <p className={`mt-0.5 text-[10px] font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+        <p className="text-[12px] font-medium text-[rgba(255,255,255,0.9)]">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
+        <p className={`mt-0.5 text-[12px] font-medium ${isPositive ? 'text-[#2dd4aa]' : 'text-[#f26b6b]'}`}>
           {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
         </p>
       </div>
@@ -49,31 +40,12 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
 
 export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProps) {
   const [marketIndices, setMarketIndices] = useState<Stock[]>([]);
-  const [topMovers, setTopMovers] = useState<Stock[]>([]);
-  const [watchlist, setWatchlist] = useState<Stock[]>([]);
   const [liveDataError, setLiveDataError] = useState(false);
-  const [topMoversMessage, setTopMoversMessage] = useState<string | null>(null);
   const [overviewStatus, setOverviewStatus] = useState<MarketDataStatus | null>(null);
-  const [watchlistStatus, setWatchlistStatus] = useState<MarketDataStatus | null>(null);
 
   const loadDashboardData = useCallback(async (isMountedRef?: { current: boolean }) => {
       try {
-        const [overviewQuotes, movers, watchlistItems] = await Promise.all([
-          getQuotes([...PRIMARY_MARKET_SYMBOLS]),
-          getTopMovers('Global'),
-          fetchWatchlist().catch(() => []),
-        ]);
-
-        const watchlistStocks: Stock[] = watchlistItems.slice(0, 3).map((item) => ({
-          ticker: item.ticker,
-          name: item.company_name || item.ticker,
-          price: null,
-          change: null,
-          changePercent: null,
-        }));
-
-        const quoteResponse = watchlistStocks.length > 0 ? await getQuotes(watchlistStocks.map((item) => item.ticker)) : { quotes: {} };
-        const quotes = quoteResponse.quotes;
+        const overviewQuotes = await getQuotes([...PRIMARY_MARKET_SYMBOLS]);
 
         if (isMountedRef && !isMountedRef.current) {
           return;
@@ -97,37 +69,13 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             .filter((stock): stock is Stock => stock !== null)
             .slice(0, 3),
         );
-
-        const combinedMovers = movers.items
-          .slice(0, 3)
-          .map((stock: TopMoverItem) => ({
-            ticker: stock.ticker,
-            name: stock.name,
-            price: stock.price,
-            change: stock.change,
-            changePercent: stock.changePercent,
-          }));
-        setTopMovers(combinedMovers);
-        setTopMoversMessage(movers.message);
         setOverviewStatus(overviewQuotes.marketDataStatus || null);
-        setWatchlistStatus(quoteResponse.marketDataStatus || null);
-
-        setWatchlist(
-          watchlistStocks.map((stock) => ({
-            ...stock,
-            price: quotes[stock.ticker]?.price ?? null,
-            change: quotes[stock.ticker]?.change ?? null,
-            changePercent: quotes[stock.ticker]?.changePercent ?? null,
-          })),
-        );
 
         setLiveDataError(false);
       } catch {
         if (!isMountedRef || isMountedRef.current) {
           setLiveDataError(true);
           setMarketIndices([]);
-          setTopMovers([]);
-          setTopMoversMessage(null);
         }
       }
     }, []);
@@ -136,97 +84,29 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
     const mounted = { current: true };
     void loadDashboardData(mounted);
 
-    const handleWatchlistUpdated = () => {
-      void loadDashboardData(mounted);
-    };
-    window.addEventListener(WATCHLIST_UPDATED_EVENT, handleWatchlistUpdated);
-
     return () => {
       mounted.current = false;
-      window.removeEventListener(WATCHLIST_UPDATED_EVENT, handleWatchlistUpdated);
     };
   }, [loadDashboardData]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-zinc-950/90">
-      <div className="px-3 pb-2 pt-2">
-        <button onClick={() => onNavigate('Market Overview')} className="w-full group">
-          <div className="mb-1.5 flex items-center justify-between">
-            <h3 className="text-[10px] uppercase tracking-[0.22em] text-zinc-500 transition-colors group-hover:text-cyan-400">Market Snapshot</h3>
-            <div className="flex items-center gap-1">
-              <span className="text-cyan-400 text-xs">Stored snapshots</span>
-              <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
-            </div>
-          </div>
+    <div className="bg-[#111113]">
+      <div className="pb-2">
+        <button onClick={() => onNavigate('Market Overview')} className="mb-3 flex w-full items-center justify-between">
+          <h3 className="text-[10px] font-medium uppercase tracking-[1.2px] text-[rgba(255,255,255,0.28)]">Snapshot</h3>
         </button>
-        {liveDataError && <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">{MARKET_DATA_LIMITED_MESSAGE}</p>}
-        {!liveDataError && !overviewStatus?.isCachedFallback && marketIndices.length > 0 && (
-          <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">Showing most recent available data.</p>
-        )}
-        {!liveDataError && overviewStatus?.isCachedFallback && (
-          <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">
-            {overviewStatus.message || 'Showing most recent available data.'}
-            {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+        {liveDataError && <p className="mb-3 text-[10px] leading-4 text-[rgba(255,255,255,0.28)]">{MARKET_DATA_LIMITED_MESSAGE}</p>}
+        {!liveDataError && overviewStatus?.lastUpdatedAt && (
+          <p className="mb-3 text-[10px] leading-4 text-[rgba(255,255,255,0.28)]">
+            Last updated {new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.
           </p>
         )}
-        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="divide-y divide-[rgba(255,255,255,0.07)]">
           {marketIndices.length === 0 && !liveDataError ? (
-            <p className="px-4 py-4 text-xs text-zinc-500">No stored market snapshots yet.</p>
+            <p className="py-3 text-[10px] text-[rgba(255,255,255,0.28)]">No stored market snapshots yet.</p>
           ) : (
-            marketIndices.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
-                <StockItem stock={stock} onOpenStock={onOpenStock} />
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="border-t border-zinc-800/80 px-3 py-2">
-        <button onClick={() => onNavigate('Top Movers')} className="w-full group">
-          <div className="mb-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Most Discussed</h3>
-            </div>
-            <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
-          </div>
-        </button>
-        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          {topMovers.length === 0 && !liveDataError ? (
-            <p className="px-4 py-4 text-xs text-zinc-500">{topMoversMessage || 'Loading discussed names...'}</p>
-          ) : (
-            topMovers.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
-                <StockItem stock={stock} onOpenStock={onOpenStock} />
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="border-t border-zinc-800/80 px-3 py-2">
-        <button onClick={() => onNavigate('Watchlist')} className="w-full group">
-          <div className="mb-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Watchlist</h3>
-            </div>
-            <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
-          </div>
-        </button>
-        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          {watchlistStatus?.isCachedFallback && (
-            <p className="px-4 pt-3 text-[10px] leading-4 text-zinc-500">
-              {watchlistStatus.message || 'Showing most recent available data.'}
-              {watchlistStatus.lastUpdatedAt ? ` Last updated ${new Date(watchlistStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
-            </p>
-          )}
-          {watchlist.length === 0 ? (
-            <p className="px-4 py-4 text-xs text-zinc-500">No watchlist items yet</p>
-          ) : (
-            watchlist.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
+            marketIndices.map((stock) => (
+              <div key={stock.ticker}>
                 <StockItem stock={stock} onOpenStock={onOpenStock} />
               </div>
             ))
