@@ -24,11 +24,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-4 py-3">
-      <div className="px-3 pb-2">
+    <div className="px-4 py-2">
+      <div className="px-2 pb-2">
         <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90">{title}</h3>
       </div>
-      <div className="space-y-1.5 rounded-[26px] border border-zinc-900/80 bg-zinc-900/45 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+      <div className="space-y-1.5 rounded-[24px] bg-zinc-900/25 p-1.5">
         {children}
       </div>
     </div>
@@ -50,10 +50,10 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 ease-out ${
+      className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-200 ease-out ${
         selected
           ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
-          : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900/80 hover:text-zinc-100 active:translate-y-px'
+          : 'border-transparent bg-zinc-950/40 text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900/90 hover:text-zinc-100 active:translate-y-px'
       }`}
     >
       <div className="text-sm font-medium leading-5">{label}</div>
@@ -75,15 +75,15 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <div className="flex w-80 flex-col border-r border-zinc-800 bg-[linear-gradient(180deg,#090b10_0%,#0d1016_100%)] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-      <div className="px-4 pt-4">
-        <div className="rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(25,29,39,0.92),rgba(17,20,28,0.96))] px-5 py-5 shadow-[0_20px_50px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="px-4 pt-5">
+        <div className="rounded-[30px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,28,37,0.96),rgba(16,19,26,0.98))] px-6 py-6 shadow-[0_20px_50px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]">
           <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">TradeLink</p>
-          <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">Messaging for trader communities</h2>
-          <p className="mt-2 text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
+          <h2 className="mt-3 text-xl font-semibold tracking-tight text-white">Messaging for trader communities</h2>
+          <p className="mt-3 max-w-[240px] text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
         </div>
       </div>
 
-      <div className="px-4 pb-4 pt-4">
+      <div className="px-4 pb-4 pt-5">
         <button
           type="button"
           onClick={onOpenComposer}
@@ -94,7 +94,7 @@ export function Sidebar({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto pt-2">
+      <div className="min-h-0 flex-1 overflow-y-auto pt-1">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
@@ -153,8 +153,8 @@ export function Sidebar({
         </Section>
       </div>
 
-      <div className="px-4 pb-5 pt-4">
-        <div className="overflow-hidden rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(22,25,33,0.94),rgba(14,17,23,0.98))] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+      <div className="px-4 pb-4 pt-3">
+        <div className="overflow-hidden rounded-[24px] border border-zinc-800/90 bg-[linear-gradient(180deg,rgba(18,21,28,0.94),rgba(12,15,20,0.98))] shadow-[0_14px_30px_rgba(0,0,0,0.14)]">
           <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
         </div>
       </div>
