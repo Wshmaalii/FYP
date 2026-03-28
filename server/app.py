@@ -1329,6 +1329,49 @@ def spaces():
     return jsonify({"spaces": [_conversation_payload(space, user) for space in public_spaces]})
 
 
+@app.route("/api/spaces", methods=["POST"])
+def create_space():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    description = (data.get("description") or "").strip()
+    visibility = (data.get("visibility") or "public").strip().lower()
+
+    if not name:
+        return json_error("Space name is required", 400)
+    if visibility not in {"public", "private"}:
+        return json_error("Visibility must be public or private", 400)
+
+    base_key = _conversation_key("space", name)
+    conversation_key = base_key
+    suffix = 1
+    while Conversation.query.filter_by(conversation_key=conversation_key).first():
+        suffix += 1
+        conversation_key = f"{base_key[:24]}{suffix}"[:32]
+
+    conversation = Conversation(
+        conversation_key=conversation_key,
+        kind="public_space",
+        name=name[:255],
+        description=description or "Community space",
+        visibility=visibility,
+        owner_id=user.id,
+    )
+    db.session.add(conversation)
+    db.session.flush()
+
+    for position, channel_name in enumerate(["General", "Trading", "Earnings"]):
+        _create_conversation_channel(conversation, channel_name, position)
+
+    _ensure_conversation_member(conversation, user, role="owner")
+    _create_activity(user.id, "space_created", f"Created space {conversation.name}")
+    db.session.commit()
+    return jsonify({"conversation": _conversation_payload(conversation, user)}), 201
+
+
 @app.route("/api/spaces/<conversation_key>/join", methods=["POST"])
 def join_space(conversation_key):
     user, error_response = get_authenticated_user()

@@ -83,6 +83,14 @@ export async function fetchSpaces() {
   return request<{ spaces: ConversationSummary[] }>('/api/spaces');
 }
 
+export async function createSpace(name: string, description: string, visibility: 'public' | 'private' = 'public') {
+  const data = await request<{ conversation: ConversationSummary }>('/api/spaces', {
+    method: 'POST',
+    body: JSON.stringify({ name, description, visibility }),
+  });
+  return data.conversation;
+}
+
 export async function joinSpace(conversationKey: string) {
   const data = await request<{ conversation: ConversationSummary }>(`/api/spaces/${conversationKey}/join`, {
     method: 'POST',

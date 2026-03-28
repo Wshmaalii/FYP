@@ -10,6 +10,7 @@ interface NewChatModalProps {
   onSearch: (query: string) => Promise<void>;
   onStartDm: (username: string) => Promise<void>;
   onCreateGroup: (name: string, usernames: string[]) => Promise<void>;
+  onCreateSpace: (name: string, description: string, visibility: 'public' | 'private') => Promise<void>;
 }
 
 export function NewChatModal({
@@ -20,10 +21,13 @@ export function NewChatModal({
   onSearch,
   onStartDm,
   onCreateGroup,
+  onCreateSpace,
 }: NewChatModalProps) {
-  const [mode, setMode] = useState<'dm' | 'group'>('dm');
+  const [mode, setMode] = useState<'dm' | 'group' | 'space'>('dm');
   const [query, setQuery] = useState('');
   const [groupName, setGroupName] = useState('');
+  const [spaceDescription, setSpaceDescription] = useState('');
+  const [spaceVisibility, setSpaceVisibility] = useState<'public' | 'private'>('public');
   const [selectedUsernames, setSelectedUsernames] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -60,7 +64,7 @@ export function NewChatModal({
           throw new Error('Search for a username to start a DM.');
         }
         await onStartDm(query.trim().toLowerCase());
-      } else {
+      } else if (mode === 'group') {
         if (!groupName.trim()) {
           throw new Error('Group name is required.');
         }
@@ -68,9 +72,16 @@ export function NewChatModal({
           throw new Error('Add at least one username to create a private group.');
         }
         await onCreateGroup(groupName.trim(), selectedUsernames);
+      } else {
+        if (!groupName.trim()) {
+          throw new Error('Space name is required.');
+        }
+        await onCreateSpace(groupName.trim(), spaceDescription.trim(), spaceVisibility);
       }
       setQuery('');
       setGroupName('');
+      setSpaceDescription('');
+      setSpaceVisibility('public');
       setSelectedUsernames([]);
       onClose();
     } catch (err) {
@@ -95,7 +106,7 @@ export function NewChatModal({
 
         <div className="px-6 pt-5">
           <div className="inline-flex rounded-lg bg-zinc-950 border border-zinc-800 p-1">
-            {(['dm', 'group'] as const).map((value) => (
+            {(['dm', 'group', 'space'] as const).map((value) => (
               <button
                 key={value}
                 type="button"
@@ -107,25 +118,57 @@ export function NewChatModal({
                   mode === value ? 'bg-cyan-600 text-white' : 'text-zinc-400 hover:text-zinc-100'
                 }`}
               >
-                {value === 'dm' ? 'Direct Message' : 'Private Group'}
+                {value === 'dm' ? 'Direct Message' : value === 'group' ? 'Private Group' : 'Public Space'}
               </button>
             ))}
           </div>
         </div>
 
         <div className="p-6 space-y-4">
-          {mode === 'group' && (
+          {(mode === 'group' || mode === 'space') && (
             <div>
-              <label className="block text-zinc-300 text-sm mb-2">Group name</label>
+              <label className="block text-zinc-300 text-sm mb-2">{mode === 'group' ? 'Group name' : 'Space name'}</label>
               <input
                 value={groupName}
                 onChange={(event) => setGroupName(event.target.value)}
-                placeholder="Macro Night Shift"
+                placeholder={mode === 'group' ? 'Macro Night Shift' : 'Large Caps Europe'}
                 className="w-full px-4 py-3 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
           )}
 
+          {mode === 'space' && (
+            <>
+              <div>
+                <label className="block text-zinc-300 text-sm mb-2">Description</label>
+                <textarea
+                  value={spaceDescription}
+                  onChange={(event) => setSpaceDescription(event.target.value)}
+                  placeholder="What this space is for, who it is useful for, and what gets discussed here."
+                  className="w-full px-4 py-3 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 min-h-[96px]"
+                />
+              </div>
+              <div>
+                <label className="block text-zinc-300 text-sm mb-2">Visibility</label>
+                <div className="inline-flex rounded-lg bg-zinc-950 border border-zinc-800 p-1">
+                  {(['public', 'private'] as const).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setSpaceVisibility(value)}
+                      className={`px-4 py-2 rounded text-sm transition-colors ${
+                        spaceVisibility === value ? 'bg-cyan-600 text-white' : 'text-zinc-400 hover:text-zinc-100'
+                      }`}
+                    >
+                      {value === 'public' ? 'Public' : 'Private'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {mode !== 'space' && (
           <div>
             <label className="block text-zinc-300 text-sm mb-2">
               {mode === 'dm' ? 'Username' : 'Invite by username'}
@@ -140,6 +183,7 @@ export function NewChatModal({
               />
             </div>
           </div>
+          )}
 
           {mode === 'group' && selectedUsers.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -151,6 +195,7 @@ export function NewChatModal({
             </div>
           )}
 
+          {mode !== 'space' && (
           <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden">
             {query.trim().length < 2 ? (
               <div className="px-4 py-4 text-zinc-500 text-sm">
@@ -185,6 +230,7 @@ export function NewChatModal({
               ))
             )}
           </div>
+          )}
 
           {error && (
             <div className="rounded-lg border border-red-900 bg-zinc-950 px-4 py-3 text-red-400 text-sm">
@@ -203,7 +249,7 @@ export function NewChatModal({
             disabled={submitting}
             className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-60 text-white transition-colors"
           >
-            {submitting ? 'Working...' : mode === 'dm' ? 'Start DM' : 'Create Group'}
+            {submitting ? 'Working...' : mode === 'dm' ? 'Start DM' : mode === 'group' ? 'Create Group' : 'Create Space'}
           </button>
         </div>
       </div>

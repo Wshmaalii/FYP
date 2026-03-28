@@ -15,6 +15,7 @@ import { NewChatModal } from './components/messaging/NewChatModal';
 import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
 import { fetchMyProfile, type UserProfile } from './api/profile';
 import {
+  createSpace,
   createDirectMessage,
   createPrivateGroup,
   fetchConversation,
@@ -213,6 +214,15 @@ export default function App() {
     await openConversation(conversation.conversation_key, resolved);
   };
 
+  const handleCreateSpace = async (name: string, description: string, visibility: 'public' | 'private') => {
+    const conversation = await createSpace(name, description, visibility);
+    const { sidebar, publicSpaces } = await refreshMessagingState();
+    const resolved = sidebar.my_spaces.find((item) => item.conversation_key === conversation.conversation_key)
+      || publicSpaces.find((item) => item.conversation_key === conversation.conversation_key)
+      || conversation;
+    await openConversation(conversation.conversation_key, resolved);
+  };
+
   const headerTitle = useMemo(() => {
     if (currentView === 'Conversation' && selectedConversation) {
       return selectedConversation.name;
@@ -360,6 +370,7 @@ export default function App() {
         onSearch={handleSearchUsers}
         onStartDm={handleStartDm}
         onCreateGroup={handleCreateGroup}
+        onCreateSpace={handleCreateSpace}
       />
     </div>
   );
