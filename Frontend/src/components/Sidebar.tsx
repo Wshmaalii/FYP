@@ -75,15 +75,15 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <div className="flex w-80 flex-col border-r border-zinc-800 bg-[linear-gradient(180deg,#090b10_0%,#0d1016_100%)] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-      <div className="px-4 pt-4">
-        <div className="rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,28,37,0.96),rgba(16,19,26,0.98))] px-5 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="px-4 pt-3.5">
+        <div className="rounded-[26px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,28,37,0.96),rgba(16,19,26,0.98))] px-4.5 py-4.5 shadow-[0_16px_34px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.03)]">
           <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">TradeLink</p>
-          <h2 className="mt-2.5 text-lg font-semibold tracking-tight text-white">Messaging for trader communities</h2>
-          <p className="mt-2 max-w-[232px] text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
+          <h2 className="mt-2 text-[17px] font-semibold tracking-tight text-white">Messaging for trader communities</h2>
+          <p className="mt-1.5 max-w-[228px] text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
         </div>
       </div>
 
-      <div className="px-4 pb-3 pt-4">
+      <div className="px-4 pb-2.5 pt-3.5">
         <button
           type="button"
           onClick={onOpenComposer}

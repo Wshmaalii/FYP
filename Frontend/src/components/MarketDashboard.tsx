@@ -24,7 +24,7 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[14px] bg-zinc-950/65 px-3 py-2.5 text-left transition-all duration-150 hover:bg-zinc-900/90 active:translate-y-px"
+      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[14px] bg-zinc-950/75 px-3 py-2 text-left transition-all duration-150 hover:bg-zinc-900/90 active:translate-y-px"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -35,11 +35,11 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
             <TrendingDown className="w-3 h-3 text-red-400" />
           ))}
         </div>
-        <p className="mt-0.5 truncate text-[11px] leading-4 text-zinc-500">{stock.name}</p>
+        <p className="mt-0.5 truncate text-[10px] leading-4 text-zinc-500">{stock.name}</p>
       </div>
       <div className="text-right">
         <p className="text-[13px] font-medium tracking-tight text-zinc-100">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
-        <p className={`mt-0.5 text-[11px] font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+        <p className={`mt-0.5 text-[10px] font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
           {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
         </p>
       </div>
@@ -149,9 +149,9 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
 
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950/90">
-      <div className="px-3 pb-2.5 pt-2.5">
+      <div className="px-3 pb-2 pt-2">
         <button onClick={() => onNavigate('Market Overview')} className="w-full group">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-1.5 flex items-center justify-between">
             <h3 className="text-[10px] uppercase tracking-[0.22em] text-zinc-500 transition-colors group-hover:text-cyan-400">Market Snapshot</h3>
             <div className="flex items-center gap-1">
               <span className="text-cyan-400 text-xs">Stored snapshots</span>
@@ -159,22 +159,22 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             </div>
           </div>
         </button>
-        {liveDataError && <p className="mb-2 text-[11px] text-zinc-500">{MARKET_DATA_LIMITED_MESSAGE}</p>}
+        {liveDataError && <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">{MARKET_DATA_LIMITED_MESSAGE}</p>}
         {!liveDataError && !overviewStatus?.isCachedFallback && marketIndices.length > 0 && (
-          <p className="mb-2 text-[11px] text-zinc-500">Showing most recent available data.</p>
+          <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">Showing most recent available data.</p>
         )}
         {!liveDataError && overviewStatus?.isCachedFallback && (
-          <p className="mb-2 text-[11px] leading-4 text-zinc-500">
+          <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">
             {overviewStatus.message || 'Showing most recent available data.'}
             {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
         )}
-        <div className="overflow-hidden rounded-[18px] border border-zinc-800/90 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           {marketIndices.length === 0 && !liveDataError ? (
             <p className="px-4 py-4 text-xs text-zinc-500">No stored market snapshots yet.</p>
           ) : (
             marketIndices.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-800/90 pt-1' : ''}>
+              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
                 <StockItem stock={stock} onOpenStock={onOpenStock} />
               </div>
             ))
@@ -182,9 +182,9 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t border-zinc-800/80 px-3 py-2.5">
+      <div className="border-t border-zinc-800/80 px-3 py-2">
         <button onClick={() => onNavigate('Top Movers')} className="w-full group">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-1.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
               <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Most Discussed</h3>
@@ -192,12 +192,12 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="overflow-hidden rounded-[18px] border border-zinc-800/90 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           {topMovers.length === 0 && !liveDataError ? (
             <p className="px-4 py-4 text-xs text-zinc-500">{topMoversMessage || 'Loading discussed names...'}</p>
           ) : (
             topMovers.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-800/90 pt-1' : ''}>
+              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
                 <StockItem stock={stock} onOpenStock={onOpenStock} />
               </div>
             ))
@@ -205,9 +205,9 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t border-zinc-800/80 px-3 py-2.5">
+      <div className="border-t border-zinc-800/80 px-3 py-2">
         <button onClick={() => onNavigate('Watchlist')} className="w-full group">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-1.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-cyan-400" />
               <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Watchlist</h3>
@@ -215,9 +215,9 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="overflow-hidden rounded-[18px] border border-zinc-800/90 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
           {watchlistStatus?.isCachedFallback && (
-            <p className="px-4 pt-3 text-[11px] leading-4 text-zinc-500">
+            <p className="px-4 pt-3 text-[10px] leading-4 text-zinc-500">
               {watchlistStatus.message || 'Showing most recent available data.'}
               {watchlistStatus.lastUpdatedAt ? ` Last updated ${new Date(watchlistStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
             </p>
@@ -226,7 +226,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             <p className="px-4 py-4 text-xs text-zinc-500">No watchlist items yet</p>
           ) : (
             watchlist.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-800/90 pt-1' : ''}>
+              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
                 <StockItem stock={stock} onOpenStock={onOpenStock} />
               </div>
             ))
