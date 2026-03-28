@@ -24,22 +24,22 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="w-full rounded-2xl border border-transparent px-3.5 py-3 transition-all duration-150 cursor-pointer text-left hover:border-zinc-800 hover:bg-zinc-900/90 active:translate-y-px"
+      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border border-transparent px-3.5 py-3 transition-all duration-150 text-left hover:border-zinc-800 hover:bg-zinc-900/90 active:translate-y-px"
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-zinc-100 text-sm font-medium">{stock.ticker}</span>
+          <span className="text-sm font-semibold tracking-tight text-zinc-100">{stock.ticker}</span>
           {stock.change !== null && (isPositive ? (
             <TrendingUp className="w-3 h-3 text-emerald-400" />
           ) : (
             <TrendingDown className="w-3 h-3 text-red-400" />
           ))}
         </div>
-        <p className="text-zinc-500 text-xs truncate mt-1">{stock.name}</p>
+        <p className="mt-1 truncate text-xs leading-5 text-zinc-500">{stock.name}</p>
       </div>
       <div className="text-right">
-        <p className="text-zinc-100 text-sm">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
-        <p className={`text-xs ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+        <p className="text-sm font-medium text-zinc-100">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
+        <p className={`mt-1 text-xs font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
           {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
         </p>
       </div>
@@ -169,11 +169,15 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
         )}
-        <div className="space-y-2 rounded-2xl bg-zinc-900/40 p-2">
+        <div className="rounded-[22px] border border-zinc-800/80 bg-zinc-900/45 p-2">
           {marketIndices.length === 0 && !liveDataError ? (
-            <p className="text-zinc-500 text-xs">No stored market snapshots yet.</p>
+            <p className="px-2.5 py-2 text-xs text-zinc-500">No stored market snapshots yet.</p>
           ) : (
-            marketIndices.map((stock) => <StockItem key={stock.ticker} stock={stock} onOpenStock={onOpenStock} />)
+            marketIndices.map((stock, index) => (
+              <div key={stock.ticker} className={index > 0 ? 'border-t border-zinc-800/80 pt-1.5' : ''}>
+                <StockItem stock={stock} onOpenStock={onOpenStock} />
+              </div>
+            ))
           )}
         </div>
       </div>
@@ -188,11 +192,15 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="space-y-2 rounded-2xl bg-zinc-900/40 p-2">
+        <div className="rounded-[22px] border border-zinc-800/80 bg-zinc-900/45 p-2">
           {topMovers.length === 0 && !liveDataError ? (
-            <p className="text-zinc-500 text-xs">{topMoversMessage || 'Loading discussed names...'}</p>
+            <p className="px-2.5 py-2 text-xs text-zinc-500">{topMoversMessage || 'Loading discussed names...'}</p>
           ) : (
-            topMovers.map((stock) => <StockItem key={stock.ticker} stock={stock} onOpenStock={onOpenStock} />)
+            topMovers.map((stock, index) => (
+              <div key={stock.ticker} className={index > 0 ? 'border-t border-zinc-800/80 pt-1.5' : ''}>
+                <StockItem stock={stock} onOpenStock={onOpenStock} />
+              </div>
+            ))
           )}
         </div>
       </div>
@@ -207,7 +215,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="space-y-2 rounded-2xl bg-zinc-900/40 p-2">
+        <div className="rounded-[22px] border border-zinc-800/80 bg-zinc-900/45 p-2">
           {watchlistStatus?.isCachedFallback && (
             <p className="text-zinc-500 text-xs mb-2">
               {watchlistStatus.message || 'Showing most recent available data.'}
@@ -215,9 +223,13 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             </p>
           )}
           {watchlist.length === 0 ? (
-            <p className="text-zinc-500 text-xs">No watchlist items yet</p>
+            <p className="px-2.5 py-2 text-xs text-zinc-500">No watchlist items yet</p>
           ) : (
-            watchlist.map((stock) => <StockItem key={stock.ticker} stock={stock} onOpenStock={onOpenStock} />)
+            watchlist.map((stock, index) => (
+              <div key={stock.ticker} className={index > 0 ? 'border-t border-zinc-800/80 pt-1.5' : ''}>
+                <StockItem stock={stock} onOpenStock={onOpenStock} />
+              </div>
+            ))
           )}
         </div>
       </div>

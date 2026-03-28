@@ -24,11 +24,13 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-3 py-3">
-      <div className="px-3 pb-2">
-        <h3 className="text-[10px] uppercase tracking-[0.22em] text-zinc-600">{title}</h3>
+    <div className="px-4 py-2.5">
+      <div className="px-3 pb-2.5">
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600">{title}</h3>
       </div>
-      <div className="space-y-1.5 rounded-2xl bg-zinc-900/55 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">{children}</div>
+      <div className="space-y-1.5 rounded-[26px] border border-zinc-900/80 bg-zinc-900/45 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        {children}
+      </div>
     </div>
   );
 }
@@ -48,10 +50,10 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-4 py-3.5 rounded-2xl border transition-all duration-200 ease-out ${
+      className={`w-full rounded-2xl border px-4 py-3.5 text-left transition-all duration-200 ease-out ${
         selected
           ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
-          : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-zinc-100 active:translate-y-px'
+          : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900/80 hover:text-zinc-100 active:translate-y-px'
       }`}
     >
       <div className="text-sm font-medium leading-5">{label}</div>
@@ -81,7 +83,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="px-4 pb-4 pt-4">
+      <div className="px-4 pb-3 pt-4">
         <button
           type="button"
           onClick={onOpenComposer}
@@ -92,7 +94,7 @@ export function Sidebar({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-1">
+      <div className="flex-1 overflow-y-auto pt-1">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
@@ -151,7 +153,7 @@ export function Sidebar({
         </Section>
       </div>
 
-      <div className="px-4 pb-4 pt-2">
+      <div className="px-4 pb-4 pt-3">
         <div className="overflow-hidden rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(22,25,33,0.94),rgba(14,17,23,0.98))] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
           <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
         </div>
