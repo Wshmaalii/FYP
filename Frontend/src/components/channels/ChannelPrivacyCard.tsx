@@ -16,17 +16,17 @@ export function ChannelPrivacyCard({
   metadataVisibility,
 }: ChannelPrivacyCardProps) {
   return (
-    <div className="bg-zinc-900 border-b border-zinc-800 px-8 py-5">
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <span className="px-2 py-1 text-[11px] uppercase tracking-wider rounded border border-cyan-800 bg-cyan-950 text-cyan-300">
+    <div className="border-b border-white/6 bg-[linear-gradient(180deg,rgba(18,21,29,0.92),rgba(14,16,24,0.92))] px-8 py-5">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="rounded border border-cyan-800/70 bg-cyan-950/70 px-2 py-1 text-[11px] uppercase tracking-wider text-cyan-300">
           {scopeLabel}
         </span>
-        <span className="px-2 py-1 text-[11px] uppercase tracking-wider rounded border border-zinc-700 bg-zinc-950 text-zinc-400">
+        <span className="rounded border border-white/8 bg-zinc-950/90 px-2 py-1 text-[11px] uppercase tracking-wider text-zinc-400">
           {audienceLabel}
         </span>
       </div>
-      <p className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] mb-2">What is visible here?</p>
-      <div className="mt-3 bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
+      <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500">What is visible here?</p>
+      <div className="mt-3 rounded-2xl border border-white/8 bg-zinc-950/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
         <ul className="space-y-3 text-sm">
           <li className="text-zinc-300">
             <span className="text-zinc-500">• Audience:</span> {visibilitySummary}

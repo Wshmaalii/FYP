@@ -320,8 +320,10 @@ export default function App() {
 
   if (authStatus === 'loading') {
     return (
-      <div className="flex h-screen bg-black items-center justify-center">
-        <div className="text-zinc-400 text-sm">Checking session...</div>
+      <div className="flex h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.14),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.16),transparent_24%),linear-gradient(180deg,#06070b_0%,#0a0c12_52%,#08090d_100%)]">
+        <div className="rounded-2xl border border-white/8 bg-zinc-950/80 px-5 py-4 text-sm text-zinc-400 shadow-[0_24px_64px_rgba(0,0,0,0.35)]">
+          Checking session...
+        </div>
       </div>
     );
   }
@@ -335,7 +337,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-black">
+    <div className="flex h-screen bg-[linear-gradient(180deg,#090b10_0%,#0c0f15_100%)] text-zinc-100">
       <Sidebar
         selectedView={currentView}
         selectedConversationKey={selectedConversation?.conversation_key || null}

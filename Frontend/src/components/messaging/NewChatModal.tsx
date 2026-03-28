@@ -92,20 +92,21 @@ export function NewChatModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-[24px] overflow-hidden shadow-[0_28px_80px_rgba(0,0,0,0.45)]">
-        <div className="flex items-start justify-between px-8 py-6 border-b border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_24%),rgba(0,0,0,0.76)] px-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(24,27,36,0.98),rgba(14,17,24,0.98))] shadow-[0_36px_100px_rgba(0,0,0,0.48)]">
+        <div className="flex items-start justify-between border-b border-white/8 px-8 py-7">
           <div>
-            <h3 className="text-zinc-100 text-xl font-semibold tracking-tight">New Chat</h3>
-            <p className="text-zinc-500 text-sm mt-1">Start a direct message, create a private group, or open a new public space.</p>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/80">Messaging</p>
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-100">New Chat</h3>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">Start a direct message, create a private group, or open a new public space.</p>
           </div>
-          <button type="button" onClick={onClose} className="mt-1 text-zinc-500 hover:text-zinc-200 transition-colors">
+          <button type="button" onClick={onClose} className="mt-1 rounded-xl p-2 text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-200">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="px-8 pt-6">
-          <div className="inline-flex rounded-2xl bg-zinc-950 border border-zinc-800 p-1.5 gap-1">
+          <div className="inline-flex rounded-2xl border border-white/8 bg-zinc-950/90 p-1.5 gap-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             {(['dm', 'group', 'space'] as const).map((value) => (
               <button
                 key={value}
@@ -116,8 +117,8 @@ export function NewChatModal({
                 }}
                 className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ease-out ${
                   mode === value
-                    ? 'bg-cyan-600 text-white shadow-[0_8px_18px_rgba(8,145,178,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]'
-                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 active:translate-y-px'
+                    ? 'bg-cyan-600 text-white shadow-[0_10px_24px_rgba(8,145,178,0.2),inset_0_1px_0_rgba(255,255,255,0.08)]'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04] active:translate-y-px'
                 }`}
               >
                 {value === 'dm' ? 'Direct Message' : value === 'group' ? 'Private Group' : 'Public Space'}
@@ -134,7 +135,7 @@ export function NewChatModal({
                 value={groupName}
                 onChange={(event) => setGroupName(event.target.value)}
                 placeholder={mode === 'group' ? 'Macro Night Shift' : 'Large Caps Europe'}
-                className="w-full px-4 py-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-700 transition-all duration-150"
+                className="w-full rounded-2xl border border-white/8 bg-zinc-950/90 px-4 py-3.5 text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
               />
             </div>
           )}
@@ -147,19 +148,19 @@ export function NewChatModal({
                   value={spaceDescription}
                   onChange={(event) => setSpaceDescription(event.target.value)}
                   placeholder="What this space is for, who it is useful for, and what gets discussed here."
-                  className="w-full px-4 py-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-700 min-h-[112px] transition-all duration-150"
+                  className="min-h-[112px] w-full rounded-2xl border border-white/8 bg-zinc-950/90 px-4 py-3.5 text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
                 />
               </div>
               <div className="space-y-2">
                 <label className="block text-zinc-300 text-sm font-medium">Visibility</label>
-                <div className="inline-flex rounded-2xl bg-zinc-950 border border-zinc-800 p-1.5 gap-1">
+                <div className="inline-flex rounded-2xl border border-white/8 bg-zinc-950/90 p-1.5 gap-1">
                   {(['public', 'private'] as const).map((value) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setSpaceVisibility(value)}
                       className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ease-out ${
-                        spaceVisibility === value ? 'bg-cyan-600 text-white shadow-[0_8px_18px_rgba(8,145,178,0.18)]' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900'
+                        spaceVisibility === value ? 'bg-cyan-600 text-white shadow-[0_8px_18px_rgba(8,145,178,0.18)]' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]'
                       }`}
                     >
                       {value === 'public' ? 'Public' : 'Private'}
@@ -181,7 +182,7 @@ export function NewChatModal({
                 value={query}
                 onChange={(event) => void handleSearchChange(event.target.value)}
                 placeholder={mode === 'dm' ? 'Search username' : 'Search usernames to invite'}
-                className="w-full pl-10 pr-4 py-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-700 transition-all duration-150"
+                className="w-full rounded-2xl border border-white/8 bg-zinc-950/90 py-3.5 pl-10 pr-4 text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
               />
             </div>
           </div>
@@ -190,7 +191,7 @@ export function NewChatModal({
           {mode === 'group' && selectedUsers.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {selectedUsers.map((user) => (
-                <span key={user.user_id} className="px-3 py-1.5 rounded-full bg-cyan-950 border border-cyan-900 text-cyan-300 text-xs">
+                <span key={user.user_id} className="rounded-full border border-cyan-900/70 bg-cyan-950/70 px-3 py-1.5 text-xs text-cyan-300">
                   @{user.username}
                 </span>
               ))}
@@ -198,7 +199,7 @@ export function NewChatModal({
           )}
 
           {mode !== 'space' && (
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden">
+          <div className="overflow-hidden rounded-2xl border border-white/8 bg-zinc-950/90">
             {query.trim().length < 2 ? (
               <div className="px-4 py-5 text-zinc-500 text-sm">
                 Search by username to start a conversation.
@@ -219,7 +220,7 @@ export function NewChatModal({
                       toggleUser(user.username);
                     }
                   }}
-                  className="w-full flex items-center justify-between px-4 py-4 hover:bg-zinc-900 text-left transition-all duration-150 border-b border-zinc-800 last:border-b-0 active:translate-y-px"
+                  className="w-full border-b border-white/6 px-4 py-4 text-left transition-all duration-150 last:border-b-0 hover:bg-white/[0.035] active:translate-y-px"
                 >
                   <div>
                     <div className="text-zinc-100 text-sm font-medium">{user.display_name}</div>
@@ -235,21 +236,21 @@ export function NewChatModal({
           )}
 
           {error && (
-            <div className="rounded-xl border border-red-900 bg-zinc-950 px-4 py-3.5 text-red-400 text-sm">
+            <div className="rounded-2xl border border-red-900/70 bg-red-950/30 px-4 py-3.5 text-sm text-red-300">
               {error}
             </div>
           )}
         </div>
 
-        <div className="px-8 py-5 border-t border-zinc-800 flex items-center justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-xl bg-zinc-950 text-zinc-300 hover:bg-zinc-800 active:translate-y-px transition-all duration-150">
+        <div className="flex items-center justify-end gap-3 border-t border-white/8 px-8 py-5">
+          <button type="button" onClick={onClose} className="rounded-2xl bg-zinc-950/90 px-4 py-2.5 text-zinc-300 transition-all duration-150 hover:bg-white/[0.05] active:translate-y-px">
             Cancel
           </button>
           <button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting}
-            className="min-w-[132px] px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 active:translate-y-px disabled:opacity-60 text-white transition-all duration-150 shadow-[0_12px_28px_rgba(8,145,178,0.18)]"
+            className="min-w-[132px] rounded-2xl bg-cyan-600 px-4 py-2.5 text-white shadow-[0_14px_30px_rgba(8,145,178,0.2)] transition-all duration-150 hover:bg-cyan-500 active:translate-y-px disabled:opacity-60"
           >
             {submitting ? 'Working...' : mode === 'dm' ? 'Start DM' : mode === 'group' ? 'Create Group' : 'Create Space'}
           </button>

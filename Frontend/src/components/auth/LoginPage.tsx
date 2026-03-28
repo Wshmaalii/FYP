@@ -16,7 +16,9 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
     event.preventDefault();
     setError(null);
 
-    if (!/^[a-z0-9_]{3,24}$/.test(username)) {
+    const normalizedUsername = username.trim().toLowerCase();
+
+    if (!/^[a-z0-9_]{3,24}$/.test(normalizedUsername)) {
       setError('Enter the username you created using lowercase letters, numbers, or underscores.');
       return;
     }
@@ -24,7 +26,7 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
     setIsSubmitting(true);
 
     try {
-      await onLogin(username, password);
+      await onLogin(normalizedUsername, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -33,73 +35,126 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   };
 
   return (
-    <div className="flex h-screen bg-black items-center justify-center p-6">
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-lg p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded flex items-center justify-center">
-            <span className="text-white">TL</span>
-          </div>
-          <div>
-            <h1 className="text-zinc-100 text-xl">TradeLink</h1>
-            <p className="text-zinc-500 text-sm">Secure Trading Workspace</p>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <h2 className="text-zinc-100 text-lg mb-1">Log In With Your Username</h2>
-          <p className="text-zinc-500 text-sm">Access your rooms, watchlist, and profile with your TradeLink handle.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-zinc-300 text-sm mb-2">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              placeholder="Enter your username"
-              minLength={3}
-              maxLength={24}
-              pattern="[a-z0-9_]{3,24}"
-              required
-            />
-            <p className="text-zinc-500 text-xs mt-2">Usernames are lowercase and case-insensitive at login.</p>
-          </div>
-
-          <div>
-            <label className="block text-zinc-300 text-sm mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded text-zinc-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-950 border border-red-900 rounded">
-              <p className="text-red-400 text-sm">{error}</p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.14),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.16),transparent_24%),linear-gradient(180deg,#06070b_0%,#0a0c12_52%,#08090d_100%)] p-6 text-zinc-100">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-7xl overflow-hidden rounded-[32px] border border-white/8 bg-zinc-950/90 shadow-[0_32px_120px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+        <div className="relative hidden flex-1 overflow-hidden border-r border-white/6 xl:flex">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.22),transparent_30%),radial-gradient(circle_at_80%_18%,rgba(59,130,246,0.22),transparent_28%),linear-gradient(180deg,rgba(12,14,22,0.96),rgba(8,10,16,0.98))]" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-[0.08]" />
+          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-cyan-400/30 to-transparent" />
+          <div className="relative flex w-full flex-col justify-between px-14 py-14">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.28),rgba(37,99,235,0.28))] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <span className="text-lg font-semibold tracking-[0.22em] text-white">TL</span>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.32em] text-cyan-300/80">TradeLink</p>
+                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Secure messaging for trader communities</h1>
+              </div>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-zinc-700 text-white rounded transition-colors flex items-center justify-center gap-2"
-          >
-            <Lock className="w-4 h-4" />
-            <span>{isSubmitting ? 'Logging In...' : 'Log In'}</span>
-          </button>
-        </form>
+            <div className="max-w-xl">
+              <p className="max-w-lg text-base leading-8 text-zinc-300">
+                Move between public spaces, private groups, and direct messages with market context embedded where it matters.
+              </p>
 
-        <div className="mt-6 pt-4 border-t border-zinc-800 text-sm text-zinc-500">
-          <span>Need an account? </span>
-          <button onClick={onSwitchToSignup} className="text-cyan-400 hover:text-cyan-300 transition-colors">
-            Sign up
-          </button>
+              <div className="mt-10 grid gap-4">
+                {[
+                  ['Private-first clarity', 'Know who can read, who can reply, and where ticker mentions stay visible.'],
+                  ['Snapshot-based market context', 'Stored market snapshots support conversation without turning the product into a dashboard.'],
+                  ['Built for community flow', 'Explore spaces, start direct messages, and create invite-only groups without friction.'],
+                ].map(([title, body]) => (
+                  <div
+                    key={title}
+                    className="rounded-2xl border border-white/8 bg-white/[0.035] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                  >
+                    <p className="text-sm font-medium text-zinc-100">{title}</p>
+                    <p className="mt-1 text-sm leading-6 text-zinc-400">{body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs text-zinc-500">
+              <div className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.45)]" />
+              Handle-based identity. Private groups. Direct market context.
+            </div>
+          </div>
+        </div>
+
+        <div className="flex w-full items-center justify-center bg-[linear-gradient(180deg,rgba(13,15,22,0.94),rgba(9,11,16,0.98))] px-6 py-10 xl:max-w-[520px]">
+          <div className="w-full max-w-md rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(23,26,36,0.94),rgba(14,17,24,0.98))] p-8 shadow-[0_28px_80px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="mb-8 flex items-center gap-4 xl:hidden">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.24),rgba(37,99,235,0.28))]">
+                <span className="font-semibold tracking-[0.2em] text-white">TL</span>
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold tracking-tight text-white">TradeLink</h1>
+                <p className="text-sm text-zinc-500">Secure messaging for trader communities</p>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/80">Welcome back</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">Log in with your username</h2>
+              <p className="mt-3 text-sm leading-6 text-zinc-400">
+                Access your spaces, direct messages, private groups, watchlist, and stored market context.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2.5">
+                <label className="block text-sm font-medium text-zinc-200">Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full rounded-2xl border border-white/8 bg-zinc-950/80 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
+                  placeholder="Enter your username"
+                  minLength={3}
+                  maxLength={24}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                />
+                <p className="text-xs leading-5 text-zinc-500">Usernames stay case-insensitive at login, but the field no longer forces lowercase while you type.</p>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="block text-sm font-medium text-zinc-200">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-white/8 bg-zinc-950/80 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-2xl border border-red-900/80 bg-red-950/40 px-4 py-3.5">
+                  <p className="text-sm text-red-300">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-4 py-3.5 text-sm font-medium text-white shadow-[0_16px_40px_rgba(8,145,178,0.22)] transition-all duration-150 hover:bg-cyan-500 active:translate-y-px disabled:bg-zinc-700 disabled:shadow-none"
+              >
+                <Lock className="h-4 w-4" />
+                <span>{isSubmitting ? 'Logging In...' : 'Log In'}</span>
+              </button>
+            </form>
+
+            <div className="mt-8 border-t border-white/8 pt-5 text-sm text-zinc-500">
+              <span>Need an account? </span>
+              <button onClick={onSwitchToSignup} className="font-medium text-cyan-300 transition-colors hover:text-cyan-200">
+                Sign up
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

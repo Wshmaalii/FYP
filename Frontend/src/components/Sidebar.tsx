@@ -72,19 +72,20 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="w-80 bg-zinc-950 border-r border-zinc-800 text-zinc-100 flex flex-col">
-      <div className="min-h-16 border-b border-zinc-800 flex items-center px-5 py-4">
+    <div className="flex w-80 flex-col border-r border-white/6 bg-[linear-gradient(180deg,rgba(12,14,20,0.98),rgba(9,11,17,1))] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
+      <div className="flex min-h-20 items-center border-b border-white/6 px-5 py-5">
         <div>
-          <h2 className="text-white text-lg font-semibold tracking-tight">TradeLink</h2>
-          <p className="text-zinc-500 text-xs mt-1">Messaging for trader communities</p>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/80">TradeLink</p>
+          <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">Messaging for trader communities</h2>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
         </div>
       </div>
 
-      <div className="px-4 py-5 border-b border-zinc-800">
+      <div className="border-b border-white/6 px-4 py-5">
         <button
           type="button"
           onClick={onOpenComposer}
-          className="w-full rounded-2xl bg-cyan-600 hover:bg-cyan-700 active:translate-y-px text-white px-4 py-3.5 flex items-center justify-center gap-2 transition-all duration-200 ease-out shadow-[0_14px_32px_rgba(8,145,178,0.18)]"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-4 py-3.5 text-white shadow-[0_16px_38px_rgba(8,145,178,0.2)] transition-all duration-200 ease-out hover:bg-cyan-500 active:translate-y-px"
         >
           <MessageSquarePlus className="w-4 h-4" />
           <span className="text-sm font-medium">New Chat</span>

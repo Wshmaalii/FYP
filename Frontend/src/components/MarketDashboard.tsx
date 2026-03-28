@@ -148,7 +148,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   }, [loadDashboardData]);
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto border-t border-white/6 bg-[linear-gradient(180deg,rgba(14,17,24,0.98),rgba(10,12,18,1))]">
       <div className="p-4">
         <button onClick={() => onNavigate('Market Overview')} className="w-full group">
           <div className="flex items-center justify-between mb-3">
