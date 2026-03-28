@@ -127,31 +127,31 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
         </button>
 
         <div className="flex items-start justify-between gap-8">
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <h1 className="text-white text-3xl font-semibold tracking-tight">{ticker}</h1>
-              <span className="px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700 text-[11px] uppercase tracking-wider">
+          <div className="max-w-3xl">
+            <div className="mb-3 flex items-center gap-3">
+              <h1 className="text-4xl font-semibold tracking-tight text-white">{ticker}</h1>
+              <span className="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
                 Stored snapshot
               </span>
             </div>
-            <p className="text-zinc-400 text-base">{companyName}</p>
-            <div className="mt-4 space-y-1.5">
-              <p className="text-zinc-500 text-sm"><span className="text-zinc-600">Source</span> · Stored market snapshot</p>
-              <p className="text-zinc-500 text-sm"><span className="text-zinc-600">Last updated</span> · {formatTimestamp(updatedAt)}</p>
+            <p className="text-lg text-zinc-400">{companyName}</p>
+            <div className="mt-5 space-y-2">
+              <p className="text-sm text-zinc-500"><span className="text-zinc-600">Source</span> · Stored market snapshot</p>
+              <p className="text-sm text-zinc-500"><span className="text-zinc-600">Last updated</span> · {formatTimestamp(updatedAt)}</p>
             </div>
           </div>
 
           <div className="flex gap-3">
             <button
               onClick={() => onMentionInChat(ticker)}
-              className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 active:translate-y-px text-zinc-100 rounded-xl transition-all duration-150 flex items-center gap-2 font-medium"
+              className="flex items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-100 transition-all duration-150 hover:bg-zinc-800 active:translate-y-px"
             >
               <MessageSquareText className="w-4 h-4" />
               Mention in Chat
             </button>
             <button
               onClick={() => void handleToggleWatchlist()}
-              className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 active:translate-y-px text-white rounded-xl transition-all duration-150 flex items-center gap-2 font-medium shadow-[0_12px_28px_rgba(8,145,178,0.18)]"
+              className="flex items-center gap-2 rounded-2xl bg-cyan-600 px-4 py-3 text-white shadow-[0_12px_28px_rgba(8,145,178,0.16)] transition-all duration-150 hover:bg-cyan-500 active:translate-y-px"
             >
               {isWatched ? <Star className="w-4 h-4 fill-white" /> : <Plus className="w-4 h-4" />}
               {isWatched ? 'Watching' : 'Add to Watchlist'}
@@ -160,7 +160,7 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
         </div>
       </div>
 
-      <div className="px-8 py-8 space-y-8">
+      <div className="space-y-8 px-8 py-8">
         {error && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-400 text-sm">
             {error}
@@ -178,40 +178,43 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
           </div>
         )}
 
-        <div className="grid grid-cols-4 gap-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Latest Price</p>
-            <p className="text-zinc-100 text-3xl font-semibold tracking-tight">{price !== null ? price.toFixed(2) : '--'}</p>
+        <div className="grid grid-cols-4 gap-5">
+          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Latest Price</p>
+            <p className="mt-4 text-4xl font-semibold tracking-tight text-zinc-100">{price !== null ? price.toFixed(2) : '--'}</p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Change</p>
-            <div className={`flex items-center gap-2 ${change !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
+          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Change</p>
+            <div className={`mt-4 flex items-center gap-2 ${change !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
               {change !== null ? (isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />) : null}
-              <p className="text-3xl font-semibold tracking-tight">{change !== null ? `${isPositive ? '+' : ''}${change.toFixed(2)}` : '--'}</p>
+              <p className="text-4xl font-semibold tracking-tight">{change !== null ? `${isPositive ? '+' : ''}${change.toFixed(2)}` : '--'}</p>
             </div>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Change %</p>
-            <p className={`text-3xl font-semibold tracking-tight ${changePercent !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
+          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Change %</p>
+            <p className={`mt-4 text-4xl font-semibold tracking-tight ${changePercent !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
               {changePercent !== null ? `${isPositive ? '+' : ''}${changePercent.toFixed(2)}%` : '--'}
             </p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Source</p>
-            <p className="text-zinc-100 text-sm leading-6">Stored market snapshot</p>
+          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Source</p>
+            <p className="mt-4 text-base font-medium leading-7 text-zinc-100">Stored market snapshot</p>
           </div>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
-          <h2 className="text-zinc-100 text-lg font-semibold mb-5">Price History</h2>
-          <div className="h-80">
+        <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 p-6 shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
+          <h2 className="mb-5 text-lg font-semibold tracking-tight text-zinc-100">Price History</h2>
+          <div className={history.length === 0 ? 'min-h-[220px]' : 'h-72'}>
             {loading ? (
-              <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+              <div className="flex h-full items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-950/60 text-sm text-zinc-500">
                 Loading stored history...
               </div>
             ) : history.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
-                Price chart will appear once enough stored snapshots have been collected.
+              <div className="flex h-full items-center justify-center rounded-[24px] border border-zinc-800 bg-zinc-950/60 px-8 text-center text-sm leading-6 text-zinc-500">
+                <div className="max-w-md">
+                  <p className="font-medium text-zinc-400">Price chart not available yet</p>
+                  <p className="mt-2">Price chart will appear once enough stored snapshots have been collected.</p>
+                </div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
