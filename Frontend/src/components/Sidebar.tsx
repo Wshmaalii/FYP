@@ -16,15 +16,21 @@ interface SidebarProps {
   onOpenStock: (ticker: string) => void;
 }
 
-const SPACE_DOT_COLORS = ['#5b74f3', '#f5a524', '#2dd4aa', '#d946ef', '#f26b6b'];
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="px-5 py-4">
+    <div className="px-4 py-3">
       <div className="pb-3">
-        <h3 className="text-[10px] font-medium uppercase tracking-[1.2px] text-[rgba(255,255,255,0.28)]">{title}</h3>
+        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[var(--text-muted)]">{title}</h3>
       </div>
-      <div className="space-y-1">{children}</div>
+      <div className="space-y-1">
+        {children}
+      </div>
     </div>
   );
 }
@@ -44,39 +50,14 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-[8px] border border-transparent px-4 py-3 text-left transition-all duration-150 ${
+      className={`w-full rounded-[7px] px-2 py-[7px] text-left transition-colors duration-150 ${
         selected
-          ? 'bg-[rgba(255,255,255,0.09)] text-[rgba(255,255,255,0.9)]'
-          : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[rgba(255,255,255,0.9)]'
+          ? 'bg-white/5 text-[var(--text-primary)]'
+          : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]'
       }`}
     >
-      <div className="text-[13px] font-medium leading-5">{label}</div>
-      {meta ? <div className={`mt-1 text-[10px] leading-4 ${selected ? 'text-[rgba(255,255,255,0.45)]' : 'text-[rgba(255,255,255,0.28)]'}`}>{meta}</div> : null}
-    </button>
-  );
-}
-
-function SpaceButton({
-  label,
-  selected,
-  color,
-  onClick,
-}: {
-  label: string;
-  selected: boolean;
-  color: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-[8px] px-4 py-2.5 text-left transition-colors ${
-        selected ? 'bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.9)]' : 'text-[rgba(255,255,255,0.45)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[rgba(255,255,255,0.9)]'
-      }`}
-    >
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-      <span className="text-[13px] font-medium">{label}</span>
+      <div className="text-[13px] leading-5">{label}</div>
+      {meta ? <div className={`mt-1 text-[10px] leading-4 ${selected ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'}`}>{meta}</div> : null}
     </button>
   );
 }
@@ -93,27 +74,24 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="flex w-[240px] flex-col border-r border-[rgba(255,255,255,0.07)] bg-[#111113] text-[rgba(255,255,255,0.9)]">
-      <div className="border-b border-[rgba(255,255,255,0.07)] px-5 py-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-[#18c7b0] text-[16px] font-semibold text-white">
-            TL
-          </div>
-          <div>
-            <p className="text-[16px] font-semibold tracking-tight text-[rgba(255,255,255,0.9)]">TradeLink</p>
-          </div>
+    <div className="flex w-60 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)]">
+      <div className="border-b border-[var(--border-subtle)] px-4 py-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[var(--text-primary)]">TradeLink</p>
+          <h2 className="mt-2 text-[15px] font-semibold leading-6 text-[var(--text-primary)]">Messaging for trader communities</h2>
+          <p className="mt-1.5 text-[12px] leading-5 text-[var(--text-secondary)]">Private groups, public spaces, and market context in one calm workspace.</p>
         </div>
         <button
           type="button"
           onClick={onOpenComposer}
-          className="mt-5 flex w-full items-center gap-2 rounded-[8px] border border-[rgba(255,255,255,0.1)] bg-transparent px-4 py-3 text-[15px] font-semibold text-[rgba(255,255,255,0.9)] transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--accent-teal-border)] bg-[var(--accent-teal-bg)] px-3 py-2 text-[12px] font-medium text-[var(--accent-teal)] transition-colors hover:bg-[rgba(0,196,160,0.16)]"
         >
-          <MessageSquarePlus className="h-4 w-4" />
+          <MessageSquarePlus className="w-4 h-4" />
           <span>New Chat</span>
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto border-b border-[var(--border-subtle)] py-2">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
@@ -121,22 +99,17 @@ export function Sidebar({
             selected={selectedView === 'Explore Spaces'}
             onClick={() => onNavigate('Explore Spaces')}
           />
-          <ConversationButton
-            label="Browse Communities"
-            selected={false}
-            onClick={() => onNavigate('Explore Spaces')}
-          />
         </Section>
 
         <Section title="My Spaces">
           {mySpaces.length === 0 ? (
-            <p className="px-4 py-2 text-[12px] leading-5 text-[rgba(255,255,255,0.28)]">Create or join a space to get started.</p>
+            <p className="px-2 py-[7px] text-[12px] leading-5 text-[var(--text-secondary)]">Create or join a space to get started.</p>
           ) : (
-            mySpaces.map((space, index) => (
-              <SpaceButton
+            mySpaces.map((space) => (
+              <ConversationButton
                 key={space.conversation_key}
                 label={space.name}
-                color={SPACE_DOT_COLORS[index % SPACE_DOT_COLORS.length]}
+                meta={space.channels.map((channel) => `#${channel.slug}`).join(' • ')}
                 selected={selectedConversationKey === space.conversation_key}
                 onClick={() => onOpenConversation(space.conversation_key)}
               />
@@ -146,7 +119,7 @@ export function Sidebar({
 
         <Section title="Direct Messages">
           {directMessages.length === 0 ? (
-            <p className="px-4 py-2 text-[12px] leading-5 text-[rgba(255,255,255,0.28)]">Start a direct message from New Chat.</p>
+            <p className="px-2 py-[7px] text-[12px] leading-5 text-[var(--text-secondary)]">Start a direct message from New Chat.</p>
           ) : (
             directMessages.map((dm) => (
               <ConversationButton
@@ -162,7 +135,7 @@ export function Sidebar({
 
         <Section title="Private Groups">
           {privateGroups.length === 0 ? (
-            <p className="px-4 py-2 text-[12px] leading-5 text-[rgba(255,255,255,0.28)]">Create a private group for invite-only discussions.</p>
+            <p className="px-2 py-[7px] text-[12px] leading-5 text-[var(--text-secondary)]">Create a private group for invite-only discussions.</p>
           ) : (
             privateGroups.map((group) => (
               <ConversationButton
@@ -177,7 +150,7 @@ export function Sidebar({
         </Section>
       </div>
 
-      <div className="border-t border-[rgba(255,255,255,0.07)] px-4 pb-4 pt-4">
+      <div className="mt-auto px-4 py-4">
         <div className="overflow-hidden">
           <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
         </div>
