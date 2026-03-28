@@ -117,7 +117,7 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
 
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950">
-      <div className="border-b border-zinc-800 bg-zinc-900 p-6">
+      <div className="border-b border-zinc-800 bg-zinc-900 px-8 py-7">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-zinc-400 hover:text-zinc-100 mb-4 transition-colors"
@@ -126,30 +126,32 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
           <span className="text-sm">Back to Markets</span>
         </button>
 
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex items-start justify-between gap-8">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-white text-2xl">{ticker}</h1>
-              <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 text-xs">
+            <div className="flex items-center gap-3 mb-3">
+              <h1 className="text-white text-3xl font-semibold tracking-tight">{ticker}</h1>
+              <span className="px-2.5 py-1 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700 text-[11px] uppercase tracking-wider">
                 Stored snapshot
               </span>
             </div>
-            <p className="text-zinc-400">{companyName}</p>
-            <p className="text-zinc-500 text-sm mt-2">Source: Stored market snapshot</p>
-            <p className="text-zinc-500 text-sm">Last updated {formatTimestamp(updatedAt)}</p>
+            <p className="text-zinc-400 text-base">{companyName}</p>
+            <div className="mt-4 space-y-1.5">
+              <p className="text-zinc-500 text-sm"><span className="text-zinc-600">Source</span> · Stored market snapshot</p>
+              <p className="text-zinc-500 text-sm"><span className="text-zinc-600">Last updated</span> · {formatTimestamp(updatedAt)}</p>
+            </div>
           </div>
 
           <div className="flex gap-3">
             <button
               onClick={() => onMentionInChat(ticker)}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 active:translate-y-px text-zinc-100 rounded-xl transition-all duration-150 flex items-center gap-2 font-medium"
             >
               <MessageSquareText className="w-4 h-4" />
               Mention in Chat
             </button>
             <button
               onClick={() => void handleToggleWatchlist()}
-              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 active:translate-y-px text-white rounded-xl transition-all duration-150 flex items-center gap-2 font-medium shadow-[0_12px_28px_rgba(8,145,178,0.18)]"
             >
               {isWatched ? <Star className="w-4 h-4 fill-white" /> : <Plus className="w-4 h-4" />}
               {isWatched ? 'Watching' : 'Add to Watchlist'}
@@ -158,50 +160,50 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="px-8 py-8 space-y-8">
         {error && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-400 text-sm">
             {error}
           </div>
         )}
         {!error && quoteStatus?.isCachedFallback && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-400 text-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-400 text-sm leading-6">
             {quoteStatus.message || 'Showing most recent available data.'}
             {quoteStatus.lastUpdatedAt ? ` Last updated ${formatTimestamp(quoteStatus.lastUpdatedAt)}.` : ''}
           </div>
         )}
         {watchMessage && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-zinc-300 text-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-300 text-sm">
             {watchMessage}
           </div>
         )}
 
         <div className="grid grid-cols-4 gap-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-            <p className="text-zinc-500 text-sm mb-2">Latest Price</p>
-            <p className="text-zinc-100 text-2xl">{price !== null ? price.toFixed(2) : '--'}</p>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Latest Price</p>
+            <p className="text-zinc-100 text-3xl font-semibold tracking-tight">{price !== null ? price.toFixed(2) : '--'}</p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-            <p className="text-zinc-500 text-sm mb-2">Change</p>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Change</p>
             <div className={`flex items-center gap-2 ${change !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
               {change !== null ? (isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />) : null}
-              <p className="text-2xl">{change !== null ? `${isPositive ? '+' : ''}${change.toFixed(2)}` : '--'}</p>
+              <p className="text-3xl font-semibold tracking-tight">{change !== null ? `${isPositive ? '+' : ''}${change.toFixed(2)}` : '--'}</p>
             </div>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-            <p className="text-zinc-500 text-sm mb-2">Change %</p>
-            <p className={`text-2xl ${changePercent !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Change %</p>
+            <p className={`text-3xl font-semibold tracking-tight ${changePercent !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
               {changePercent !== null ? `${isPositive ? '+' : ''}${changePercent.toFixed(2)}%` : '--'}
             </p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-            <p className="text-zinc-500 text-sm mb-2">Source</p>
-            <p className="text-zinc-100 text-sm">Stored market snapshot</p>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Source</p>
+            <p className="text-zinc-100 text-sm leading-6">Stored market snapshot</p>
           </div>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-          <h2 className="text-zinc-100 mb-4">Price History</h2>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
+          <h2 className="text-zinc-100 text-lg font-semibold mb-5">Price History</h2>
           <div className="h-80">
             {loading ? (
               <div className="h-full flex items-center justify-center text-zinc-500 text-sm">

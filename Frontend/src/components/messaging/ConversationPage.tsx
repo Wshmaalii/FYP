@@ -126,10 +126,10 @@ export function ConversationPage({
 
   return (
     <div className="flex-1 flex flex-col bg-zinc-950">
-      <div className="px-6 py-5 border-b border-zinc-800 bg-zinc-900">
-        <div className="flex items-start justify-between gap-4">
+      <div className="px-8 py-6 border-b border-zinc-800 bg-zinc-900">
+        <div className="flex items-start justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2.5 mb-3">
               {conversation.kind === 'direct_message' ? (
                 <MessageSquare className="w-4 h-4 text-cyan-400" />
               ) : conversation.kind === 'private_group' ? (
@@ -137,26 +137,26 @@ export function ConversationPage({
               ) : (
                 <Users className="w-4 h-4 text-cyan-400" />
               )}
-              <h2 className="text-zinc-100 text-xl">{conversation.name}</h2>
+              <h2 className="text-zinc-100 text-2xl font-semibold tracking-tight">{conversation.name}</h2>
               {conversation.kind !== 'direct_message' && (
                 <span className="text-zinc-500 text-sm">{memberText}</span>
               )}
             </div>
-            <p className="text-zinc-500 text-sm">{conversation.description}</p>
+            <p className="text-zinc-500 text-sm leading-6 max-w-3xl">{conversation.description}</p>
           </div>
           {conversation.kind === 'direct_message' ? (
-            <div className="text-zinc-500 text-sm">{memberText}</div>
+            <div className="text-zinc-500 text-sm pt-1">{memberText}</div>
           ) : null}
         </div>
 
         {conversation.kind === 'public_space' && conversation.channels.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-6 flex flex-wrap gap-3">
             {conversation.channels.map((channel) => (
               <button
                 key={channel.channel_key}
                 type="button"
                 onClick={() => onChannelSelect(channel.channel_key)}
-                className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
                   channel.channel_key === activeChannelKey
                     ? 'bg-cyan-600 border-cyan-500 text-white'
                     : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
@@ -174,16 +174,16 @@ export function ConversationPage({
 
       <ChannelPrivacyCard {...privacy} />
 
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
         {error && (
-          <div className="bg-zinc-900 border border-red-900 rounded-lg p-4 text-red-400 text-sm">
+          <div className="bg-zinc-900 border border-red-900 rounded-xl p-4 text-red-400 text-sm">
             {error}
           </div>
         )}
         {loading ? (
           <div className="text-zinc-400 text-sm">Loading conversation...</div>
         ) : messages.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-zinc-500 text-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-zinc-500 text-sm leading-6">
             No messages yet. Start the conversation in {activeChannel ? `#${activeChannel.slug}` : conversation.name}.
           </div>
         ) : (

@@ -24,18 +24,18 @@ function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker:
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="w-full flex items-center justify-between py-2 px-3 hover:bg-zinc-900 rounded transition-colors cursor-pointer text-left"
+      className="w-full flex items-center justify-between py-3 px-3 hover:bg-zinc-900 rounded-xl transition-all duration-150 cursor-pointer text-left active:translate-y-px"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-zinc-100 text-sm">{stock.ticker}</span>
+          <span className="text-zinc-100 text-sm font-medium">{stock.ticker}</span>
           {stock.change !== null && (isPositive ? (
             <TrendingUp className="w-3 h-3 text-emerald-400" />
           ) : (
             <TrendingDown className="w-3 h-3 text-red-400" />
           ))}
         </div>
-        <p className="text-zinc-500 text-xs truncate">{stock.name}</p>
+        <p className="text-zinc-500 text-xs truncate mt-1">{stock.name}</p>
       </div>
       <div className="text-right">
         <p className="text-zinc-100 text-sm">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
@@ -152,7 +152,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
       <div className="p-4">
         <button onClick={() => onNavigate('Market Overview')} className="w-full group">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-zinc-400 text-xs uppercase tracking-wider group-hover:text-cyan-400 transition-colors">Market Overview</h3>
+            <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Market Snapshot</h3>
             <div className="flex items-center gap-1">
               <span className="text-cyan-400 text-xs">Stored snapshots</span>
               <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
@@ -169,7 +169,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
         )}
-        <div className="space-y-1">
+        <div className="space-y-2">
           {marketIndices.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">No stored market snapshots yet.</p>
           ) : (
@@ -183,12 +183,12 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-zinc-400 text-xs uppercase tracking-wider group-hover:text-cyan-400 transition-colors">Most Discussed</h3>
+              <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Most Discussed</h3>
             </div>
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="space-y-1">
+        <div className="space-y-2">
           {topMovers.length === 0 && !liveDataError ? (
             <p className="text-zinc-500 text-xs">{topMoversMessage || 'Loading discussed names...'}</p>
           ) : (
@@ -202,12 +202,12 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-zinc-400 text-xs uppercase tracking-wider group-hover:text-cyan-400 transition-colors">Watchlist</h3>
+              <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Watchlist</h3>
             </div>
             <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
-        <div className="space-y-1">
+        <div className="space-y-2">
           {watchlistStatus?.isCachedFallback && (
             <p className="text-zinc-500 text-xs mb-2">
               {watchlistStatus.message || 'Showing most recent available data.'}

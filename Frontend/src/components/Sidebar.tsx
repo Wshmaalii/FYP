@@ -24,11 +24,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="border-b border-zinc-800 py-4">
-      <div className="px-3 mb-2">
-        <h3 className="text-zinc-500 text-xs uppercase tracking-wider px-2">{title}</h3>
+    <div className="border-b border-zinc-800 py-6">
+      <div className="px-4 mb-3">
+        <h3 className="text-zinc-600 text-[11px] uppercase tracking-[0.18em]">{title}</h3>
       </div>
-      <div className="space-y-1 px-2">{children}</div>
+      <div className="space-y-2 px-3">{children}</div>
     </div>
   );
 }
@@ -48,12 +48,14 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-        selected ? 'bg-cyan-600 text-white' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
+      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 ease-out ${
+        selected
+          ? 'bg-cyan-600 text-white shadow-[0_10px_24px_rgba(8,145,178,0.18)]'
+          : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 hover:border-zinc-700 active:translate-y-px'
       }`}
     >
-      <div className="text-sm">{label}</div>
-      {meta ? <div className={`text-xs mt-0.5 ${selected ? 'text-cyan-100' : 'text-zinc-600'}`}>{meta}</div> : null}
+      <div className="text-sm font-medium leading-5">{label}</div>
+      {meta ? <div className={`text-xs mt-1 leading-4 ${selected ? 'text-cyan-100/90' : 'text-zinc-600'}`}>{meta}</div> : null}
     </button>
   );
 }
@@ -71,21 +73,21 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <div className="w-80 bg-zinc-950 border-r border-zinc-800 text-zinc-100 flex flex-col">
-      <div className="h-16 border-b border-zinc-800 flex items-center px-4">
+      <div className="min-h-16 border-b border-zinc-800 flex items-center px-5 py-4">
         <div>
-          <h2 className="text-white">TradeLink</h2>
-          <p className="text-zinc-500 text-xs">Messaging for trader communities</p>
+          <h2 className="text-white text-lg font-semibold tracking-tight">TradeLink</h2>
+          <p className="text-zinc-500 text-xs mt-1">Messaging for trader communities</p>
         </div>
       </div>
 
-      <div className="px-4 py-4 border-b border-zinc-800">
+      <div className="px-4 py-5 border-b border-zinc-800">
         <button
           type="button"
           onClick={onOpenComposer}
-          className="w-full rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-3 flex items-center justify-center gap-2 transition-colors"
+          className="w-full rounded-2xl bg-cyan-600 hover:bg-cyan-700 active:translate-y-px text-white px-4 py-3.5 flex items-center justify-center gap-2 transition-all duration-200 ease-out shadow-[0_14px_32px_rgba(8,145,178,0.18)]"
         >
           <MessageSquarePlus className="w-4 h-4" />
-          <span className="text-sm">New Chat</span>
+          <span className="text-sm font-medium">New Chat</span>
         </button>
       </div>
 
@@ -101,7 +103,7 @@ export function Sidebar({
 
         <Section title="My Spaces">
           {mySpaces.length === 0 ? (
-            <p className="text-zinc-600 text-xs px-3 py-2">Join a public space to add it here.</p>
+            <p className="text-zinc-600 text-xs px-4 py-2 leading-5">Create or join a space to get started.</p>
           ) : (
             mySpaces.map((space) => (
               <ConversationButton
@@ -117,7 +119,7 @@ export function Sidebar({
 
         <Section title="Direct Messages">
           {directMessages.length === 0 ? (
-            <p className="text-zinc-600 text-xs px-3 py-2">Start a DM from New Chat.</p>
+            <p className="text-zinc-600 text-xs px-4 py-2 leading-5">Start a direct message from New Chat.</p>
           ) : (
             directMessages.map((dm) => (
               <ConversationButton
@@ -133,7 +135,7 @@ export function Sidebar({
 
         <Section title="Private Groups">
           {privateGroups.length === 0 ? (
-            <p className="text-zinc-600 text-xs px-3 py-2">Create an invite-only group from New Chat.</p>
+            <p className="text-zinc-600 text-xs px-4 py-2 leading-5">Create a private group for invite-only discussions.</p>
           ) : (
             privateGroups.map((group) => (
               <ConversationButton
