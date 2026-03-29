@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { MessageSquarePlus } from 'lucide-react';
-import { MarketDashboard } from './MarketDashboard';
 import type { ConversationSummary } from '../api/messaging';
 import { View } from '../App';
 
@@ -24,9 +23,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-4 pt-[14px] pb-2">
+    <div className="px-4 pt-3 pb-1">
       <div className="pb-[6px]">
-        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-zinc-600">{title}</h3>
+        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.28)]">{title}</h3>
       </div>
       <div className="space-y-[1px]">
         {children}
@@ -52,7 +51,7 @@ function ConversationButton({
       onClick={onClick}
       className={`w-full rounded-[7px] border px-2 py-[7px] text-left transition-all duration-150 ${
         selected
-          ? 'border-transparent bg-white/[0.07] text-[rgba(255,255,255,0.9)]'
+          ? 'border-transparent bg-white/[0.08] text-[rgba(255,255,255,0.9)]'
           : 'border-transparent text-[rgba(255,255,255,0.5)] hover:bg-white/[0.05] hover:text-[rgba(255,255,255,0.8)]'
       }`}
     >
@@ -75,8 +74,8 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <div className="flex w-[240px] min-w-[240px] flex-col border-r border-white/[0.07] bg-[#111113] text-zinc-100">
-      <div className="border-b border-white/[0.06] px-4 py-[18px]">
-        <div className="mb-[14px] flex items-center gap-2">
+      <div className="border-b border-white/[0.06] px-4 py-4">
+        <div className="mb-3 flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#00c4a0] text-[11px] font-bold text-white">
             TL
           </div>
@@ -96,7 +95,6 @@ export function Sidebar({
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
-            meta="Browse public communities"
             selected={selectedView === 'Explore Spaces'}
             onClick={() => onNavigate('Explore Spaces')}
           />
@@ -175,8 +173,8 @@ export function Sidebar({
         >
           Snapshot
         </button>
-        <div>
-          <button type="button" onClick={() => onOpenStock('SPY')} className="flex w-full items-center justify-between rounded-[6px] border-b border-white/[0.04] py-[6px] text-left transition-colors hover:bg-white/[0.04]">
+        <div className="rounded-[12px] border border-white/[0.06] bg-black/10 px-2 py-1">
+          <button type="button" onClick={() => onOpenStock('SPY')} className="flex w-full items-center justify-between rounded-[6px] border-b border-white/[0.06] py-[7px] text-left transition-colors hover:bg-white/[0.04]">
             <div>
               <div className="text-[12px] font-semibold text-[rgba(255,255,255,0.75)]">SPY</div>
               <div className="mt-[1px] text-[10px] text-[rgba(255,255,255,0.3)]">S&amp;P 500 ETF</div>
@@ -186,7 +184,7 @@ export function Sidebar({
               <div className="mt-[1px] text-[10px] text-[#f26b6b]">−0.83%</div>
             </div>
           </button>
-          <button type="button" onClick={() => onOpenStock('AAPL')} className="flex w-full items-center justify-between rounded-[6px] border-b border-white/[0.04] py-[6px] text-left transition-colors hover:bg-white/[0.04]">
+          <button type="button" onClick={() => onOpenStock('AAPL')} className="flex w-full items-center justify-between rounded-[6px] border-b border-white/[0.06] py-[7px] text-left transition-colors hover:bg-white/[0.04]">
             <div>
               <div className="text-[12px] font-semibold text-[rgba(255,255,255,0.75)]">AAPL</div>
               <div className="mt-[1px] text-[10px] text-[rgba(255,255,255,0.3)]">Apple</div>
@@ -196,7 +194,7 @@ export function Sidebar({
               <div className="mt-[1px] text-[10px] text-[#2dd4aa]">+1.47%</div>
             </div>
           </button>
-          <button type="button" onClick={() => onOpenStock('MSFT')} className="flex w-full items-center justify-between rounded-[6px] py-[6px] text-left transition-colors hover:bg-white/[0.04]">
+          <button type="button" onClick={() => onOpenStock('MSFT')} className="flex w-full items-center justify-between rounded-[6px] py-[7px] text-left transition-colors hover:bg-white/[0.04]">
             <div>
               <div className="text-[12px] font-semibold text-[rgba(255,255,255,0.75)]">MSFT</div>
               <div className="mt-[1px] text-[10px] text-[rgba(255,255,255,0.3)]">Microsoft</div>
