@@ -53,19 +53,19 @@ export function TopBar({
     .toUpperCase();
 
   return (
-    <div className="flex h-20 items-center justify-between border-b border-zinc-800 bg-[linear-gradient(180deg,rgba(24,27,34,0.96),rgba(18,21,28,0.98))] px-6 shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
-      <div className="flex items-center gap-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-zinc-700 bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(37,99,235,0.18))] shadow-[0_10px_24px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.05)]">
-          <span className="text-sm font-semibold tracking-[0.18em] text-white">TL</span>
+    <div className="flex h-[52px] items-center justify-between border-b border-white/[0.06] bg-[#111113] px-6">
+      <div className="flex items-center gap-[10px]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[rgba(0,196,160,0.15)]">
+          <span className="text-[11px] font-bold text-[#00c4a0]">TL</span>
         </div>
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-lg font-semibold tracking-tight text-zinc-50">{displayTitle}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[15px] font-semibold text-[rgba(255,255,255,0.9)]">{displayTitle}</h1>
             {isPrivateConversation && (
               <Lock className="w-4 h-4 text-cyan-400" />
             )}
           </div>
-          {displaySubtitle && <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-zinc-500">{displaySubtitle}</p>}
+          {displaySubtitle && <p className="text-[11px] text-[rgba(255,255,255,0.3)]">{displaySubtitle}</p>}
         </div>
       </div>
 
@@ -73,15 +73,15 @@ export function TopBar({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowProfileMenu(!showProfileMenu)}
-          className="flex items-center gap-3 rounded-full border border-zinc-700/80 bg-zinc-950/70 px-3 py-2 transition-all duration-150 hover:border-zinc-600 hover:bg-zinc-800"
+          className="flex items-center gap-3 rounded-full px-1 py-1 transition-all duration-150 hover:bg-white/[0.03]"
         >
           <div className="flex items-center gap-2">
             <span className="text-sm text-zinc-300">{displayName}</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_10px_24px_rgba(8,145,178,0.18)]">
+            <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#4f6ef7]">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" />
               ) : (
-                <span className="text-white text-sm">{initials}</span>
+                <span className="text-[11px] font-semibold text-white">{initials}</span>
               )}
             </div>
           </div>
