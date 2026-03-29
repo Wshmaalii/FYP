@@ -150,19 +150,14 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
       <div className="flex items-end justify-between gap-4 mb-5">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-zinc-100 text-3xl font-semibold tracking-tight">{price !== null ? price.toFixed(2) : '--'}</span>
+            <span className="text-[22px] font-semibold tracking-tight text-zinc-100">{price !== null ? price.toFixed(2) : '--'}</span>
             <span className="text-zinc-500 text-sm">USD</span>
           </div>
-          <div className={`flex items-center gap-1.5 mt-2 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-            {isPositive ? (
-              <TrendingUp className="w-4 h-4" />
-            ) : (
-              <TrendingDown className="w-4 h-4" />
-            )}
-            <span className="text-sm">
+          <div className="mt-2">
+            <span className={`inline-flex items-center gap-1 rounded-md px-2 py-[3px] text-[12px] font-medium ${isPositive ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}>
+              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               {changePercent !== null ? `${isPositive ? '+' : ''}${changePercent.toFixed(2)}%` : 'Unavailable'}
             </span>
-            <span className="text-xs text-zinc-500">today</span>
           </div>
           {liveDataError && (
             <p className="text-xs text-zinc-500 mt-3 leading-5">{MARKET_DATA_LIMITED_MESSAGE}</p>
