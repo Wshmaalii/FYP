@@ -160,7 +160,7 @@ export function Sidebar({
               <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90">Snapshot</h3>
             </div>
             <div className="divide-y divide-zinc-800/90">
-              <div className="flex items-center justify-between py-2.5">
+              <button type="button" onClick={() => onOpenStock('SPY')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
                 <div>
                   <p className="text-xs font-semibold text-zinc-100">SPY</p>
                 </div>
@@ -168,8 +168,8 @@ export function Sidebar({
                   <p className="text-xs font-medium text-zinc-100">651.37</p>
                   <p className="text-xs font-medium text-red-400">-0.83%</p>
                 </div>
-              </div>
-              <div className="flex items-center justify-between py-2.5">
+              </button>
+              <button type="button" onClick={() => onOpenStock('AAPL')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
                 <div>
                   <p className="text-xs font-semibold text-zinc-100">AAPL</p>
                 </div>
@@ -177,8 +177,8 @@ export function Sidebar({
                   <p className="text-xs font-medium text-zinc-100">256.34</p>
                   <p className="text-xs font-medium text-emerald-400">+1.47%</p>
                 </div>
-              </div>
-              <div className="flex items-center justify-between py-2.5">
+              </button>
+              <button type="button" onClick={() => onOpenStock('MSFT')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
                 <div>
                   <p className="text-xs font-semibold text-zinc-100">MSFT</p>
                 </div>
@@ -186,7 +186,7 @@ export function Sidebar({
                   <p className="text-xs font-medium text-zinc-100">368.13</p>
                   <p className="text-xs font-medium text-red-400">-0.78%</p>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>
