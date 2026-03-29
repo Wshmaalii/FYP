@@ -157,7 +157,7 @@ export function Sidebar({
         <div className="overflow-hidden rounded-[22px] border border-zinc-800/90 bg-[linear-gradient(180deg,rgba(18,21,28,0.94),rgba(12,15,20,0.98))] shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between pb-2">
-              <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90">Snapshot</h3>
+              <button type="button" onClick={() => onNavigate('Market Overview')} className="cursor-pointer text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90 transition-colors hover:text-zinc-300">Snapshot</button>
             </div>
             <div className="divide-y divide-zinc-800/90">
               <button type="button" onClick={() => onOpenStock('SPY')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
