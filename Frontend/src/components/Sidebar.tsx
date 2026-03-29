@@ -26,7 +26,7 @@ function Section({
   return (
     <div className="px-4 py-1.5">
       <div className="px-2 pb-1.5">
-        <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90">{title}</h3>
+        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-zinc-600">{title}</h3>
       </div>
       <div className="space-y-1.5 rounded-[24px] bg-zinc-900/25 p-1.5">
         {children}
@@ -53,7 +53,7 @@ function ConversationButton({
       className={`w-full rounded-2xl border px-4 py-2.5 text-left transition-all duration-200 ease-out ${
         selected
           ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
-          : 'border-transparent bg-zinc-950/40 text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900/90 hover:text-zinc-100 active:translate-y-px'
+          : 'rounded-[8px] border-transparent bg-zinc-900/40 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 active:translate-y-px'
       }`}
     >
       <div className="text-sm font-medium leading-5">{label}</div>
