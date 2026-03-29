@@ -134,7 +134,7 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 transition-all duration-200 ease-out hover:border-zinc-700 hover:shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+    <div className="bg-[#161618] border border-white/[0.08] rounded-[14px] p-[18px] hover:border-white/[0.13] transition-colors cursor-pointer">
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
