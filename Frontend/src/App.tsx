@@ -337,43 +337,45 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100">
-      <Sidebar
-        selectedView={currentView}
-        selectedConversationKey={selectedConversation?.conversation_key || null}
-        mySpaces={sidebarData.my_spaces}
-        directMessages={sidebarData.direct_messages}
-        privateGroups={sidebarData.private_groups}
-        onNavigate={setCurrentView}
-        onOpenConversation={(conversationKey) => void openConversation(conversationKey)}
-        onOpenComposer={() => setNewChatOpen(true)}
-        onOpenStock={openStockDetail}
-      />
-      <div className="flex-1 flex flex-col">
-        <TopBar
-          currentView={currentView}
+    <div className="min-h-screen bg-[#0a0a0c] px-6 py-7 text-zinc-100">
+      <div className="mx-auto flex h-[calc(100vh-3.5rem)] min-h-[720px] max-w-[1480px] overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#0e0e10] shadow-[0_22px_60px_rgba(0,0,0,0.32)]">
+        <Sidebar
+          selectedView={currentView}
+          selectedConversationKey={selectedConversation?.conversation_key || null}
+          mySpaces={sidebarData.my_spaces}
+          directMessages={sidebarData.direct_messages}
+          privateGroups={sidebarData.private_groups}
           onNavigate={setCurrentView}
-          onLogout={handleLogout}
-          userName={currentProfile?.full_name || currentUser?.name}
-          userHandle={currentProfile?.username}
-          avatarUrl={currentProfile?.avatar_url || undefined}
-          avatarSeed={currentProfile?.avatar_seed}
-          headerTitle={headerTitle}
-          headerSubtitle={headerSubtitle}
-          isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
+          onOpenConversation={(conversationKey) => void openConversation(conversationKey)}
+          onOpenComposer={() => setNewChatOpen(true)}
+          onOpenStock={openStockDetail}
         />
-        {renderView()}
+        <div className="flex min-w-0 flex-1 flex-col bg-[#0e0e10]">
+          <TopBar
+            currentView={currentView}
+            onNavigate={setCurrentView}
+            onLogout={handleLogout}
+            userName={currentProfile?.full_name || currentUser?.name}
+            userHandle={currentProfile?.username}
+            avatarUrl={currentProfile?.avatar_url || undefined}
+            avatarSeed={currentProfile?.avatar_seed}
+            headerTitle={headerTitle}
+            headerSubtitle={headerSubtitle}
+            isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
+          />
+          {renderView()}
+        </div>
+        <NewChatModal
+          isOpen={newChatOpen}
+          searchResults={searchResults}
+          searching={searchingUsers}
+          onClose={() => setNewChatOpen(false)}
+          onSearch={handleSearchUsers}
+          onStartDm={handleStartDm}
+          onCreateGroup={handleCreateGroup}
+          onCreateSpace={handleCreateSpace}
+        />
       </div>
-      <NewChatModal
-        isOpen={newChatOpen}
-        searchResults={searchResults}
-        searching={searchingUsers}
-        onClose={() => setNewChatOpen(false)}
-        onSearch={handleSearchUsers}
-        onStartDm={handleStartDm}
-        onCreateGroup={handleCreateGroup}
-        onCreateSpace={handleCreateSpace}
-      />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { MessageSquarePlus } from 'lucide-react';
-import { MarketDashboard } from './MarketDashboard';
 import type { ConversationSummary } from '../api/messaging';
 import { View } from '../App';
 
@@ -24,11 +23,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-4 py-1.5">
-      <div className="px-2 pb-1.5">
+    <div className="px-4 py-3">
+      <div className="pb-2">
         <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-zinc-600">{title}</h3>
       </div>
-      <div className="space-y-1.5 rounded-[24px] bg-zinc-900/25 p-1.5">
+      <div className="space-y-1 rounded-[12px]">
         {children}
       </div>
     </div>
@@ -50,9 +49,9 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-2xl border px-4 py-2.5 text-left transition-all duration-200 ease-out ${
+      className={`w-full border px-4 py-2.5 text-left transition-all duration-200 ease-out ${
         selected
-          ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
+          ? 'rounded-[8px] border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
           : 'rounded-[8px] border-transparent bg-zinc-900/40 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 active:translate-y-px'
       }`}
     >
@@ -74,32 +73,37 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="flex w-80 flex-col border-r border-zinc-800 bg-[linear-gradient(180deg,#090b10_0%,#0d1016_100%)] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-      <div className="px-4 pt-3.5">
-        <div className="rounded-[26px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,28,37,0.96),rgba(16,19,26,0.98))] px-4.5 py-4.5 shadow-[0_16px_34px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">TradeLink</p>
-          <h2 className="mt-2 text-[17px] font-semibold tracking-tight text-white">Messaging for trader communities</h2>
-          <p className="mt-1.5 max-w-[228px] text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
+    <div className="flex w-[300px] flex-col border-r border-white/[0.06] bg-[#111113] text-zinc-100">
+      <div className="border-b border-white/[0.06] px-7 py-7">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[#18c7b0] text-[21px] font-semibold text-white">
+            TL
+          </div>
+          <div>
+            <p className="text-[18px] font-semibold tracking-tight text-white">TradeLink</p>
+          </div>
         </div>
-      </div>
-
-      <div className="px-4 pb-2.5 pt-3.5">
         <button
           type="button"
           onClick={onOpenComposer}
-          className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-cyan-600 px-4 py-3 text-white shadow-[0_14px_30px_rgba(8,145,178,0.16)] transition-all duration-200 ease-out hover:bg-cyan-500 active:translate-y-px"
+          className="mt-7 flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#1a6f63] bg-[#13312d] px-4 py-3 text-[#18c7b0] transition-colors duration-150 hover:bg-[#163a35]"
         >
           <MessageSquarePlus className="w-4 h-4" />
           <span className="text-sm font-medium">New Chat</span>
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pt-1">
+      <div className="min-h-0 flex-1 overflow-y-auto py-4">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
             meta="Browse public communities"
             selected={selectedView === 'Explore Spaces'}
+            onClick={() => onNavigate('Explore Spaces')}
+          />
+          <ConversationButton
+            label="Browse Communities"
+            selected={false}
             onClick={() => onNavigate('Explore Spaces')}
           />
         </Section>
@@ -108,15 +112,26 @@ export function Sidebar({
           {mySpaces.length === 0 ? (
             <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Create or join a space to get started.</p>
           ) : (
-            mySpaces.map((space) => (
-              <ConversationButton
-                key={space.conversation_key}
-                label={space.name}
-                meta={space.channels.map((channel) => `#${channel.slug}`).join(' • ')}
-                selected={selectedConversationKey === space.conversation_key}
-                onClick={() => onOpenConversation(space.conversation_key)}
-              />
-            ))
+            <div className="space-y-2 px-2">
+              {mySpaces.map((space, index) => (
+                <button
+                  key={space.conversation_key}
+                  type="button"
+                  onClick={() => onOpenConversation(space.conversation_key)}
+                  className="flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left transition-colors hover:bg-white/[0.04]"
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: ['#5b74f3', '#f59e0b', '#2dd4aa'][index % 3],
+                    }}
+                  />
+                  <span className={`${selectedConversationKey === space.conversation_key ? 'text-zinc-200' : 'text-zinc-500'} text-[13px] font-medium`}>
+                    {space.name}
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
         </Section>
 
@@ -153,42 +168,41 @@ export function Sidebar({
         </Section>
       </div>
 
-      <div className="px-4 pb-3 pt-2">
-        <div className="overflow-hidden rounded-[22px] border border-zinc-800/90 bg-[linear-gradient(180deg,rgba(18,21,28,0.94),rgba(12,15,20,0.98))] shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between pb-2">
-              <button type="button" onClick={() => onNavigate('Market Overview')} className="cursor-pointer text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90 transition-colors hover:text-zinc-300">Snapshot</button>
+      <div className="mt-auto border-t border-white/[0.06] px-6 pb-5 pt-5">
+        <div className="pb-3">
+          <button type="button" onClick={() => onNavigate('Market Overview')} className="cursor-pointer text-[10px] font-semibold uppercase tracking-[1.2px] text-zinc-600 transition-colors hover:text-zinc-300">Snapshot</button>
+        </div>
+        <div className="space-y-0">
+          <button type="button" onClick={() => onOpenStock('SPY')} className="flex w-full items-center justify-between rounded-[6px] border-b border-white/[0.04] py-2 text-left transition-colors hover:bg-white/[0.04]">
+            <div>
+              <p className="text-xs font-semibold text-zinc-100">SPY</p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">S&amp;P 500 ETF</p>
             </div>
-            <div className="divide-y divide-zinc-800/90">
-              <button type="button" onClick={() => onOpenStock('SPY')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
-                <div>
-                  <p className="text-xs font-semibold text-zinc-100">SPY</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-zinc-100">651.37</p>
-                  <p className="text-xs font-medium text-red-400">-0.83%</p>
-                </div>
-              </button>
-              <button type="button" onClick={() => onOpenStock('AAPL')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
-                <div>
-                  <p className="text-xs font-semibold text-zinc-100">AAPL</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-zinc-100">256.34</p>
-                  <p className="text-xs font-medium text-emerald-400">+1.47%</p>
-                </div>
-              </button>
-              <button type="button" onClick={() => onOpenStock('MSFT')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
-                <div>
-                  <p className="text-xs font-semibold text-zinc-100">MSFT</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-zinc-100">368.13</p>
-                  <p className="text-xs font-medium text-red-400">-0.78%</p>
-                </div>
-              </button>
+            <div className="text-right">
+              <p className="text-xs font-medium text-zinc-200">651.37</p>
+              <p className="mt-0.5 text-[10px] font-medium text-red-400">−0.83%</p>
             </div>
-          </div>
+          </button>
+          <button type="button" onClick={() => onOpenStock('AAPL')} className="flex w-full items-center justify-between rounded-[6px] border-b border-white/[0.04] py-2 text-left transition-colors hover:bg-white/[0.04]">
+            <div>
+              <p className="text-xs font-semibold text-zinc-100">AAPL</p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">Apple</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-zinc-200">256.34</p>
+              <p className="mt-0.5 text-[10px] font-medium text-emerald-400">+1.47%</p>
+            </div>
+          </button>
+          <button type="button" onClick={() => onOpenStock('MSFT')} className="flex w-full items-center justify-between rounded-[6px] py-2 text-left transition-colors hover:bg-white/[0.04]">
+            <div>
+              <p className="text-xs font-semibold text-zinc-100">MSFT</p>
+              <p className="mt-0.5 text-[10px] text-zinc-500">Microsoft</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-zinc-200">368.13</p>
+              <p className="mt-0.5 text-[10px] font-medium text-red-400">−0.78%</p>
+            </div>
+          </button>
         </div>
       </div>
     </div>
