@@ -155,7 +155,40 @@ export function Sidebar({
 
       <div className="px-4 pb-3 pt-2">
         <div className="overflow-hidden rounded-[22px] border border-zinc-800/90 bg-[linear-gradient(180deg,rgba(18,21,28,0.94),rgba(12,15,20,0.98))] shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
-          <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between pb-2">
+              <h3 className="text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90">Snapshot</h3>
+            </div>
+            <div className="divide-y divide-zinc-800/90">
+              <div className="flex items-center justify-between py-2.5">
+                <div>
+                  <p className="text-xs font-semibold text-zinc-100">SPY</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-medium text-zinc-100">651.37</p>
+                  <p className="text-xs font-medium text-red-400">-0.83%</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <div>
+                  <p className="text-xs font-semibold text-zinc-100">AAPL</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-medium text-zinc-100">256.34</p>
+                  <p className="text-xs font-medium text-emerald-400">+1.47%</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <div>
+                  <p className="text-xs font-semibold text-zinc-100">MSFT</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-medium text-zinc-100">368.13</p>
+                  <p className="text-xs font-medium text-red-400">-0.78%</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
