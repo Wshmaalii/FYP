@@ -16,6 +16,12 @@ interface ChatMessageProps {
   onOpenTradeTicket?: (ticket: TradeTicketInput) => void;
 }
 
+function getAvatarColor(user: string): string {
+  const colors = ['#4f6ef7', '#00c4a0', '#f59e0b', '#f26b6b', '#2dd4aa'];
+  const index = user.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[index % colors.length];
+}
+
 function formatTimestamp(value: string) {
   if (!value.includes('T')) {
     return value;
@@ -30,30 +36,41 @@ function formatTimestamp(value: string) {
 }
 
 export function ChatMessage({ message, onOpenTradeTicket }: ChatMessageProps) {
+  const avatarColor = getAvatarColor(message.user);
+
   return (
     <div className="flex gap-3">
-      {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-        <span className="text-white text-sm">{message.user.split(' ').map(n => n[0]).join('')}</span>
+      <div
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
+        style={{ background: avatarColor }}
+      >
+        {message.user.split(' ').map((part) => part[0]).join('')}
       </div>
 
-      {/* Message Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-zinc-100">{message.user}</span>
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-[14px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {message.user}
+          </span>
           {message.verified && (
-            <ShieldCheck className="w-4 h-4 text-cyan-400" />
+            <ShieldCheck className="h-4 w-4" style={{ color: 'var(--accent-teal)' }} />
           )}
-          <span className="text-zinc-600 text-xs">{formatTimestamp(message.timestamp)}</span>
+          <span className="text-[11px]" style={{ color: 'var(--text-label)' }}>
+            {formatTimestamp(message.timestamp)}
+          </span>
         </div>
 
-        <div className="bg-zinc-900 rounded-2xl rounded-tl-sm px-4 py-3 border border-zinc-800 inline-block max-w-2xl">
-          <p className="text-zinc-300">{message.content}</p>
+        <div
+          className="inline-block max-w-2xl rounded-2xl rounded-tl-sm px-4 py-3"
+          style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+        >
+          <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+            {message.content}
+          </p>
         </div>
-        
-        {/* Market Data Cards */}
+
         {message.tickers && message.tickers.length > 0 && (
-          <div className="grid gap-3 mt-3 max-w-2xl">
+          <div className="mt-3 grid max-w-2xl gap-3">
             {message.tickers.map((ticker) => (
               <MarketDataCard key={ticker} ticker={ticker} onOpenTradeTicket={onOpenTradeTicket} />
             ))}
