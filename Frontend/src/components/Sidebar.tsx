@@ -60,22 +60,18 @@ function DiscoverButton({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[7px] px-2 py-[7px] text-left text-[13px] transition-all duration-150 active:translate-y-px"
+      className="w-full rounded-[7px] px-2 py-[7px] text-left text-[13px] transition-all duration-150"
       style={{
-        background: selected ? 'var(--bg-active)' : 'transparent',
+        background: 'transparent',
         color: selected ? 'var(--text-secondary)' : 'var(--text-muted)',
       }}
       onMouseEnter={(event) => {
-        if (!selected) {
-          event.currentTarget.style.background = 'var(--bg-hover)';
-          event.currentTarget.style.color = 'var(--text-secondary)';
-        }
+        event.currentTarget.style.background = 'var(--bg-hover)';
+        event.currentTarget.style.color = 'var(--text-secondary)';
       }}
       onMouseLeave={(event) => {
-        if (!selected) {
-          event.currentTarget.style.background = 'transparent';
-          event.currentTarget.style.color = 'var(--text-muted)';
-        }
+        event.currentTarget.style.background = 'transparent';
+        event.currentTarget.style.color = selected ? 'var(--text-secondary)' : 'var(--text-muted)';
       }}
     >
       {label}
@@ -173,8 +169,14 @@ export function Sidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="px-4 pb-2 pt-[14px]" style={{ borderBottom: '0.5px solid var(--border-subtle)' }}>
-          <Section title="Discover">
+        <div className="px-4 pb-5 pt-[14px]" style={{ borderBottom: '0.5px solid var(--border-subtle)' }}>
+          <div
+            className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[1.2px]"
+            style={{ color: 'var(--text-label)' }}
+          >
+            Discover
+          </div>
+          <div className="space-y-0.5">
             <DiscoverButton
               label="Explore Spaces"
               selected={selectedView === 'Explore Spaces'}
@@ -185,7 +187,7 @@ export function Sidebar({
               selected={false}
               onClick={() => onNavigate('Explore Spaces')}
             />
-          </Section>
+          </div>
         </div>
 
         <div className="px-4 pb-4 pt-[14px]">
