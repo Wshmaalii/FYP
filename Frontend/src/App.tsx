@@ -320,8 +320,8 @@ export default function App() {
 
   if (authStatus === 'loading') {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-950">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-sm text-zinc-400 shadow-[0_24px_64px_rgba(0,0,0,0.35)]">
+      <div className="flex h-screen items-center justify-center" style={{ background: 'var(--bg-body)' }}>
+        <div className="rounded-2xl px-5 py-4 text-sm shadow-[0_24px_64px_rgba(0,0,0,0.35)]" style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)', color: 'var(--text-muted)' }}>
           Checking session...
         </div>
       </div>
@@ -337,7 +337,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex h-screen" style={{ background: 'var(--bg-app)', color: 'var(--text-primary)' }}>
       <Sidebar
         selectedView={currentView}
         selectedConversationKey={selectedConversation?.conversation_key || null}

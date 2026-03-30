@@ -67,6 +67,11 @@ export function ConversationPage({
   const privacy = buildPrivacyCopy(conversation);
   const activeChannelKey = selectedChannelKey || conversation.channels[0]?.channel_key || null;
   const activeChannel = conversation.channels.find((channel) => channel.channel_key === activeChannelKey) || conversation.channels[0] || null;
+  const conversationTypeLabel = conversation.kind === 'direct_message'
+    ? 'Direct message'
+    : conversation.kind === 'private_group'
+      ? 'Private group'
+      : 'Public space';
 
   useEffect(() => {
     if (!activeChannelKey) {
@@ -125,42 +130,47 @@ export function ConversationPage({
   }, [conversation]);
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-950">
-      <div className="border-b border-zinc-800 bg-zinc-900 px-8 py-7">
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2.5 mb-3">
+    <div className="flex flex-1 flex-col" style={{ background: 'var(--bg-app)' }}>
+      <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-sidebar)' }}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
               {conversation.kind === 'direct_message' ? (
-                <MessageSquare className="w-4 h-4 text-cyan-400" />
+                <MessageSquare className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />
               ) : conversation.kind === 'private_group' ? (
-                <Lock className="w-4 h-4 text-cyan-400" />
+                <Lock className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />
               ) : (
-                <Users className="w-4 h-4 text-cyan-400" />
+                <Users className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />
               )}
-              <h2 className="text-zinc-100 text-2xl font-semibold tracking-tight">{conversation.name}</h2>
-              {conversation.kind !== 'direct_message' && (
-                <span className="text-zinc-500 text-sm">{memberText}</span>
-              )}
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--text-label)' }}>
+                {conversationTypeLabel}
+              </p>
             </div>
-            <p className="max-w-3xl text-sm leading-6 text-zinc-400">{conversation.description}</p>
+            <p className="max-w-3xl text-sm leading-6" style={{ color: 'var(--text-secondary)' }}>
+              {conversation.description || privacy.visibilitySummary}
+            </p>
           </div>
-          {conversation.kind === 'direct_message' ? (
-            <div className="text-zinc-500 text-sm pt-1">{memberText}</div>
-          ) : null}
+          <div
+            className="shrink-0 rounded-full px-3 py-1 text-[11px]"
+            style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)', color: 'var(--text-muted)' }}
+          >
+            {memberText}
+          </div>
         </div>
 
-        {conversation.kind === 'public_space' && conversation.channels.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-3">
+        {conversation.kind === 'public_space' && conversation.channels.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
             {conversation.channels.map((channel) => (
               <button
                 key={channel.channel_key}
                 type="button"
                 onClick={() => onChannelSelect(channel.channel_key)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
-                  channel.channel_key === activeChannelKey
-                    ? 'border-cyan-500 bg-cyan-600 text-white shadow-[0_12px_28px_rgba(8,145,178,0.18)]'
-                    : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
-                }`}
+                className="rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors"
+                style={{
+                  background: channel.channel_key === activeChannelKey ? 'var(--accent-teal-bg)' : 'var(--bg-card)',
+                  border: `0.5px solid ${channel.channel_key === activeChannelKey ? 'var(--accent-teal-border)' : 'var(--border-primary)'}`,
+                  color: channel.channel_key === activeChannelKey ? 'var(--accent-teal)' : 'var(--text-muted)',
+                }}
               >
                 <span className="inline-flex items-center gap-2">
                   <Hash className="w-3 h-3" />
@@ -169,21 +179,21 @@ export function ConversationPage({
               </button>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       <ChannelPrivacyCard {...privacy} />
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-8 py-7">
+      <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
         {error && (
           <div className="rounded-2xl border border-red-900/70 bg-red-950/30 p-4 text-sm text-red-300">
             {error}
           </div>
         )}
         {loading ? (
-          <div className="text-zinc-400 text-sm">Loading conversation...</div>
+          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading conversation...</div>
         ) : messages.length === 0 ? (
-          <div className="rounded-[24px] border border-zinc-800 bg-zinc-900 p-8 text-sm leading-6 text-zinc-500 shadow-[0_18px_44px_rgba(0,0,0,0.18)]">
+          <div className="rounded-[20px] p-8 text-sm leading-6 shadow-[0_18px_44px_rgba(0,0,0,0.18)]" style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)', color: 'var(--text-muted)' }}>
             No messages yet. Start the conversation in {activeChannel ? `#${activeChannel.slug}` : conversation.name}.
           </div>
         ) : (
