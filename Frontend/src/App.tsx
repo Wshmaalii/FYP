@@ -320,7 +320,7 @@ export default function App() {
 
   if (authStatus === 'loading') {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--tl-bg-app)] px-6 py-6">
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-sm text-zinc-400 shadow-[0_24px_64px_rgba(0,0,0,0.35)]">
           Checking session...
         </div>
@@ -337,32 +337,34 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100">
-      <Sidebar
-        selectedView={currentView}
-        selectedConversationKey={selectedConversation?.conversation_key || null}
-        mySpaces={sidebarData.my_spaces}
-        directMessages={sidebarData.direct_messages}
-        privateGroups={sidebarData.private_groups}
-        onNavigate={setCurrentView}
-        onOpenConversation={(conversationKey) => void openConversation(conversationKey)}
-        onOpenComposer={() => setNewChatOpen(true)}
-        onOpenStock={openStockDetail}
-      />
-      <div className="flex-1 flex flex-col">
-        <TopBar
-          currentView={currentView}
+    <div className="min-h-screen bg-[var(--tl-bg-app)] px-6 py-6 text-zinc-100">
+      <div className="mx-auto flex h-[calc(100vh-3rem)] tl-shell">
+        <Sidebar
+          selectedView={currentView}
+          selectedConversationKey={selectedConversation?.conversation_key || null}
+          mySpaces={sidebarData.my_spaces}
+          directMessages={sidebarData.direct_messages}
+          privateGroups={sidebarData.private_groups}
           onNavigate={setCurrentView}
-          onLogout={handleLogout}
-          userName={currentProfile?.full_name || currentUser?.name}
-          userHandle={currentProfile?.username}
-          avatarUrl={currentProfile?.avatar_url || undefined}
-          avatarSeed={currentProfile?.avatar_seed}
-          headerTitle={headerTitle}
-          headerSubtitle={headerSubtitle}
-          isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
+          onOpenConversation={(conversationKey) => void openConversation(conversationKey)}
+          onOpenComposer={() => setNewChatOpen(true)}
+          onOpenStock={openStockDetail}
         />
-        {renderView()}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar
+            currentView={currentView}
+            onNavigate={setCurrentView}
+            onLogout={handleLogout}
+            userName={currentProfile?.full_name || currentUser?.name}
+            userHandle={currentProfile?.username}
+            avatarUrl={currentProfile?.avatar_url || undefined}
+            avatarSeed={currentProfile?.avatar_seed}
+            headerTitle={headerTitle}
+            headerSubtitle={headerSubtitle}
+            isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
+          />
+          {renderView()}
+        </div>
       </div>
       <NewChatModal
         isOpen={newChatOpen}

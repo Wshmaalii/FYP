@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { MessageSquarePlus } from 'lucide-react';
-import { MarketDashboard } from './MarketDashboard';
 import type { ConversationSummary } from '../api/messaging';
 import { View } from '../App';
 
@@ -24,13 +23,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-4 py-1.5">
+    <div className="px-4 pt-3">
       <div className="px-2 pb-1.5">
-        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-zinc-600">{title}</h3>
+        <h3 className="tl-section-label">{title}</h3>
       </div>
-      <div className="space-y-1.5 rounded-[24px] bg-zinc-900/25 p-1.5">
-        {children}
-      </div>
+      <div className="space-y-0.5">{children}</div>
     </div>
   );
 }
@@ -50,14 +47,18 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-2xl border px-4 py-2.5 text-left transition-all duration-200 ease-out ${
+      className={`w-full rounded-[8px] px-2 py-[7px] text-left transition-colors duration-150 ${
         selected
-          ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
-          : 'rounded-[8px] border-transparent bg-zinc-900/40 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 active:translate-y-px'
+          ? 'bg-white/[0.07] text-[var(--tl-text-primary)]'
+          : 'text-[var(--tl-text-secondary)] hover:bg-white/[0.05] hover:text-[var(--tl-text-primary)]'
       }`}
     >
-      <div className="text-sm font-medium leading-5">{label}</div>
-      {meta ? <div className={`mt-1 text-xs leading-4 ${selected ? 'text-cyan-100/90' : 'text-zinc-600'}`}>{meta}</div> : null}
+      <div className="text-[13px] font-medium leading-5">{label}</div>
+      {meta ? (
+        <div className={`${selected ? 'text-[var(--tl-text-secondary)]' : 'text-[var(--tl-text-muted)]'} mt-0.5 text-[11px] leading-4`}>
+          {meta}
+        </div>
+      ) : null}
     </button>
   );
 }
@@ -74,48 +75,62 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="flex w-80 flex-col border-r border-zinc-800 bg-[linear-gradient(180deg,#090b10_0%,#0d1016_100%)] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-      <div className="px-4 pt-3.5">
-        <div className="rounded-[26px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,28,37,0.96),rgba(16,19,26,0.98))] px-4.5 py-4.5 shadow-[0_16px_34px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">TradeLink</p>
-          <h2 className="mt-2 text-[17px] font-semibold tracking-tight text-white">Messaging for trader communities</h2>
-          <p className="mt-1.5 max-w-[228px] text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
+    <div className="tl-sidebar flex flex-col text-zinc-100">
+      <div className="border-b border-[var(--tl-border-subtle)] px-4 pt-[18px] pb-3">
+        <div className="mb-[14px] flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[var(--tl-accent)] text-[11px] font-bold text-white">
+            TL
+          </div>
+          <span className="text-[13px] font-semibold tracking-[0.5px] text-[var(--tl-text-primary)]">TradeLink</span>
         </div>
-      </div>
-
-      <div className="px-4 pb-2.5 pt-3.5">
         <button
           type="button"
           onClick={onOpenComposer}
-          className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-cyan-600 px-4 py-3 text-white shadow-[0_14px_30px_rgba(8,145,178,0.16)] transition-all duration-200 ease-out hover:bg-cyan-500 active:translate-y-px"
+          className="tl-btn-primary flex w-full items-center gap-1.5"
         >
-          <MessageSquarePlus className="w-4 h-4" />
-          <span className="text-sm font-medium">New Chat</span>
+          <MessageSquarePlus className="h-3.5 w-3.5" />
+          <span>New Chat</span>
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pt-1">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
-            meta="Browse public communities"
             selected={selectedView === 'Explore Spaces'}
+            onClick={() => onNavigate('Explore Spaces')}
+          />
+          <ConversationButton
+            label="Browse Communities"
+            selected={false}
             onClick={() => onNavigate('Explore Spaces')}
           />
         </Section>
 
         <Section title="My Spaces">
           {mySpaces.length === 0 ? (
-            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Create or join a space to get started.</p>
+            <p className="px-2 py-1.5 text-[12px] leading-5 text-[var(--tl-text-muted)]">Create or join a space to get started.</p>
           ) : (
             mySpaces.map((space) => (
-              <ConversationButton
+              <button
                 key={space.conversation_key}
-                label={space.name}
-                meta={space.channels.map((channel) => `#${channel.slug}`).join(' • ')}
-                selected={selectedConversationKey === space.conversation_key}
+                type="button"
                 onClick={() => onOpenConversation(space.conversation_key)}
-              />
+                className={`flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left transition-colors ${
+                  selectedConversationKey === space.conversation_key
+                    ? 'bg-white/[0.06]'
+                    : 'hover:bg-white/[0.04]'
+                }`}
+              >
+                <div className="h-2 w-2 rounded-full bg-[#4f6ef7]" />
+                <span
+                  className={`text-[13px] ${
+                    selectedConversationKey === space.conversation_key ? 'text-[var(--tl-text-primary)]' : 'text-[var(--tl-text-secondary)]'
+                  }`}
+                >
+                  {space.name}
+                </span>
+              </button>
             ))
           )}
         </Section>
@@ -153,42 +168,45 @@ export function Sidebar({
         </Section>
       </div>
 
-      <div className="px-4 pb-3 pt-2">
-        <div className="overflow-hidden rounded-[22px] border border-zinc-800/90 bg-[linear-gradient(180deg,rgba(18,21,28,0.94),rgba(12,15,20,0.98))] shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between pb-2">
-              <button type="button" onClick={() => onNavigate('Market Overview')} className="cursor-pointer text-[10px] font-medium uppercase tracking-[0.24em] text-zinc-600/90 transition-colors hover:text-zinc-300">Snapshot</button>
+      <div className="mt-auto border-t border-[var(--tl-border-subtle)] px-[14px] py-3">
+        <button
+          type="button"
+          onClick={() => onNavigate('Market Overview')}
+          className="tl-section-label mb-2 cursor-pointer transition-colors hover:text-[var(--tl-text-secondary)]"
+        >
+          Snapshot
+        </button>
+        <div className="overflow-hidden rounded-[12px] bg-[var(--tl-bg-muted)] px-2">
+          <button type="button" onClick={() => onOpenStock('SPY')} className="tl-snapshot-row w-full rounded-[6px] px-1 text-left hover:bg-white/[0.04]">
+            <div>
+              <p className="text-[12px] font-semibold text-[var(--tl-text-primary)]">SPY</p>
+              <p className="text-[10px] text-[var(--tl-text-muted)]">S&amp;P 500 ETF</p>
             </div>
-            <div className="divide-y divide-zinc-800/90">
-              <button type="button" onClick={() => onOpenStock('SPY')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
-                <div>
-                  <p className="text-xs font-semibold text-zinc-100">SPY</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-zinc-100">651.37</p>
-                  <p className="text-xs font-medium text-red-400">-0.83%</p>
-                </div>
-              </button>
-              <button type="button" onClick={() => onOpenStock('AAPL')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
-                <div>
-                  <p className="text-xs font-semibold text-zinc-100">AAPL</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-zinc-100">256.34</p>
-                  <p className="text-xs font-medium text-emerald-400">+1.47%</p>
-                </div>
-              </button>
-              <button type="button" onClick={() => onOpenStock('MSFT')} className="flex w-full cursor-pointer items-center justify-between rounded-lg py-2.5 text-left transition-colors hover:bg-white/5">
-                <div>
-                  <p className="text-xs font-semibold text-zinc-100">MSFT</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-zinc-100">368.13</p>
-                  <p className="text-xs font-medium text-red-400">-0.78%</p>
-                </div>
-              </button>
+            <div className="text-right">
+              <p className="text-[12px] font-medium text-[var(--tl-text-primary)]">651.37</p>
+              <p className="text-[10px] font-medium text-[var(--tl-danger)]">-0.83%</p>
             </div>
-          </div>
+          </button>
+          <button type="button" onClick={() => onOpenStock('AAPL')} className="tl-snapshot-row w-full rounded-[6px] px-1 text-left hover:bg-white/[0.04]">
+            <div>
+              <p className="text-[12px] font-semibold text-[var(--tl-text-primary)]">AAPL</p>
+              <p className="text-[10px] text-[var(--tl-text-muted)]">Apple</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[12px] font-medium text-[var(--tl-text-primary)]">256.34</p>
+              <p className="text-[10px] font-medium text-[var(--tl-positive)]">+1.47%</p>
+            </div>
+          </button>
+          <button type="button" onClick={() => onOpenStock('MSFT')} className="tl-snapshot-row w-full rounded-[6px] px-1 text-left hover:bg-white/[0.04]">
+            <div>
+              <p className="text-[12px] font-semibold text-[var(--tl-text-primary)]">MSFT</p>
+              <p className="text-[10px] text-[var(--tl-text-muted)]">Microsoft</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[12px] font-medium text-[var(--tl-text-primary)]">368.13</p>
+              <p className="text-[10px] font-medium text-[var(--tl-danger)]">-0.78%</p>
+            </div>
+          </button>
         </div>
       </div>
     </div>
