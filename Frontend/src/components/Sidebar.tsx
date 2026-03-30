@@ -26,7 +26,7 @@ function Section({
   return (
     <div className="px-4 pt-[14px] pb-2">
       <div className="px-2 pb-1.5">
-        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[var(--text-label)]">{title}</h3>
+        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px]" style={{ color: 'var(--text-label)' }}>{title}</h3>
       </div>
       <div className="space-y-0.5">
         {children}
@@ -52,12 +52,15 @@ function ConversationButton({
       onClick={onClick}
       className={`w-full rounded-[7px] border px-2 py-[7px] text-left transition-all duration-150 ${
         selected
-          ? 'border-transparent bg-[var(--bg-active)] text-[var(--text-primary)]'
-          : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'
+          ? 'border-transparent'
+          : 'border-transparent'
       }`}
+      style={selected
+        ? { background: 'var(--bg-active)', color: 'var(--text-primary)' }
+        : { color: 'var(--text-muted)' }}
     >
       <div className="text-[13px] font-medium leading-5">{label}</div>
-      {meta ? <div className={`mt-px text-[12px] leading-4 ${selected ? 'text-[var(--text-muted)]' : 'text-[var(--text-subtle)]'}`}>{meta}</div> : null}
+      {meta ? <div className="mt-px text-[12px] leading-4" style={{ color: selected ? 'var(--text-muted)' : 'var(--text-subtle)' }}>{meta}</div> : null}
     </button>
   );
 }
@@ -100,7 +103,7 @@ export function Sidebar({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="px-4 pt-[14px] pb-2" style={{ borderBottom: '0.5px solid var(--border-subtle)' }}>
           <div className="px-2 pb-1.5">
-            <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[var(--text-label)]">Discover</h3>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px]" style={{ color: 'var(--text-label)' }}>Discover</h3>
           </div>
           <div className="space-y-0.5">
           <ConversationButton
@@ -118,7 +121,7 @@ export function Sidebar({
 
         <div className="flex-1 overflow-y-auto px-4">
           <div className="mb-2 mt-[14px] px-2">
-            <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[var(--text-label)]">My Spaces</h3>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px]" style={{ color: 'var(--text-label)' }}>My Spaces</h3>
           </div>
           <div className="space-y-0.5">
             {mySpaces.map((space, index) => (
@@ -135,7 +138,7 @@ export function Sidebar({
                   className="h-2 w-2 flex-shrink-0 rounded-full"
                   style={{ background: ['#4f6ef7', '#f59e0b', '#2dd4aa'][index % 3] }}
                 />
-                <span className={`text-[13px] ${selectedConversationKey === space.conversation_key ? 'text-[var(--text-primary)]' : 'text-[var(--text-subtle)]'}`}>
+                <span className="text-[13px]" style={{ color: selectedConversationKey === space.conversation_key ? 'var(--text-primary)' : 'var(--text-subtle)' }}>
                   {space.name}
                 </span>
               </button>
@@ -143,7 +146,7 @@ export function Sidebar({
           </div>
 
           {mySpaces.length === 0 ? (
-            <p className="px-2 py-1.5 text-[13px] text-[var(--text-subtle)]">Create or join a space to get started.</p>
+            <p className="px-2 py-1.5 text-[13px]" style={{ color: 'var(--text-subtle)' }}>Create or join a space to get started.</p>
           ) : null}
 
           {directMessages.length > 0 ? (

@@ -55,56 +55,58 @@ function IndexCard({ index, onSelectStock }: { index: MarketOverviewIndex; onSel
     <button
       type="button"
       onClick={() => onSelectStock(index.ticker)}
-      className="w-full rounded-[14px] border border-white/[0.08] bg-[var(--bg-card)] p-[18px] text-left transition-colors hover:border-white/[0.15]"
+      className="w-full rounded-[14px] p-[18px] text-left transition-colors"
+      style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
     >
       <div className="mb-[14px] flex items-start justify-between gap-4">
         <div>
-          <div className="text-[13px] font-semibold text-[var(--text-primary)]">{index.name}</div>
-          <div className="mt-[2px] text-[11px] text-[var(--text-faint)]">{index.ticker}</div>
+          <div className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{index.name}</div>
+          <div className="mt-[2px] text-[11px]" style={{ color: 'var(--text-faint)' }}>{index.ticker}</div>
         </div>
-        <span className={`rounded-full px-2 py-[3px] text-[9px] font-semibold uppercase tracking-[0.5px] ${
-          index.available
-            ? 'border border-[var(--accent-teal-border)] bg-[var(--accent-teal-bg)] text-[var(--accent-teal)]'
-            : 'border border-white/[0.08] bg-white/[0.04] text-[var(--text-subtle)]'
-        }`}>
+        <span
+          className="rounded-full px-2 py-[3px] text-[9px] font-semibold uppercase tracking-[0.5px]"
+          style={index.available
+            ? { border: '0.5px solid var(--accent-teal-border)', background: 'var(--accent-teal-bg)', color: 'var(--accent-teal)' }
+            : { border: '0.5px solid var(--border-primary)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-subtle)' }}
+        >
           {index.available ? 'Tracked' : 'Unavailable'}
-            </span>
+        </span>
       </div>
 
       {index.available ? (
         <>
           <div className="mb-2.5 flex items-baseline gap-1.5">
-            <span className="text-[22px] font-semibold tracking-[-0.5px] text-[var(--text-primary)]">{index.price?.toFixed(2)}</span>
-            <span className="text-[12px] text-[var(--text-faint)]">USD</span>
+            <span className="text-[22px] font-semibold tracking-[-0.5px]" style={{ color: 'var(--text-primary)' }}>{index.price?.toFixed(2)}</span>
+            <span className="text-[12px]" style={{ color: 'var(--text-faint)' }}>USD</span>
           </div>
 
           <div className={`mb-[14px] inline-block rounded-md px-2 py-[3px] text-[12px] font-medium ${isPositive ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}>
             {isPositive ? '+' : '-'}{Math.abs(index.change ?? 0).toFixed(2)} ({isPositive ? '+' : '-'}{Math.abs(index.changePercent ?? 0).toFixed(2)}%)
           </div>
 
-          <hr className="mb-3 border-none border-t border-white/[0.05]" />
+          <hr className="mb-3 border-none" style={{ borderTop: '0.5px solid var(--border-faint)' }} />
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px] text-[var(--text-label)]">Open</div>
-              <div className="text-[12px] text-[var(--text-muted)]">{index.open !== null ? index.open.toFixed(2) : '--'}</div>
+              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px]" style={{ color: 'var(--text-label)' }}>Open</div>
+              <div className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{index.open !== null ? index.open.toFixed(2) : '--'}</div>
             </div>
             <div>
-              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px] text-[var(--text-label)]">Volume</div>
-              <div className="text-[12px] text-[var(--text-muted)]">{formatVolume(index.volume)}</div>
+              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px]" style={{ color: 'var(--text-label)' }}>Volume</div>
+              <div className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{formatVolume(index.volume)}</div>
             </div>
             <div>
-              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px] text-[var(--text-label)]">High</div>
-              <div className="text-[12px] text-[var(--text-muted)]">{index.high !== null ? index.high.toFixed(2) : '--'}</div>
+              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px]" style={{ color: 'var(--text-label)' }}>High</div>
+              <div className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{index.high !== null ? index.high.toFixed(2) : '--'}</div>
             </div>
             <div>
-              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px] text-[var(--text-label)]">Low</div>
-              <div className="text-[12px] text-[var(--text-muted)]">{index.low !== null ? index.low.toFixed(2) : '--'}</div>
+              <div className="mb-0.5 text-[10px] uppercase tracking-[0.3px]" style={{ color: 'var(--text-label)' }}>Low</div>
+              <div className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{index.low !== null ? index.low.toFixed(2) : '--'}</div>
             </div>
           </div>
         </>
       ) : (
-        <div className="rounded-[12px] border border-white/[0.08] bg-white/[0.03] px-4 py-5 text-sm leading-6 text-[var(--text-muted)]">Live market data is not available for this item right now.</div>
+        <div className="rounded-[12px] px-4 py-5 text-sm leading-6" style={{ border: '0.5px solid var(--border-primary)', background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)' }}>Live market data is not available for this item right now.</div>
       )}
     </button>
   );
@@ -168,17 +170,20 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
     : indices.filter((index) => MARKET_FILTER_SYMBOLS[selectedFilter].includes(index.ticker));
 
   return (
-    <div className="flex flex-1 flex-col bg-[var(--bg-app)]">
-      <div className="flex h-11 items-center gap-1 border-b border-white/[0.06] bg-[var(--bg-sidebar)] px-6">
+    <div className="flex flex-1 flex-col" style={{ background: 'var(--bg-app)' }}>
+      <div className="flex h-11 items-center gap-1 px-6" style={{ background: 'var(--bg-sidebar)', borderBottom: '0.5px solid var(--border-subtle)' }}>
         {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
           <button
             key={filter}
             onClick={() => setSelectedFilter(filter)}
             className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
               selectedFilter === filter
-                ? 'bg-[var(--accent-teal-bg)] text-[var(--accent-teal)]'
-                : 'text-[var(--text-subtle)] hover:text-[var(--text-muted)]'
+                ? ''
+                : ''
             }`}
+            style={selectedFilter === filter
+              ? { background: 'var(--accent-teal-bg)', color: 'var(--accent-teal)' }
+              : { color: 'var(--text-subtle)' }}
           >
             {filter}
           </button>
@@ -186,14 +191,14 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
       </div>
 
       <div className="flex-1 overflow-y-auto px-7 py-6">
-        <button onClick={onBack} className="mb-4 flex items-center gap-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]">
+        <button onClick={onBack} className="mb-4 flex items-center gap-2 text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Dashboard</span>
         </button>
 
         <div className="mb-5">
-          <div className="text-[18px] font-semibold text-[var(--text-primary)]">Market Snapshot</div>
-          <div className="mt-1 text-[12px] text-[var(--text-faint)]">
+          <div className="text-[18px] font-semibold" style={{ color: 'var(--text-primary)' }}>Market Snapshot</div>
+          <div className="mt-1 text-[12px]" style={{ color: 'var(--text-faint)' }}>
             {marketDataStatus?.lastUpdatedAt
               ? `Stored snapshot · Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB', {
                 day: '2-digit',
@@ -206,17 +211,17 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
           </div>
         </div>
 
-        {error && <div className="mb-5 rounded-[14px] border border-white/[0.08] bg-[var(--bg-card)] p-4 text-sm text-[var(--text-muted)]">{error}</div>}
+        {error && <div className="mb-5 rounded-[14px] p-4 text-sm" style={{ border: '0.5px solid var(--border-primary)', background: 'var(--bg-card)', color: 'var(--text-muted)' }}>{error}</div>}
         {!error && marketDataStatus?.isCachedFallback && (
-          <div className="mb-5 rounded-[14px] border border-white/[0.08] bg-[var(--bg-card)] px-5 py-4 text-sm text-[var(--text-muted)]">
+          <div className="mb-5 rounded-[14px] px-5 py-4 text-sm" style={{ border: '0.5px solid var(--border-primary)', background: 'var(--bg-card)', color: 'var(--text-muted)' }}>
             {marketDataStatus.message || 'Showing most recent available data.'}
             {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </div>
         )}
         {loading && indices.length === 0 ? (
-          <div className="rounded-[14px] border border-white/[0.08] bg-[var(--bg-card)] p-6 text-sm text-[var(--text-muted)]">Loading stored market snapshots...</div>
+          <div className="rounded-[14px] p-6 text-sm" style={{ border: '0.5px solid var(--border-primary)', background: 'var(--bg-card)', color: 'var(--text-muted)' }}>Loading stored market snapshots...</div>
         ) : filteredIndices.length === 0 ? (
-          <div className="rounded-[14px] border border-white/[0.08] bg-[var(--bg-card)] p-6 text-sm text-[var(--text-muted)]">No stored market snapshots are available for this filter yet.</div>
+          <div className="rounded-[14px] p-6 text-sm" style={{ border: '0.5px solid var(--border-primary)', background: 'var(--bg-card)', color: 'var(--text-muted)' }}>No stored market snapshots are available for this filter yet.</div>
         ) : (
           <div className="grid grid-cols-3 gap-[14px]">
             {filteredIndices.map((index) => (

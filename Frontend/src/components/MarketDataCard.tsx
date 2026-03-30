@@ -137,8 +137,8 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
     <div className="bg-[#161618] border border-white/[0.08] rounded-[14px] p-[18px] hover:border-white/[0.13] transition-colors cursor-pointer">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h4 className="text-[13px] font-semibold text-[var(--text-primary)]">{companyName}</h4>
-          <p className="mt-[2px] text-[11px] text-[var(--text-faint)]">{ticker}</p>
+          <h4 className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{companyName}</h4>
+          <p className="mt-[2px] text-[11px]" style={{ color: 'var(--text-faint)' }}>{ticker}</p>
         </div>
         <button className="text-zinc-500 hover:text-cyan-400 transition-colors duration-150 p-1 -m-1 rounded-lg">
           <Star className="w-4 h-4" />
@@ -148,8 +148,8 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
       <div className="flex items-end justify-between gap-4 mb-5">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-[22px] font-semibold tracking-[-0.5px] text-[var(--text-primary)]">{price !== null ? price.toFixed(2) : '--'}</span>
-            <span className="text-[12px] text-[var(--text-faint)]">USD</span>
+            <span className="text-[22px] font-semibold tracking-[-0.5px]" style={{ color: 'var(--text-primary)' }}>{price !== null ? price.toFixed(2) : '--'}</span>
+            <span className="text-[12px]" style={{ color: 'var(--text-faint)' }}>USD</span>
           </div>
           <div className="mt-2">
             <span className={`inline-flex items-center gap-1 rounded-md px-2 py-[3px] text-[12px] font-medium ${isPositive ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}>
@@ -189,19 +189,22 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
       <div className="grid grid-cols-3 gap-3">
         <button
           onClick={handleBuy}
-          className="rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+          className="rounded-[8px] px-3 py-2.5 text-sm font-medium transition-colors"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}
         >
           Buy
         </button>
         <button
           onClick={handleSell}
-          className="rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+          className="rounded-[8px] px-3 py-2.5 text-sm font-medium transition-colors"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}
         >
           Sell
         </button>
         <button
           onClick={handleWatch}
-          className="flex items-center justify-center gap-1.5 rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+          className="flex items-center justify-center gap-1.5 rounded-[8px] px-3 py-2.5 text-sm font-medium transition-colors"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)' }}
         >
           <Activity className="w-3 h-3" />
           {isWatched ? 'Watching' : 'Watch'}
