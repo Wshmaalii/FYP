@@ -78,44 +78,26 @@ export function MessageInput({
   };
 
   return (
-    <div
-      className="px-6 py-4"
-      style={{
-        borderTop: '0.5px solid var(--border-subtle)',
-        background: 'var(--bg-sidebar)',
-      }}
-    >
+    <div className="border-t border-zinc-800 bg-zinc-950 px-6 py-4">
       <div className="flex items-end gap-3">
+        {/* Attachment Buttons */}
         <div className="flex gap-2 pb-2">
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg transition-all"
-            style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+            className="w-9 h-9 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center transition-colors"
             title="Attach ticker"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--bg-card)';
-            }}
           >
-            <TrendingUp className="h-4 w-4" style={{ color: 'var(--accent-teal)' }} />
+            <TrendingUp className="w-4 h-4 text-cyan-400" />
           </button>
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg transition-all"
-            style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+            className="w-9 h-9 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center transition-colors"
             title="Attach file"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-hover)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--bg-card)';
-            }}
           >
-            <Paperclip className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
+            <Paperclip className="w-4 h-4 text-zinc-400" />
           </button>
         </div>
 
-        <div className="relative flex-1">
+        {/* Input Field */}
+        <div className="flex-1 relative">
           <textarea
             value={message}
             onChange={(e) => {
@@ -124,44 +106,31 @@ export function MessageInput({
             }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full resize-none rounded-lg px-4 py-3 text-[13px] focus:outline-none"
-            style={{
-              background: 'var(--bg-card)',
-              border: '0.5px solid var(--border-primary)',
-              color: 'var(--text-primary)',
-              minHeight: '44px',
-              maxHeight: '120px',
-            }}
+            className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             rows={1}
+            style={{ minHeight: '44px', maxHeight: '120px' }}
           />
         </div>
 
+        {/* Send Button */}
         <button
           onClick={() => void handleSend()}
           disabled={!message.trim() || isSending}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg transition-all disabled:cursor-not-allowed"
-          style={{
-            background: message.trim() ? 'var(--accent-teal)' : 'var(--bg-card)',
-            border: `0.5px solid ${message.trim() ? 'var(--accent-teal-border)' : 'var(--border-primary)'}`,
-          }}
+          className="w-11 h-11 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:bg-zinc-800 disabled:cursor-not-allowed flex items-center justify-center transition-colors flex-shrink-0"
         >
-          <Send
-            className="h-5 w-5"
-            style={{ color: message.trim() ? '#ffffff' : 'var(--text-muted)' }}
-          />
+          <Send className="w-5 h-5 text-white" />
         </button>
       </div>
 
       {sendWarning && (
-        <div className="mt-3 rounded-lg p-3 text-sm" style={{ background: 'rgba(120,53,15,0.35)', border: '0.5px solid rgba(180,83,9,0.55)', color: '#fcd34d' }}>
+        <div className="mt-3 bg-amber-950 border border-amber-900 rounded-lg p-3 text-amber-300 text-sm">
           <p>{sendWarning}</p>
-          <p className="mt-1 text-xs" style={{ color: 'rgba(252,211,77,0.8)' }}>
-            Press send again to post in this public {contextLabel}, or edit the message first.
-          </p>
+          <p className="text-amber-400/80 text-xs mt-1">Press send again to post in this public {contextLabel}, or edit the message first.</p>
         </div>
       )}
 
-      <div className="mt-2 px-1 text-[11px]" style={{ color: 'var(--text-label)' }}>
+      {/* Help Text */}
+      <div className="mt-2 text-xs text-zinc-600 px-1">
         {privacyMode === 'public'
           ? `Public ${contextLabel}: your display name, timestamp, and explicit ticker mentions are visible here. Use $AAPL or #SPY for ticker cards. Press Enter to send, Shift+Enter for new line.`
           : `Private ${contextLabel}: only members can see your message metadata here. Use $AAPL or #SPY for ticker cards. Press Enter to send, Shift+Enter for new line.`}

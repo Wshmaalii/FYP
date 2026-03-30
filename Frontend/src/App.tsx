@@ -320,8 +320,8 @@ export default function App() {
 
   if (authStatus === 'loading') {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0a0a0c] px-6">
-        <div className="rounded-[14px] border border-white/[0.08] bg-[#111113] px-5 py-4 text-sm text-zinc-400">
+      <div className="flex h-screen items-center justify-center bg-zinc-950">
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-sm text-zinc-400 shadow-[0_24px_64px_rgba(0,0,0,0.35)]">
           Checking session...
         </div>
       </div>
@@ -337,45 +337,43 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] px-6 py-6 text-zinc-100">
-      <div className="mx-auto flex h-[calc(100vh-48px)] max-h-[760px] w-full max-w-[1200px] overflow-hidden rounded-[14px] border border-white/[0.08] bg-[#0e0e10] shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-        <Sidebar
-          selectedView={currentView}
-          selectedConversationKey={selectedConversation?.conversation_key || null}
-          mySpaces={sidebarData.my_spaces}
-          directMessages={sidebarData.direct_messages}
-          privateGroups={sidebarData.private_groups}
+    <div className="flex h-screen bg-zinc-950 text-zinc-100">
+      <Sidebar
+        selectedView={currentView}
+        selectedConversationKey={selectedConversation?.conversation_key || null}
+        mySpaces={sidebarData.my_spaces}
+        directMessages={sidebarData.direct_messages}
+        privateGroups={sidebarData.private_groups}
+        onNavigate={setCurrentView}
+        onOpenConversation={(conversationKey) => void openConversation(conversationKey)}
+        onOpenComposer={() => setNewChatOpen(true)}
+        onOpenStock={openStockDetail}
+      />
+      <div className="flex-1 flex flex-col">
+        <TopBar
+          currentView={currentView}
           onNavigate={setCurrentView}
-          onOpenConversation={(conversationKey) => void openConversation(conversationKey)}
-          onOpenComposer={() => setNewChatOpen(true)}
-          onOpenStock={openStockDetail}
+          onLogout={handleLogout}
+          userName={currentProfile?.full_name || currentUser?.name}
+          userHandle={currentProfile?.username}
+          avatarUrl={currentProfile?.avatar_url || undefined}
+          avatarSeed={currentProfile?.avatar_seed}
+          headerTitle={headerTitle}
+          headerSubtitle={headerSubtitle}
+          isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
         />
-        <div className="flex min-w-0 flex-1 flex-col bg-[#0e0e10]">
-          <TopBar
-            currentView={currentView}
-            onNavigate={setCurrentView}
-            onLogout={handleLogout}
-            userName={currentProfile?.full_name || currentUser?.name}
-            userHandle={currentProfile?.username}
-            avatarUrl={currentProfile?.avatar_url || undefined}
-            avatarSeed={currentProfile?.avatar_seed}
-            headerTitle={headerTitle}
-            headerSubtitle={headerSubtitle}
-            isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
-          />
-          {renderView()}
-        </div>
-        <NewChatModal
-          isOpen={newChatOpen}
-          searchResults={searchResults}
-          searching={searchingUsers}
-          onClose={() => setNewChatOpen(false)}
-          onSearch={handleSearchUsers}
-          onStartDm={handleStartDm}
-          onCreateGroup={handleCreateGroup}
-          onCreateSpace={handleCreateSpace}
-        />
+        {renderView()}
       </div>
+      <NewChatModal
+        isOpen={newChatOpen}
+        searchResults={searchResults}
+        searching={searchingUsers}
+        onClose={() => setNewChatOpen(false)}
+        onSearch={handleSearchUsers}
+        onStartDm={handleStartDm}
+        onCreateGroup={handleCreateGroup}
+        onCreateSpace={handleCreateSpace}
+      />
     </div>
   );
 }
