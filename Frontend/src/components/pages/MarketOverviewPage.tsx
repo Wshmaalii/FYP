@@ -56,65 +56,65 @@ function IndexCard({ index, onSelectStock }: { index: MarketOverviewIndex; onSel
     <button
       type="button"
       onClick={() => onSelectStock(index.ticker)}
-      className="w-full rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[#07090d] p-0 text-left transition-colors duration-150 hover:border-[rgba(255,255,255,0.16)] hover:bg-[#0a0d12]"
+      className="tl-market-card"
     >
-      <div className="p-5">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div className="min-w-0 pr-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-[18px] font-medium leading-8 text-[rgba(255,255,255,0.96)]">{index.name}</h3>
-              <span className="rounded-full border border-[rgba(255,255,255,0.16)] bg-[rgba(255,255,255,0.08)] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.04em] text-[rgba(255,255,255,0.6)]">
+      <div className="tl-market-card-body">
+        <div className="tl-market-card-header">
+          <div className="tl-market-card-copy">
+            <div className="tl-market-card-title-row">
+              <h3 className="tl-market-card-title">{index.name}</h3>
+              <span className="tl-market-card-status">
                 {statusLabel}
               </span>
             </div>
-            <p className="mt-3 text-[13px] text-[rgba(255,255,255,0.46)]">{index.ticker}</p>
+            <p className="tl-market-card-ticker">{index.ticker}</p>
             {index.sourceLabel ? (
-              <p className="mt-2 text-[12px] text-[rgba(255,255,255,0.28)]">Source: {index.sourceLabel}</p>
+              <p className="tl-market-card-source">Source: {index.sourceLabel}</p>
             ) : null}
           </div>
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.02)]">
-            <Globe className="h-5 w-5 text-[#00d7ff]" />
+          <div className="tl-market-card-icon">
+            <Globe className="h-5 w-5" />
           </div>
         </div>
 
         {index.available ? (
           <>
-            <div className="rounded-[18px] border border-[rgba(255,255,255,0.09)] bg-[#06080c] px-5 py-5">
-              <div className="flex items-baseline gap-3">
-                <span className="text-[22px] font-medium tracking-tight text-[rgba(255,255,255,0.96)]">{index.price?.toFixed(2)}</span>
-                <span className="text-[12px] text-[rgba(255,255,255,0.36)]">USD</span>
+            <div className="tl-market-card-price-panel">
+              <div className="tl-market-card-price-row">
+                <span className="tl-market-card-price">{index.price?.toFixed(2)}</span>
+                <span className="tl-market-card-currency">USD</span>
               </div>
-              <div className={`mt-4 flex items-center gap-1.5 text-[14px] ${isPositive ? 'text-[#14e0ae]' : 'text-[#ff6a6a]'}`}>
+              <div className={`tl-market-card-change ${isPositive ? 'is-positive' : 'is-negative'}`}>
                 {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                 <span>{isPositive ? '+' : ''}{(index.change ?? 0).toFixed(2)}({isPositive ? '+' : ''}{(index.changePercent ?? 0).toFixed(2)}%)</span>
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-6">
+            <div className="tl-market-card-stats">
               <div>
-                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">OPEN</p>
-                <p className="mt-2 text-[18px] text-[rgba(255,255,255,0.92)]">{index.open !== null ? index.open.toFixed(2) : '--'}</p>
+                <p className="tl-market-card-stat-label">OPEN</p>
+                <p className="tl-market-card-stat-value">{index.open !== null ? index.open.toFixed(2) : '--'}</p>
               </div>
               <div>
-                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">VOLUME</p>
-                <p className="mt-2 text-[18px] text-[rgba(255,255,255,0.92)]">{formatVolume(index.volume)}</p>
+                <p className="tl-market-card-stat-label">VOLUME</p>
+                <p className="tl-market-card-stat-value">{formatVolume(index.volume)}</p>
               </div>
               <div>
-                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">HIGH</p>
-                <p className="mt-2 text-[18px] text-[#14e0ae]">{index.high !== null ? index.high.toFixed(2) : '--'}</p>
+                <p className="tl-market-card-stat-label">HIGH</p>
+                <p className="tl-market-card-stat-value is-positive">{index.high !== null ? index.high.toFixed(2) : '--'}</p>
               </div>
               <div>
-                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">LOW</p>
-                <p className="mt-2 text-[18px] text-[#ff6a6a]">{index.low !== null ? index.low.toFixed(2) : '--'}</p>
+                <p className="tl-market-card-stat-label">LOW</p>
+                <p className="tl-market-card-stat-value is-negative">{index.low !== null ? index.low.toFixed(2) : '--'}</p>
               </div>
             </div>
 
             {index.history.length === 0 ? (
-              <p className="mt-5 text-[12px] text-[rgba(255,255,255,0.34)]">Chart history is not available for this snapshot yet.</p>
+              <p className="tl-market-card-note">Chart history is not available for this snapshot yet.</p>
             ) : null}
           </>
         ) : (
-          <div className="rounded-[18px] border border-[rgba(255,255,255,0.09)] bg-[#06080c] px-5 py-5 text-[14px] leading-6 text-[rgba(255,255,255,0.4)]">
+          <div className="tl-market-card-price-panel tl-market-card-unavailable">
             Live market data unavailable for this snapshot.
           </div>
         )}
@@ -183,42 +183,38 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
   const openMarkets = indices.filter((index) => index.available).length;
   const closedMarkets = indices.filter((index) => !index.available).length;
   return (
-    <div className="flex-1 overflow-y-auto bg-[#07090d]">
-      <div className="px-6 py-5 xl:px-8">
+    <div className="tl-market-page">
+      <div className="tl-market-shell">
         <button
           onClick={onBack}
-          className="mb-6 flex items-center gap-2 text-[12px] text-[rgba(255,255,255,0.58)] transition-colors hover:text-white"
+          className="tl-market-back"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Dashboard</span>
         </button>
 
-        <div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="max-w-3xl">
-            <h1 className="text-[20px] font-medium text-[rgba(255,255,255,0.96)]">Market Overview</h1>
-            <p className="mt-3 text-[13px] leading-7 text-[rgba(255,255,255,0.44)]">Snapshot-based market data for tracked stocks</p>
-            <div className="mt-2 flex flex-wrap items-center gap-5 text-[13px] text-[rgba(255,255,255,0.58)]">
-              <span className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-[#14e0ae]" />
+        <div className="tl-market-header">
+          <div className="tl-market-header-copy">
+            <h1 className="tl-market-title">Market Overview</h1>
+            <p className="tl-market-subtitle">Snapshot-based market data for tracked stocks</p>
+            <div className="tl-market-status-row">
+              <span className="tl-market-status-item">
+                <div className="tl-market-status-dot is-available" />
                 {openMarkets} Available
               </span>
-              <span className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-[rgba(255,255,255,0.28)]" />
+              <span className="tl-market-status-item">
+                <div className="tl-market-status-dot is-unavailable" />
                 {closedMarkets} Unavailable
               </span>
             </div>
           </div>
 
-          <div className="inline-flex flex-wrap items-center gap-1 rounded-full border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)] p-1">
+          <div className="tl-market-filters">
             {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setSelectedFilter(filter)}
-                className={`rounded-full px-5 py-2 text-[13px] transition-colors ${
-                  selectedFilter === filter
-                    ? 'bg-[#1192b7] text-white'
-                    : 'text-[rgba(255,255,255,0.52)] hover:bg-[rgba(255,255,255,0.05)] hover:text-white'
-                }`}
+                className={`tl-market-filter ${selectedFilter === filter ? 'is-active' : ''}`}
               >
                 {filter}
               </button>
@@ -226,32 +222,32 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
           </div>
         </div>
 
-        <div className="space-y-6">
-          {error && <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] p-5 text-[14px] text-[rgba(255,255,255,0.5)]">{error}</div>}
+        <div className="tl-market-content">
+          {error && <div className="tl-market-panel tl-market-panel-text">{error}</div>}
           {!error && marketDataStatus?.isCachedFallback && (
-            <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] px-5 py-4">
-              <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)]">Market Snapshot</div>
-              <div className="mt-2 text-[13px] text-[rgba(255,255,255,0.44)]">
+            <div className="tl-market-panel">
+              <div className="tl-market-panel-title">Market Snapshot</div>
+              <div className="tl-market-panel-text">
                 {marketDataStatus.message || 'Showing most recent available data.'}
                 {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
               </div>
             </div>
           )}
           {!error && !marketDataStatus?.isCachedFallback && indices.length > 0 && (
-            <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] px-5 py-4">
-              <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)]">Market Snapshot</div>
-              <div className="mt-2 text-[13px] text-[rgba(255,255,255,0.44)]">Showing most recent available data for selected tracked stocks.</div>
+            <div className="tl-market-panel">
+              <div className="tl-market-panel-title">Market Snapshot</div>
+              <div className="tl-market-panel-text">Showing most recent available data for selected tracked stocks.</div>
             </div>
           )}
 
           <div>
-            <h2 className="mb-4 text-[18px] font-medium text-[rgba(255,255,255,0.96)]">Curated Market Snapshot</h2>
+            <h2 className="tl-market-section-title">Curated Market Snapshot</h2>
             {loading && indices.length === 0 ? (
-              <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] p-5 text-[14px] text-[rgba(255,255,255,0.4)]">Loading stored market snapshots...</div>
+              <div className="tl-market-panel tl-market-panel-text">Loading stored market snapshots...</div>
             ) : filteredIndices.length === 0 ? (
-              <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] p-5 text-[14px] text-[rgba(255,255,255,0.4)]">No stored market snapshots are available for this filter yet.</div>
+              <div className="tl-market-panel tl-market-panel-text">No stored market snapshots are available for this filter yet.</div>
             ) : (
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
+              <div className="tl-market-grid">
                 {filteredIndices.map((index) => (
                   <IndexCard key={index.ticker} index={index} onSelectStock={onSelectStock} />
                 ))}
