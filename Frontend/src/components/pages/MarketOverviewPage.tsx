@@ -55,68 +55,90 @@ function IndexCard({ index, onSelectStock }: { index: MarketOverviewIndex; onSel
     <button
       type="button"
       onClick={() => onSelectStock(index.ticker)}
-      className="w-full rounded-[18px] border border-zinc-800/80 bg-[#111518] p-3.5 text-left transition-colors duration-150 hover:border-zinc-700 hover:bg-[#14181b]"
+      className="w-full rounded-xl border border-white/8 bg-[#16181d] p-4 text-left shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 hover:border-white/14 hover:bg-[#191c22]"
     >
-      <div className="mb-3.5 flex items-start justify-between gap-3">
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <h3 className="text-[15px] font-medium tracking-tight text-zinc-100">{index.name}</h3>
-            <span className={`rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] ${
-              index.status === 'Open'
-                ? 'border-emerald-800 bg-emerald-950/60 text-emerald-400'
-                : index.status === 'Unavailable'
-                  ? 'border-zinc-700 bg-zinc-900 text-zinc-500'
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-400'
-            }`}>
-              {index.status}
-            </span>
-          </div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">{index.ticker}</p>
-          {index.sourceLabel && <p className="mt-1.5 text-[10px] leading-4.5 text-zinc-600">Source: {index.sourceLabel}</p>}
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-[13px] font-medium text-zinc-100">{index.name}</h3>
+          <p className="mt-1 text-[11px] text-zinc-500">{index.ticker}</p>
         </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-zinc-700 bg-zinc-950/80">
-          <Globe className="h-3.5 w-3.5 text-[#8fb7b2]" />
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] ${
+            index.status === 'Unavailable'
+              ? 'border-white/10 bg-white/[0.03] text-zinc-500'
+              : 'border-[#1e564d] bg-[rgba(0,196,160,0.10)] text-[#8ed7c7]'
+          }`}>
+            {index.status === 'Unavailable' ? 'Unavailable' : 'Tracked'}
+          </span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/6 bg-[#121419]">
+            <Globe className="h-3.5 w-3.5 text-zinc-500" />
+          </div>
         </div>
       </div>
 
       {index.available ? (
         <>
-          <div className="mb-3 rounded-[14px] border border-zinc-800/80 bg-zinc-950/70 px-3.5 py-3">
-            <div className="mb-1.5 flex items-baseline gap-2">
-              <span className="text-[24px] font-semibold tracking-tight text-white">{index.price?.toFixed(2)}</span>
-              <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">USD</span>
-            </div>
-            <div className={`flex items-center gap-1.5 text-[12px] ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-              <span className="font-medium">{isPositive ? '+' : ''}{(index.change ?? 0).toFixed(2)}</span>
-              <span>({isPositive ? '+' : ''}{(index.changePercent ?? 0).toFixed(2)}%)</span>
-            </div>
+          <div className="mb-3 flex items-baseline gap-2">
+            <span className="text-[22px] font-semibold tracking-tight text-zinc-50">{index.price?.toFixed(2)}</span>
+            <span className="text-[11px] text-zinc-500">USD</span>
+          </div>
+          <div className={`mb-4 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium ${
+            isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+          }`}>
+            {isPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            <span>{isPositive ? '+' : ''}{(index.change ?? 0).toFixed(2)} ({isPositive ? '+' : ''}{(index.changePercent ?? 0).toFixed(2)}%)</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 text-sm">
-            <div className="rounded-[14px] border border-zinc-800/70 bg-zinc-950/55 px-3 py-2.5">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-500">Open</p>
-              <p className="mt-1.5 text-[12px] font-medium text-zinc-100">{index.open !== null ? index.open.toFixed(2) : '--'}</p>
+          <div className="mb-3 border-t border-white/6" />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Open</p>
+              <p className="mt-1 text-[12px] text-zinc-300">{index.open !== null ? index.open.toFixed(2) : '--'}</p>
             </div>
-            <div className="rounded-[14px] border border-zinc-800/70 bg-zinc-950/55 px-3 py-2.5">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-500">Volume</p>
-              <p className="mt-1.5 text-[12px] font-medium text-zinc-100">{formatVolume(index.volume)}</p>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Volume</p>
+              <p className="mt-1 text-[12px] text-zinc-300">{formatVolume(index.volume)}</p>
             </div>
-            <div className="rounded-[14px] border border-zinc-800/70 bg-zinc-950/55 px-3 py-2.5">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-500">High</p>
-              <p className="mt-1.5 text-[12px] font-medium text-emerald-400">{index.high !== null ? index.high.toFixed(2) : '--'}</p>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">High</p>
+              <p className="mt-1 text-[12px] text-zinc-300">{index.high !== null ? index.high.toFixed(2) : '--'}</p>
             </div>
-            <div className="rounded-[14px] border border-zinc-800/70 bg-zinc-950/55 px-3 py-2.5">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-500">Low</p>
-              <p className="mt-1.5 text-[12px] font-medium text-red-400">{index.low !== null ? index.low.toFixed(2) : '--'}</p>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Low</p>
+              <p className="mt-1 text-[12px] text-zinc-300">{index.low !== null ? index.low.toFixed(2) : '--'}</p>
             </div>
           </div>
-          {index.history.length === 0 && (
-            <p className="mt-3 text-[10px] leading-4.5 text-zinc-500">Chart history is not available for this snapshot yet.</p>
-          )}
         </>
       ) : (
-        <div className="rounded-[14px] border border-zinc-800 bg-zinc-950/60 px-3.5 py-4 text-[12px] leading-5 text-zinc-500">Live market data is not available for this item in the prototype right now.</div>
+        <>
+          <div className="mb-3 flex items-baseline gap-2">
+            <span className="text-[22px] font-semibold tracking-tight text-zinc-50">--</span>
+            <span className="text-[11px] text-zinc-500">USD</span>
+          </div>
+          <div className="mb-4 inline-flex rounded-md bg-white/[0.04] px-2 py-1 text-[12px] text-zinc-500">
+            Live market data unavailable
+          </div>
+          <div className="mb-3 border-t border-white/6" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Open</p>
+              <p className="mt-1 text-[12px] text-zinc-300">--</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Volume</p>
+              <p className="mt-1 text-[12px] text-zinc-300">--</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">High</p>
+              <p className="mt-1 text-[12px] text-zinc-300">--</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Low</p>
+              <p className="mt-1 text-[12px] text-zinc-300">--</p>
+            </div>
+          </div>
+        </>
       )}
     </button>
   );
@@ -185,7 +207,7 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#0b0f10]">
-      <div className="mx-auto max-w-[1120px] px-4 py-5 lg:px-6 lg:py-6">
+      <div className="mx-auto max-w-[1100px] px-5 py-5 lg:px-6 lg:py-6">
         <button
           onClick={onBack}
           className="mb-4 flex items-center gap-2 text-[12px] text-zinc-400 transition-colors hover:text-zinc-100"
@@ -194,98 +216,69 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
           <span>Back to Dashboard</span>
         </button>
 
-        <div className="rounded-[20px] border border-zinc-800/80 bg-[#101417] px-4 py-4 lg:px-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-[9px] uppercase tracking-[0.28em] text-zinc-500">Market Snapshot</p>
-              <h1 className="mt-1.5 text-[24px] font-semibold tracking-tight text-white">Market Overview</h1>
-              <p className="mt-1.5 text-[12px] leading-5 text-zinc-400">Snapshot-based market data for tracked stocks.</p>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-[12px] text-zinc-400">
-                <span className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-emerald-400" />
-                  {openMarkets} Available
-                </span>
-                <span className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-zinc-600" />
-                  {closedMarkets} Unavailable
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 rounded-[16px] border border-zinc-800 bg-zinc-950/85 p-1">
-              {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setSelectedFilter(filter)}
-                  className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                    selectedFilter === filter
-                      ? 'bg-[#131f1f] text-[#d4ece8]'
-                      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
+        <div className="mb-5">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Market Snapshot</p>
+          <h1 className="mt-1 text-[24px] font-semibold tracking-tight text-white">Market Overview</h1>
+          <p className="mt-1.5 text-[12px] leading-5 text-zinc-400">Snapshot-based market data for tracked stocks.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px] text-zinc-400">
+            <span className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-400" />
+              {openMarkets} Available
+            </span>
+            <span className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-zinc-600" />
+              {closedMarkets} Unavailable
+            </span>
           </div>
         </div>
 
-        <div className="space-y-5 py-5">
-          {error && <div className="rounded-[16px] border border-zinc-800 bg-[#111518] p-3.5 text-[12px] text-zinc-400">{error}</div>}
+        <div className="mb-5 flex flex-wrap gap-2">
+          {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setSelectedFilter(filter)}
+              className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                selectedFilter === filter
+                  ? 'bg-[rgba(0,196,160,0.14)] text-[#8ed7c7]'
+                  : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-5">
+          {error && <div className="rounded-xl border border-white/8 bg-[#16181d] p-4 text-[12px] text-zinc-400">{error}</div>}
           {!error && marketDataStatus?.isCachedFallback && (
-            <div className="rounded-[16px] border border-zinc-800 bg-[#111518] px-4 py-3 text-[12px] text-zinc-400">
-              {marketDataStatus.message || 'Showing most recent available data.'}
-              {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+            <div className="rounded-xl border border-white/8 bg-[#16181d] px-4 py-3">
+              <div className="text-[13px] font-medium text-zinc-100">Market Snapshot</div>
+              <div className="mt-1 text-[12px] text-zinc-500">
+                {marketDataStatus.message || 'Showing most recent available data.'}
+                {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+              </div>
             </div>
           )}
           {!error && !marketDataStatus?.isCachedFallback && indices.length > 0 && (
-            <div className="rounded-[16px] border border-zinc-800 bg-[#111518] px-4 py-3 text-[12px] text-zinc-400">
-              Showing most recent available data for selected tracked stocks.
+            <div className="rounded-xl border border-white/8 bg-[#16181d] px-4 py-3">
+              <div className="text-[13px] font-medium text-zinc-100">Market Snapshot</div>
+              <div className="mt-1 text-[12px] text-zinc-500">Showing most recent available data for selected tracked stocks.</div>
             </div>
           )}
 
           <div>
-            <h2 className="mb-3 text-[16px] font-semibold tracking-tight text-zinc-100">Curated Market Snapshot</h2>
+            <h2 className="mb-4 text-[16px] font-semibold text-zinc-100">Curated Market Snapshot</h2>
             {loading && indices.length === 0 ? (
-              <div className="rounded-[16px] border border-zinc-800 bg-[#111518] p-5 text-[12px] text-zinc-500">Loading stored market snapshots...</div>
+              <div className="rounded-xl border border-white/8 bg-[#16181d] p-5 text-[12px] text-zinc-500">Loading stored market snapshots...</div>
             ) : filteredIndices.length === 0 ? (
-              <div className="rounded-[16px] border border-zinc-800 bg-[#111518] p-5 text-[12px] text-zinc-500">No stored market snapshots are available for this filter yet.</div>
+              <div className="rounded-xl border border-white/8 bg-[#16181d] p-5 text-[12px] text-zinc-500">No stored market snapshots are available for this filter yet.</div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {filteredIndices.map((index) => (
                   <IndexCard key={index.ticker} index={index} onSelectStock={onSelectStock} />
                 ))}
               </div>
             )}
-          </div>
-
-          <div>
-            <h2 className="mb-3 text-[16px] font-semibold tracking-tight text-zinc-100">Snapshot Notes</h2>
-            <div className="rounded-[16px] border border-zinc-800 bg-[#111518] p-5">
-              <div className="text-zinc-500 text-[12px]">Market data is stored and refreshed manually for selected tracked stocks. Prices remain visible until a newer snapshot replaces them.</div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="mb-3 text-[16px] font-semibold tracking-tight text-zinc-100">Market Summary</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-[16px] border border-zinc-800 bg-[#111518] px-4 py-4">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">Markets Advancing</p>
-                <p className="mt-2 text-[28px] font-semibold tracking-tight text-emerald-400">{availableIndices.filter((index) => (index.change ?? 0) > 0).length}</p>
-              </div>
-              <div className="rounded-[16px] border border-zinc-800 bg-[#111518] px-4 py-4">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">Markets Declining</p>
-                <p className="mt-2 text-[28px] font-semibold tracking-tight text-red-400">{availableIndices.filter((index) => (index.change ?? 0) < 0).length}</p>
-              </div>
-              <div className="rounded-[16px] border border-zinc-800 bg-[#111518] px-4 py-4">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">Stored Snapshots</p>
-                <p className="mt-2 text-[28px] font-semibold tracking-tight text-[#8fb7b2]">{availableIndices.length}</p>
-              </div>
-              <div className="rounded-[16px] border border-zinc-800 bg-[#111518] px-4 py-4">
-                <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">Unavailable</p>
-                <p className="mt-2 text-[28px] font-semibold tracking-tight text-zinc-300">{indices.filter((index) => !index.available).length}</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
