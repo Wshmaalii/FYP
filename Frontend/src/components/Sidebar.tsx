@@ -24,11 +24,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <div className="px-4 py-1.5">
+    <div className="px-4 pt-[14px] pb-2">
       <div className="px-2 pb-1.5">
-        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-zinc-600">{title}</h3>
+        <h3 className="text-[10px] font-semibold uppercase tracking-[1.2px] text-[rgba(255,255,255,0.28)]">{title}</h3>
       </div>
-      <div className="space-y-1.5 rounded-[24px] bg-zinc-900/25 p-1.5">
+      <div className="space-y-0.5">
         {children}
       </div>
     </div>
@@ -50,14 +50,14 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-2xl border px-4 py-2.5 text-left transition-all duration-200 ease-out ${
+      className={`w-full rounded-[7px] border px-2 py-[7px] text-left transition-all duration-150 ${
         selected
-          ? 'border-cyan-500/40 bg-[linear-gradient(180deg,rgba(8,145,178,0.26),rgba(14,116,144,0.22))] text-white shadow-[0_12px_26px_rgba(8,145,178,0.14)]'
-          : 'rounded-[8px] border-transparent bg-zinc-900/40 text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 active:translate-y-px'
+          ? 'border-transparent bg-white/[0.07] text-[rgba(255,255,255,0.9)]'
+          : 'border-transparent text-[rgba(255,255,255,0.5)] hover:bg-white/[0.05] hover:text-[rgba(255,255,255,0.75)]'
       }`}
     >
-      <div className="text-sm font-medium leading-5">{label}</div>
-      {meta ? <div className={`mt-1 text-xs leading-4 ${selected ? 'text-cyan-100/90' : 'text-zinc-600'}`}>{meta}</div> : null}
+      <div className="text-[13px] font-medium leading-5">{label}</div>
+      {meta ? <div className={`mt-px text-[12px] leading-4 ${selected ? 'text-[rgba(255,255,255,0.45)]' : 'text-[rgba(255,255,255,0.35)]'}`}>{meta}</div> : null}
     </button>
   );
 }
@@ -74,48 +74,60 @@ export function Sidebar({
   onOpenStock,
 }: SidebarProps) {
   return (
-    <div className="flex w-80 flex-col border-r border-zinc-800 bg-[linear-gradient(180deg,#090b10_0%,#0d1016_100%)] text-zinc-100 shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)]">
-      <div className="px-4 pt-3.5">
-        <div className="rounded-[26px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,28,37,0.96),rgba(16,19,26,0.98))] px-4.5 py-4.5 shadow-[0_16px_34px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-cyan-300/80">TradeLink</p>
-          <h2 className="mt-2 text-[17px] font-semibold tracking-tight text-white">Messaging for trader communities</h2>
-          <p className="mt-1.5 max-w-[228px] text-xs leading-5 text-zinc-500">Private groups, public spaces, and market context in one calm workspace.</p>
+    <div className="flex w-60 min-w-60 flex-col bg-[#111113] text-zinc-100">
+      <div className="border-b border-white/[0.06] px-4 pb-3 pt-[18px]">
+        <div className="mb-[14px] flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#00c4a0] text-[11px] font-bold text-white">
+            TL
+          </div>
+          <span className="text-[13px] font-semibold tracking-[0.5px] text-[rgba(255,255,255,0.9)]">TradeLink</span>
         </div>
-      </div>
-
-      <div className="px-4 pb-2.5 pt-3.5">
         <button
           type="button"
           onClick={onOpenComposer}
-          className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-cyan-600 px-4 py-3 text-white shadow-[0_14px_30px_rgba(8,145,178,0.16)] transition-all duration-200 ease-out hover:bg-cyan-500 active:translate-y-px"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[rgba(0,196,160,0.3)] bg-[rgba(0,196,160,0.12)] px-3 py-2 text-[12px] font-medium text-[#00c4a0] transition-colors hover:bg-[rgba(0,196,160,0.18)]"
         >
-          <MessageSquarePlus className="w-4 h-4" />
-          <span className="text-sm font-medium">New Chat</span>
+          <MessageSquarePlus className="h-3.5 w-3.5" />
+          <span>New Chat</span>
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pt-1">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <Section title="Discover">
           <ConversationButton
             label="Explore Spaces"
-            meta="Browse public communities"
             selected={selectedView === 'Explore Spaces'}
+            onClick={() => onNavigate('Explore Spaces')}
+          />
+          <ConversationButton
+            label="Browse Communities"
+            selected={false}
             onClick={() => onNavigate('Explore Spaces')}
           />
         </Section>
 
         <Section title="My Spaces">
           {mySpaces.length === 0 ? (
-            <p className="px-4 py-3 text-xs leading-5 text-zinc-600">Create or join a space to get started.</p>
+            <p className="px-2 py-1.5 text-[13px] text-[rgba(255,255,255,0.35)]">Create or join a space to get started.</p>
           ) : (
-            mySpaces.map((space) => (
-              <ConversationButton
+            mySpaces.map((space, index) => (
+              <button
                 key={space.conversation_key}
-                label={space.name}
-                meta={space.channels.map((channel) => `#${channel.slug}`).join(' • ')}
-                selected={selectedConversationKey === space.conversation_key}
+                type="button"
                 onClick={() => onOpenConversation(space.conversation_key)}
-              />
+                className="flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left transition-all hover:bg-white/[0.05]"
+                style={{
+                  background: selectedConversationKey === space.conversation_key ? 'rgba(255,255,255,0.07)' : 'transparent',
+                }}
+              >
+                <span
+                  className="h-2 w-2 flex-shrink-0 rounded-full"
+                  style={{ background: ['#4f6ef7', '#f59e0b', '#2dd4aa'][index % 3] }}
+                />
+                <span className={`text-[13px] ${selectedConversationKey === space.conversation_key ? 'text-[rgba(255,255,255,0.9)]' : 'text-[rgba(255,255,255,0.35)]'}`}>
+                  {space.name}
+                </span>
+              </button>
             ))
           )}
         </Section>
