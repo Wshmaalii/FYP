@@ -53,101 +53,102 @@ export function TopBar({
     .toUpperCase();
 
   return (
-    <div className="flex h-14 items-center justify-between border-b border-zinc-800/80 bg-[#0d1012] px-4 lg:px-5">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-zinc-700/80 bg-[#12171a] text-[10px] font-semibold tracking-[0.2em] text-[#94bcb6]">
-          <span>TL</span>
+    <div className="flex h-20 items-center justify-between border-b border-zinc-800 bg-[linear-gradient(180deg,rgba(24,27,34,0.96),rgba(18,21,28,0.98))] px-6 shadow-[inset_0_-1px_0_rgba(255,255,255,0.02)]">
+      <div className="flex items-center gap-4">
+        <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-zinc-700 bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(37,99,235,0.18))] shadow-[0_10px_24px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <span className="text-sm font-semibold tracking-[0.18em] text-white">TL</span>
         </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h1 className="truncate text-[14px] font-semibold tracking-tight text-zinc-50">{displayTitle}</h1>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-lg font-semibold tracking-tight text-zinc-50">{displayTitle}</h1>
             {isPrivateConversation && (
-              <Lock className="h-3 w-3 text-[#8fb7b2]" />
+              <Lock className="w-4 h-4 text-cyan-400" />
             )}
           </div>
-          {displaySubtitle && <p className="mt-0.5 truncate text-[9px] uppercase tracking-[0.22em] text-zinc-500">{displaySubtitle}</p>}
+          {displaySubtitle && <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-zinc-500">{displaySubtitle}</p>}
         </div>
       </div>
 
+      {/* Profile Menu */}
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowProfileMenu(!showProfileMenu)}
-          className="flex items-center gap-2.5 rounded-full border border-zinc-700/80 bg-zinc-950/70 px-2 py-1 transition-colors duration-150 hover:border-zinc-600 hover:bg-zinc-900"
+          className="flex items-center gap-3 rounded-full border border-zinc-700/80 bg-zinc-950/70 px-3 py-2 transition-all duration-150 hover:border-zinc-600 hover:bg-zinc-800"
         >
           <div className="flex items-center gap-2">
-            <span className="max-w-[112px] truncate text-[12px] text-zinc-300">{displayName}</span>
-            <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-zinc-700 bg-[#162222] text-[#d4ece8]">
+            <span className="text-sm text-zinc-300">{displayName}</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_10px_24px_rgba(8,145,178,0.18)]">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" />
               ) : (
-                <span className="text-xs font-medium">{initials}</span>
+                <span className="text-white text-sm">{initials}</span>
               )}
             </div>
           </div>
         </button>
 
         {showProfileMenu && (
-          <div className="absolute right-0 z-50 mt-2 w-[17rem] overflow-hidden rounded-[18px] border border-zinc-800 bg-[#111518] shadow-[0_16px_44px_rgba(0,0,0,0.36)]">
-            <div className="border-b border-zinc-800 bg-zinc-950/70 p-3.5">
+          <div className="absolute right-0 z-50 mt-3 w-72 overflow-hidden rounded-[28px] border border-zinc-800 bg-[linear-gradient(180deg,rgba(24,27,36,0.98),rgba(15,18,24,0.98))] shadow-[0_28px_80px_rgba(0,0,0,0.45)]">
+            <div className="border-b border-zinc-800 bg-zinc-950/90 p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-700 bg-[#162222] text-[#d4ece8]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_12px_30px_rgba(8,145,178,0.18)]">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" />
                   ) : (
-                    <span className="text-sm font-medium">{initials}</span>
+                    <span className="text-white">{initials}</span>
                   )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-[13px] font-medium text-zinc-100">{displayName}</h3>
-                    <Shield className="w-3.5 h-3.5 text-[#8fb7b2]" />
+                    <h3 className="text-sm font-medium text-zinc-100">{displayName}</h3>
+                    <Shield className="w-4 h-4 text-cyan-400" />
                   </div>
-                  <p className="text-[12px] text-zinc-500">@{userHandle || displayName.toLowerCase().replace(/\s+/g, '')}</p>
+                  <p className="text-zinc-500 text-sm">@{userHandle || displayName.toLowerCase().replace(/\s+/g, '')}</p>
                 </div>
               </div>
             </div>
 
-            <div className="py-1.5">
+            <div className="py-2">
               <button
                 onClick={() => {
                   onNavigate('My Profile');
                   setShowProfileMenu(false);
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-zinc-300 transition-colors hover:bg-zinc-800/80"
+                className="w-full flex items-center gap-3 px-5 py-3 text-zinc-300 transition-colors hover:bg-zinc-800"
               >
                 <User className="w-4 h-4" />
-                <span className="text-[12px]">My Profile</span>
+                <span className="text-sm">My Profile</span>
               </button>
               <button
                 onClick={() => {
                   onNavigate('Account Settings');
                   setShowProfileMenu(false);
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-zinc-300 transition-colors hover:bg-zinc-800/80"
+                className="w-full flex items-center gap-3 px-5 py-3 text-zinc-300 transition-colors hover:bg-zinc-800"
               >
                 <Settings className="w-4 h-4" />
-                <span className="text-[12px]">Account Settings</span>
+                <span className="text-sm">Account Settings</span>
               </button>
-              <button className="flex w-full items-center gap-3 px-4 py-2.5 text-zinc-300 transition-colors hover:bg-zinc-800/80">
+              <button className="w-full flex items-center gap-3 px-5 py-3 text-zinc-300 transition-colors hover:bg-zinc-800">
                 <Bell className="w-4 h-4" />
-                <span className="text-[12px]">Notifications</span>
+                <span className="text-sm">Notifications</span>
               </button>
-              <button className="flex w-full items-center gap-3 px-4 py-2.5 text-zinc-300 transition-colors hover:bg-zinc-800/80">
+              <button className="w-full flex items-center gap-3 px-5 py-3 text-zinc-300 transition-colors hover:bg-zinc-800">
                 <Shield className="w-4 h-4" />
-                <span className="text-[12px]">Verification Status</span>
+                <span className="text-sm">Verification Status</span>
               </button>
             </div>
 
-            <div className="border-t border-zinc-800 py-1.5">
+            <div className="border-t border-zinc-800 py-2">
               <button
                 onClick={() => {
                   setShowProfileMenu(false);
                   void onLogout();
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-red-400 transition-colors hover:bg-zinc-800/80"
+                className="w-full flex items-center gap-3 px-5 py-3 text-red-400 transition-colors hover:bg-zinc-800"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-[12px]">Log Out</span>
+                <span className="text-sm">Log Out</span>
               </button>
             </div>
           </div>

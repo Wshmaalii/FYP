@@ -50,96 +50,75 @@ function formatVolume(volume: number | null) {
 
 function IndexCard({ index, onSelectStock }: { index: MarketOverviewIndex; onSelectStock: (ticker: string) => void }) {
   const isPositive = (index.change ?? 0) >= 0;
+  const statusLabel = index.available ? 'TRACKED' : 'UNAVAILABLE';
 
   return (
     <button
       type="button"
       onClick={() => onSelectStock(index.ticker)}
-      className="w-full rounded-xl border border-white/8 bg-[#16181d] p-4 text-left shadow-[0_1px_0_rgba(255,255,255,0.02)] transition-colors duration-150 hover:border-white/14 hover:bg-[#191c22]"
+      className="w-full rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[#07090d] p-0 text-left transition-colors duration-150 hover:border-[rgba(255,255,255,0.16)] hover:bg-[#0a0d12]"
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-[13px] font-medium text-zinc-100">{index.name}</h3>
-          <p className="mt-1 text-[11px] text-zinc-500">{index.ticker}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`rounded-full border px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] ${
-            index.status === 'Unavailable'
-              ? 'border-white/10 bg-white/[0.03] text-zinc-500'
-              : 'border-[#1e564d] bg-[rgba(0,196,160,0.10)] text-[#8ed7c7]'
-          }`}>
-            {index.status === 'Unavailable' ? 'Unavailable' : 'Tracked'}
-          </span>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/6 bg-[#121419]">
-            <Globe className="h-3.5 w-3.5 text-zinc-500" />
+      <div className="p-5">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="min-w-0 pr-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="truncate text-[18px] font-medium leading-8 text-[rgba(255,255,255,0.96)]">{index.name}</h3>
+              <span className="rounded-full border border-[rgba(255,255,255,0.16)] bg-[rgba(255,255,255,0.08)] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.04em] text-[rgba(255,255,255,0.6)]">
+                {statusLabel}
+              </span>
+            </div>
+            <p className="mt-3 text-[13px] text-[rgba(255,255,255,0.46)]">{index.ticker}</p>
+            {index.sourceLabel ? (
+              <p className="mt-2 text-[12px] text-[rgba(255,255,255,0.28)]">Source: {index.sourceLabel}</p>
+            ) : null}
+          </div>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.02)]">
+            <Globe className="h-5 w-5 text-[#00d7ff]" />
           </div>
         </div>
+
+        {index.available ? (
+          <>
+            <div className="rounded-[18px] border border-[rgba(255,255,255,0.09)] bg-[#06080c] px-5 py-5">
+              <div className="flex items-baseline gap-3">
+                <span className="text-[22px] font-medium tracking-tight text-[rgba(255,255,255,0.96)]">{index.price?.toFixed(2)}</span>
+                <span className="text-[12px] text-[rgba(255,255,255,0.36)]">USD</span>
+              </div>
+              <div className={`mt-4 flex items-center gap-1.5 text-[14px] ${isPositive ? 'text-[#14e0ae]' : 'text-[#ff6a6a]'}`}>
+                {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                <span>{isPositive ? '+' : ''}{(index.change ?? 0).toFixed(2)}({isPositive ? '+' : ''}{(index.changePercent ?? 0).toFixed(2)}%)</span>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-6">
+              <div>
+                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">OPEN</p>
+                <p className="mt-2 text-[18px] text-[rgba(255,255,255,0.92)]">{index.open !== null ? index.open.toFixed(2) : '--'}</p>
+              </div>
+              <div>
+                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">VOLUME</p>
+                <p className="mt-2 text-[18px] text-[rgba(255,255,255,0.92)]">{formatVolume(index.volume)}</p>
+              </div>
+              <div>
+                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">HIGH</p>
+                <p className="mt-2 text-[18px] text-[#14e0ae]">{index.high !== null ? index.high.toFixed(2) : '--'}</p>
+              </div>
+              <div>
+                <p className="text-[12px] uppercase tracking-[0.04em] text-[rgba(255,255,255,0.4)]">LOW</p>
+                <p className="mt-2 text-[18px] text-[#ff6a6a]">{index.low !== null ? index.low.toFixed(2) : '--'}</p>
+              </div>
+            </div>
+
+            {index.history.length === 0 ? (
+              <p className="mt-5 text-[12px] text-[rgba(255,255,255,0.34)]">Chart history is not available for this snapshot yet.</p>
+            ) : null}
+          </>
+        ) : (
+          <div className="rounded-[18px] border border-[rgba(255,255,255,0.09)] bg-[#06080c] px-5 py-5 text-[14px] leading-6 text-[rgba(255,255,255,0.4)]">
+            Live market data unavailable for this snapshot.
+          </div>
+        )}
       </div>
-
-      {index.available ? (
-        <>
-          <div className="mb-3 flex items-baseline gap-2">
-            <span className="text-[22px] font-semibold tracking-tight text-zinc-50">{index.price?.toFixed(2)}</span>
-            <span className="text-[11px] text-zinc-500">USD</span>
-          </div>
-          <div className={`mb-4 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium ${
-            isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-          }`}>
-            {isPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-            <span>{isPositive ? '+' : ''}{(index.change ?? 0).toFixed(2)} ({isPositive ? '+' : ''}{(index.changePercent ?? 0).toFixed(2)}%)</span>
-          </div>
-
-          <div className="mb-3 border-t border-white/6" />
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Open</p>
-              <p className="mt-1 text-[12px] text-zinc-300">{index.open !== null ? index.open.toFixed(2) : '--'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Volume</p>
-              <p className="mt-1 text-[12px] text-zinc-300">{formatVolume(index.volume)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">High</p>
-              <p className="mt-1 text-[12px] text-zinc-300">{index.high !== null ? index.high.toFixed(2) : '--'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Low</p>
-              <p className="mt-1 text-[12px] text-zinc-300">{index.low !== null ? index.low.toFixed(2) : '--'}</p>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="mb-3 flex items-baseline gap-2">
-            <span className="text-[22px] font-semibold tracking-tight text-zinc-50">--</span>
-            <span className="text-[11px] text-zinc-500">USD</span>
-          </div>
-          <div className="mb-4 inline-flex rounded-md bg-white/[0.04] px-2 py-1 text-[12px] text-zinc-500">
-            Live market data unavailable
-          </div>
-          <div className="mb-3 border-t border-white/6" />
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Open</p>
-              <p className="mt-1 text-[12px] text-zinc-300">--</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Volume</p>
-              <p className="mt-1 text-[12px] text-zinc-300">--</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">High</p>
-              <p className="mt-1 text-[12px] text-zinc-300">--</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">Low</p>
-              <p className="mt-1 text-[12px] text-zinc-300">--</p>
-            </div>
-          </div>
-        </>
-      )}
     </button>
   );
 }
@@ -203,77 +182,76 @@ export function MarketOverviewPage({ onBack, onSelectStock }: MarketOverviewPage
 
   const openMarkets = indices.filter((index) => index.available).length;
   const closedMarkets = indices.filter((index) => !index.available).length;
-  const availableIndices = indices.filter((index) => index.available);
-
   return (
-    <div className="flex-1 overflow-y-auto bg-[#0b0f10]">
-      <div className="mx-auto max-w-[1100px] px-5 py-5 lg:px-6 lg:py-6">
+    <div className="flex-1 overflow-y-auto bg-[#07090d]">
+      <div className="px-6 py-5 xl:px-8">
         <button
           onClick={onBack}
-          className="mb-4 flex items-center gap-2 text-[12px] text-zinc-400 transition-colors hover:text-zinc-100"
+          className="mb-6 flex items-center gap-2 text-[12px] text-[rgba(255,255,255,0.58)] transition-colors hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Dashboard</span>
         </button>
 
-        <div className="mb-5">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Market Snapshot</p>
-          <h1 className="mt-1 text-[24px] font-semibold tracking-tight text-white">Market Overview</h1>
-          <p className="mt-1.5 text-[12px] leading-5 text-zinc-400">Snapshot-based market data for tracked stocks.</p>
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px] text-zinc-400">
-            <span className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-400" />
-              {openMarkets} Available
-            </span>
-            <span className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-zinc-600" />
-              {closedMarkets} Unavailable
-            </span>
+        <div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-3xl">
+            <h1 className="text-[20px] font-medium text-[rgba(255,255,255,0.96)]">Market Overview</h1>
+            <p className="mt-3 text-[13px] leading-7 text-[rgba(255,255,255,0.44)]">Snapshot-based market data for tracked stocks</p>
+            <div className="mt-2 flex flex-wrap items-center gap-5 text-[13px] text-[rgba(255,255,255,0.58)]">
+              <span className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-[#14e0ae]" />
+                {openMarkets} Available
+              </span>
+              <span className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-[rgba(255,255,255,0.28)]" />
+                {closedMarkets} Unavailable
+              </span>
+            </div>
+          </div>
+
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-full border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)] p-1">
+            {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setSelectedFilter(filter)}
+                className={`rounded-full px-5 py-2 text-[13px] transition-colors ${
+                  selectedFilter === filter
+                    ? 'bg-[#1192b7] text-white'
+                    : 'text-[rgba(255,255,255,0.52)] hover:bg-[rgba(255,255,255,0.05)] hover:text-white'
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="mb-5 flex flex-wrap gap-2">
-          {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setSelectedFilter(filter)}
-              className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                selectedFilter === filter
-                  ? 'bg-[rgba(0,196,160,0.14)] text-[#8ed7c7]'
-                  : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-5">
-          {error && <div className="rounded-xl border border-white/8 bg-[#16181d] p-4 text-[12px] text-zinc-400">{error}</div>}
+        <div className="space-y-6">
+          {error && <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] p-5 text-[14px] text-[rgba(255,255,255,0.5)]">{error}</div>}
           {!error && marketDataStatus?.isCachedFallback && (
-            <div className="rounded-xl border border-white/8 bg-[#16181d] px-4 py-3">
-              <div className="text-[13px] font-medium text-zinc-100">Market Snapshot</div>
-              <div className="mt-1 text-[12px] text-zinc-500">
+            <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] px-5 py-4">
+              <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)]">Market Snapshot</div>
+              <div className="mt-2 text-[13px] text-[rgba(255,255,255,0.44)]">
                 {marketDataStatus.message || 'Showing most recent available data.'}
                 {marketDataStatus.lastUpdatedAt ? ` Last updated ${new Date(marketDataStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
               </div>
             </div>
           )}
           {!error && !marketDataStatus?.isCachedFallback && indices.length > 0 && (
-            <div className="rounded-xl border border-white/8 bg-[#16181d] px-4 py-3">
-              <div className="text-[13px] font-medium text-zinc-100">Market Snapshot</div>
-              <div className="mt-1 text-[12px] text-zinc-500">Showing most recent available data for selected tracked stocks.</div>
+            <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] px-5 py-4">
+              <div className="text-[15px] font-medium text-[rgba(255,255,255,0.9)]">Market Snapshot</div>
+              <div className="mt-2 text-[13px] text-[rgba(255,255,255,0.44)]">Showing most recent available data for selected tracked stocks.</div>
             </div>
           )}
 
           <div>
-            <h2 className="mb-4 text-[16px] font-semibold text-zinc-100">Curated Market Snapshot</h2>
+            <h2 className="mb-4 text-[18px] font-medium text-[rgba(255,255,255,0.96)]">Curated Market Snapshot</h2>
             {loading && indices.length === 0 ? (
-              <div className="rounded-xl border border-white/8 bg-[#16181d] p-5 text-[12px] text-zinc-500">Loading stored market snapshots...</div>
+              <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] p-5 text-[14px] text-[rgba(255,255,255,0.4)]">Loading stored market snapshots...</div>
             ) : filteredIndices.length === 0 ? (
-              <div className="rounded-xl border border-white/8 bg-[#16181d] p-5 text-[12px] text-zinc-500">No stored market snapshots are available for this filter yet.</div>
+              <div className="rounded-[22px] border border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.04)] p-5 text-[14px] text-[rgba(255,255,255,0.4)]">No stored market snapshots are available for this filter yet.</div>
             ) : (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
                 {filteredIndices.map((index) => (
                   <IndexCard key={index.ticker} index={index} onSelectStock={onSelectStock} />
                 ))}
