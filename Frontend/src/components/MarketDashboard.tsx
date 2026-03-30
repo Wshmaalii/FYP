@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Star, BarChart3, ChevronRight } from 'lucide-react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { ChevronRight, Star } from 'lucide-react';
 import { View } from '../App';
 import { getTopMovers, getQuotes, MARKET_DATA_LIMITED_MESSAGE, MARKET_SYMBOL_NAMES, PRIMARY_MARKET_SYMBOLS, type MarketDataStatus, type TopMoverItem } from '../api/market';
 import { WATCHLIST_UPDATED_EVENT, fetchWatchlist } from '../api/watchlist';
@@ -17,31 +17,84 @@ interface MarketDashboardProps {
   onOpenStock: (ticker: string) => void;
 }
 
-function StockItem({ stock, onOpenStock }: { stock: Stock; onOpenStock: (ticker: string) => void }) {
+function StockItem({
+  stock,
+  onOpenStock,
+  showDivider = true,
+}: {
+  stock: Stock;
+  onOpenStock: (ticker: string) => void;
+  showDivider?: boolean;
+}) {
   const isPositive = (stock.change ?? 0) >= 0;
 
   return (
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[14px] bg-zinc-950/75 px-3 py-2 text-left transition-all duration-150 hover:bg-zinc-900/90 active:translate-y-px"
+      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
+      style={{
+        borderBottom: showDivider ? '0.5px solid var(--border-faint)' : 'none',
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.background = 'var(--bg-hover)';
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.background = 'transparent';
+      }}
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold tracking-tight text-zinc-100">{stock.ticker}</span>
-          {stock.change !== null && (isPositive ? (
-            <TrendingUp className="w-3 h-3 text-emerald-400" />
-          ) : (
-            <TrendingDown className="w-3 h-3 text-red-400" />
-          ))}
+          <span className="text-[12px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{stock.ticker}</span>
         </div>
-        <p className="mt-0.5 truncate text-[10px] leading-4 text-zinc-500">{stock.name}</p>
+        <p className="mt-px truncate text-[10px]" style={{ color: 'var(--text-faint)' }}>{stock.name}</p>
       </div>
       <div className="text-right">
-        <p className="text-[13px] font-medium tracking-tight text-zinc-100">{stock.price !== null ? stock.price.toFixed(2) : '--'}</p>
-        <p className={`mt-0.5 text-[10px] font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+        <p className="text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+          {stock.price !== null ? stock.price.toFixed(2) : '--'}
+        </p>
+        <p
+          className="mt-px text-[10px]"
+          style={{ color: isPositive ? 'var(--color-green)' : 'var(--color-red)' }}
+        >
           {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
         </p>
+      </div>
+    </button>
+  );
+}
+
+function SectionHeader({
+  title,
+  onClick,
+  trailing,
+  icon,
+}: {
+  title: string;
+  onClick: () => void;
+  trailing?: ReactNode;
+  icon?: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mb-2 flex w-full items-center justify-between text-left transition-colors duration-150"
+      style={{ color: 'var(--text-label)' }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.color = 'var(--text-muted)';
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.color = 'var(--text-label)';
+      }}
+    >
+      <div className="flex items-center gap-2">
+        {icon}
+        <span className="text-[10px] font-semibold uppercase tracking-[1px]">{title}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        {trailing}
+        <ChevronRight className="h-3 w-3" />
       </div>
     </button>
   );
@@ -148,87 +201,87 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   }, [loadDashboardData]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-zinc-950/90">
-      <div className="px-3 pb-2 pt-2">
-        <button onClick={() => onNavigate('Market Overview')} className="w-full group">
-          <div className="mb-1.5 flex items-center justify-between">
-            <h3 className="text-[10px] uppercase tracking-[0.22em] text-zinc-500 transition-colors group-hover:text-cyan-400">Market Snapshot</h3>
-            <div className="flex items-center gap-1">
-              <span className="text-cyan-400 text-xs">Stored snapshots</span>
-              <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
-            </div>
-          </div>
-        </button>
-        {liveDataError && <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">{MARKET_DATA_LIMITED_MESSAGE}</p>}
-        {!liveDataError && !overviewStatus?.isCachedFallback && marketIndices.length > 0 && (
-          <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">Showing most recent available data.</p>
-        )}
-        {!liveDataError && overviewStatus?.isCachedFallback && (
-          <p className="mb-1.5 text-[10px] leading-4 text-zinc-500">
+    <div className="mt-auto px-3.5 py-3">
+      <div className="pb-3">
+        <SectionHeader
+          title="Snapshot"
+          onClick={() => onNavigate('Market Overview')}
+          trailing={<span className="text-[10px]" style={{ color: 'var(--accent-teal)' }}>Stored snapshots</span>}
+        />
+        {liveDataError ? (
+          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>{MARKET_DATA_LIMITED_MESSAGE}</p>
+        ) : !overviewStatus?.isCachedFallback && marketIndices.length > 0 ? (
+          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+            Showing most recent available data.
+          </p>
+        ) : overviewStatus?.isCachedFallback ? (
+          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
             {overviewStatus.message || 'Showing most recent available data.'}
             {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
-        )}
-        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+        ) : null}
+        <div className="space-y-0">
           {marketIndices.length === 0 && !liveDataError ? (
-            <p className="px-4 py-4 text-xs text-zinc-500">No stored market snapshots yet.</p>
+            <p className="py-1.5 text-[10px]" style={{ color: 'var(--text-faint)' }}>No stored market snapshots yet.</p>
           ) : (
             marketIndices.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
-                <StockItem stock={stock} onOpenStock={onOpenStock} />
-              </div>
+              <StockItem
+                key={stock.ticker}
+                stock={stock}
+                onOpenStock={onOpenStock}
+                showDivider={index < marketIndices.length - 1}
+              />
             ))
           )}
         </div>
       </div>
 
-      <div className="border-t border-zinc-800/80 px-3 py-2">
-        <button onClick={() => onNavigate('Top Movers')} className="w-full group">
-          <div className="mb-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Most Discussed</h3>
-            </div>
-            <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
-          </div>
-        </button>
-        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          {topMovers.length === 0 && !liveDataError ? (
-            <p className="px-4 py-4 text-xs text-zinc-500">{topMoversMessage || 'Loading discussed names...'}</p>
+      <div className="border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
+        <SectionHeader
+          title="Most Discussed"
+          onClick={() => onNavigate('Top Movers')}
+        />
+        <div className="space-y-0">
+          {topMovers.length === 0 ? (
+            <p className="py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+              {topMoversMessage || 'Mention a ticker like #SPY or $AAPL to start.'}
+            </p>
           ) : (
             topMovers.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
-                <StockItem stock={stock} onOpenStock={onOpenStock} />
-              </div>
+              <StockItem
+                key={stock.ticker}
+                stock={stock}
+                onOpenStock={onOpenStock}
+                showDivider={index < topMovers.length - 1}
+              />
             ))
           )}
         </div>
       </div>
 
-      <div className="border-t border-zinc-800/80 px-3 py-2">
-        <button onClick={() => onNavigate('Watchlist')} className="w-full group">
-          <div className="mb-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-zinc-500 text-[11px] uppercase tracking-[0.18em] group-hover:text-cyan-400 transition-colors">Watchlist</h3>
-            </div>
-            <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
-          </div>
-        </button>
-        <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-900/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          {watchlistStatus?.isCachedFallback && (
-            <p className="px-4 pt-3 text-[10px] leading-4 text-zinc-500">
-              {watchlistStatus.message || 'Showing most recent available data.'}
-              {watchlistStatus.lastUpdatedAt ? ` Last updated ${new Date(watchlistStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
-            </p>
-          )}
+      <div className="border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
+        <SectionHeader
+          title="Watchlist"
+          onClick={() => onNavigate('Watchlist')}
+          icon={<Star className="h-3.5 w-3.5" style={{ color: 'var(--accent-teal)' }} />}
+        />
+        {watchlistStatus?.isCachedFallback ? (
+          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+            {watchlistStatus.message || 'Showing most recent available data.'}
+            {watchlistStatus.lastUpdatedAt ? ` Last updated ${new Date(watchlistStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+          </p>
+        ) : null}
+        <div className="space-y-0">
           {watchlist.length === 0 ? (
-            <p className="px-4 py-4 text-xs text-zinc-500">No watchlist items yet</p>
+            <p className="py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>No watchlist items yet.</p>
           ) : (
             watchlist.map((stock, index) => (
-              <div key={stock.ticker} className={index > 0 ? 'mt-1 border-t border-zinc-700 pt-1' : ''}>
-                <StockItem stock={stock} onOpenStock={onOpenStock} />
-              </div>
+              <StockItem
+                key={stock.ticker}
+                stock={stock}
+                onOpenStock={onOpenStock}
+                showDivider={index < watchlist.length - 1}
+              />
             ))
           )}
         </div>
