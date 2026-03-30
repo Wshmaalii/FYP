@@ -137,10 +137,8 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
     <div className="bg-[#161618] border border-white/[0.08] rounded-[14px] p-[18px] hover:border-white/[0.13] transition-colors cursor-pointer">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <h4 className="text-zinc-100 text-base font-semibold tracking-tight">{ticker}</h4>
-          </div>
-          <p className="text-zinc-500 text-sm leading-5">{companyName}</p>
+          <h4 className="text-[13px] font-semibold text-[var(--text-primary)]">{companyName}</h4>
+          <p className="mt-[2px] text-[11px] text-[var(--text-faint)]">{ticker}</p>
         </div>
         <button className="text-zinc-500 hover:text-cyan-400 transition-colors duration-150 p-1 -m-1 rounded-lg">
           <Star className="w-4 h-4" />
@@ -150,8 +148,8 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
       <div className="flex items-end justify-between gap-4 mb-5">
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-[22px] font-semibold tracking-tight text-zinc-100">{price !== null ? price.toFixed(2) : '--'}</span>
-            <span className="text-zinc-500 text-sm">USD</span>
+            <span className="text-[22px] font-semibold tracking-[-0.5px] text-[var(--text-primary)]">{price !== null ? price.toFixed(2) : '--'}</span>
+            <span className="text-[12px] text-[var(--text-faint)]">USD</span>
           </div>
           <div className="mt-2">
             <span className={`inline-flex items-center gap-1 rounded-md px-2 py-[3px] text-[12px] font-medium ${isPositive ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}>
@@ -191,19 +189,19 @@ export function MarketDataCard({ ticker, onOpenTradeTicket }: MarketDataCardProp
       <div className="grid grid-cols-3 gap-3">
         <button
           onClick={handleBuy}
-          className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:translate-y-px text-white rounded-xl transition-all duration-150 text-sm font-medium"
+          className="rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
         >
           Buy
         </button>
         <button
           onClick={handleSell}
-          className="px-3 py-2.5 bg-red-600 hover:bg-red-700 active:translate-y-px text-white rounded-xl transition-all duration-150 text-sm font-medium"
+          className="rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
         >
           Sell
         </button>
         <button
           onClick={handleWatch}
-          className="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 active:translate-y-px text-zinc-300 rounded-xl transition-all duration-150 text-sm flex items-center justify-center gap-1.5 font-medium"
+          className="flex items-center justify-center gap-1.5 rounded-[8px] border border-white/10 bg-white/[0.06] px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
         >
           <Activity className="w-3 h-3" />
           {isWatched ? 'Watching' : 'Watch'}
