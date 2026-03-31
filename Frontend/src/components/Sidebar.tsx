@@ -26,8 +26,8 @@ function Section({
   return (
     <section className="pb-5">
       <h3
-        className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[1.2px]"
-        style={{ color: 'var(--text-label)' }}
+        className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+        style={{ color: 'var(--text-label)', fontWeight: 600 }}
       >
         {title}
       </h3>
@@ -49,21 +49,20 @@ function EmptyState({ children, compact = false }: { children: ReactNode; compac
 
 function DiscoverButton({
   label,
-  selected,
   onClick,
 }: {
   label: string;
-  selected: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[7px] px-2 py-[7px] text-left text-[13px] transition-all duration-150"
+      className="w-full rounded-[7px] px-3 py-[8px] text-left text-[13px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
       style={{
         background: 'transparent',
-        color: selected ? 'var(--text-secondary)' : 'var(--text-muted)',
+        color: 'var(--text-subtle)',
+        fontWeight: 400,
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.background = 'var(--bg-hover)';
@@ -71,7 +70,7 @@ function DiscoverButton({
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.background = 'transparent';
-        event.currentTarget.style.color = selected ? 'var(--text-secondary)' : 'var(--text-muted)';
+        event.currentTarget.style.color = 'var(--text-subtle)';
       }}
     >
       {label}
@@ -94,7 +93,7 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left transition-all duration-150 active:translate-y-px"
+      className="flex w-full items-center gap-3 rounded-[7px] px-3 py-2 text-left transition-all duration-150 active:translate-y-px"
       style={{
         background: selected ? 'var(--bg-active)' : 'transparent',
         color: selected ? 'var(--text-primary)' : 'var(--text-subtle)',
@@ -111,10 +110,10 @@ function ConversationButton({
       }}
     >
       <span
-        className="h-2 w-2 flex-shrink-0 rounded-full"
+        className="h-[9px] w-[9px] flex-shrink-0 rounded-full"
         style={{ background: dotColor }}
       />
-      <span className="truncate text-[13px]">{label}</span>
+      <span className="truncate text-[13px] tracking-[-0.01em]">{label}</span>
     </button>
   );
 }
@@ -169,28 +168,26 @@ export function Sidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="px-4 pb-5 pt-[14px]" style={{ borderBottom: '0.5px solid var(--border-subtle)' }}>
+        <div className="px-4 pb-7 pt-[18px]" style={{ borderBottom: '0.5px solid var(--border-subtle)' }}>
           <div
-            className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[1.2px]"
-            style={{ color: 'var(--text-label)' }}
+            className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+            style={{ color: 'var(--text-label)', fontWeight: 600 }}
           >
             Discover
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-2">
             <DiscoverButton
               label="Explore Spaces"
-              selected={selectedView === 'Explore Spaces'}
               onClick={() => onNavigate('Explore Spaces')}
             />
             <DiscoverButton
               label="Browse Communities"
-              selected={false}
               onClick={() => onNavigate('Explore Spaces')}
             />
           </div>
         </div>
 
-        <div className="px-4 pb-4 pt-[14px]">
+        <div className="px-4 pb-4 pt-[18px]">
           <Section title="My Spaces">
             {mySpaces.length === 0 ? (
               <EmptyState compact>Create or join a space to get started.</EmptyState>
