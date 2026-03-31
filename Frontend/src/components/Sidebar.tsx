@@ -24,14 +24,14 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="pb-5">
+    <section className="pb-4">
       <h3
-        className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
-        style={{ color: 'var(--text-label)', fontWeight: 600 }}
+        className="mb-1.5 px-1 text-[9px] font-medium uppercase tracking-[0.24em]"
+        style={{ color: 'rgba(255,255,255,0.26)', fontWeight: 500 }}
       >
         {title}
       </h3>
-      <div className="space-y-1">{children}</div>
+      <div className="space-y-0.5">{children}</div>
     </section>
   );
 }
@@ -39,8 +39,8 @@ function Section({
 function EmptyState({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
   return (
     <div
-      className={`rounded-[7px] px-2 ${compact ? 'py-1.5' : 'py-2'} text-[12px] leading-5`}
-      style={{ color: 'var(--text-label)' }}
+      className={`rounded-[7px] px-2.5 ${compact ? 'py-1.5' : 'py-2'} text-[12px] leading-[1.45]`}
+      style={{ color: 'rgba(255,255,255,0.26)' }}
     >
       {children}
     </div>
@@ -58,19 +58,19 @@ function DiscoverButton({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[7px] px-3 py-[8px] text-left text-[13px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
+      className="w-full rounded-[10px] px-3 py-[7px] text-left text-[12px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
       style={{
         background: 'transparent',
-        color: 'var(--text-subtle)',
+        color: 'rgba(255,255,255,0.54)',
         fontWeight: 400,
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.background = 'var(--bg-hover)';
-        event.currentTarget.style.color = 'var(--text-secondary)';
+        event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+        event.currentTarget.style.color = 'rgba(255,255,255,0.68)';
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.background = 'transparent';
-        event.currentTarget.style.color = 'var(--text-subtle)';
+        event.currentTarget.style.color = 'rgba(255,255,255,0.54)';
       }}
     >
       {label}
@@ -93,14 +93,14 @@ function ConversationButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-[7px] px-3 py-2 text-left transition-all duration-150 active:translate-y-px"
+      className="flex w-full items-center gap-3 rounded-[14px] px-3 py-2 text-left transition-all duration-150 active:translate-y-px"
       style={{
-        background: selected ? 'var(--bg-active)' : 'transparent',
-        color: selected ? 'var(--text-primary)' : 'var(--text-subtle)',
+        background: selected ? 'rgba(255,255,255,0.08)' : 'transparent',
+        color: selected ? 'rgba(255,255,255,0.86)' : 'rgba(255,255,255,0.42)',
       }}
       onMouseEnter={(event) => {
         if (!selected) {
-          event.currentTarget.style.background = 'var(--bg-hover)';
+          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
         }
       }}
       onMouseLeave={(event) => {
@@ -110,10 +110,10 @@ function ConversationButton({
       }}
     >
       <span
-        className="h-[9px] w-[9px] flex-shrink-0 rounded-full"
+        className="h-[8px] w-[8px] flex-shrink-0 rounded-full"
         style={{ background: dotColor }}
       />
-      <span className="truncate text-[13px] tracking-[-0.01em]">{label}</span>
+      <span className="truncate text-[12px] font-normal tracking-[-0.01em]" style={{ fontWeight: selected ? 500 : 400 }}>{label}</span>
     </button>
   );
 }
@@ -132,34 +132,34 @@ export function Sidebar({
   return (
     <aside
       className="flex w-60 min-w-60 flex-col"
-      style={{ background: 'var(--bg-sidebar)', borderRight: '0.5px solid var(--border-secondary)' }}
+      style={{ background: '#111214', borderRight: '0.5px solid rgba(255,255,255,0.055)' }}
     >
-      <div className="px-4 pb-3 pt-[18px]" style={{ borderBottom: '0.5px solid var(--border-subtle)' }}>
-        <div className="mb-[14px] flex items-center gap-2">
+      <div className="px-4 pb-2.5 pt-4" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.055)' }}>
+        <div className="mb-3 flex items-center gap-1.5">
           <div
-            className="flex h-7 w-7 items-center justify-center rounded-[7px] text-[11px] font-bold text-white"
-            style={{ background: 'var(--accent-teal)' }}
+            className="flex h-8 w-8 items-center justify-center rounded-[11px] text-[10px] font-bold text-white"
+            style={{ background: '#63c4af' }}
           >
             TL
           </div>
-          <span className="text-[13px] font-semibold tracking-[0.5px]" style={{ color: 'var(--text-primary)' }}>
+          <span className="text-[12px] font-medium tracking-[-0.01em]" style={{ color: 'rgba(255,255,255,0.88)' }}>
             TradeLink
           </span>
         </div>
         <button
           type="button"
           onClick={onOpenComposer}
-          className="flex w-full items-center justify-center gap-1.5 rounded-[18px] px-3 py-2 text-[12px] font-medium transition-colors"
+          className="flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-medium transition-colors"
           style={{
-            background: 'var(--accent-teal-bg)',
-            border: '0.5px solid var(--accent-teal-border)',
-            color: 'var(--accent-teal)',
+            background: 'rgba(99,196,175,0.10)',
+            border: '0.5px solid rgba(99,196,175,0.26)',
+            color: '#67c8b5',
           }}
           onMouseEnter={(event) => {
-            event.currentTarget.style.background = 'var(--accent-teal-hover)';
+            event.currentTarget.style.background = 'rgba(99,196,175,0.14)';
           }}
           onMouseLeave={(event) => {
-            event.currentTarget.style.background = 'var(--accent-teal-bg)';
+            event.currentTarget.style.background = 'rgba(99,196,175,0.10)';
           }}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -168,14 +168,14 @@ export function Sidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="px-4 pb-7 pt-[18px]" style={{ borderBottom: '0.5px solid var(--border-subtle)' }}>
+        <div className="px-4 pb-5 pt-4" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
           <div
-            className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
-            style={{ color: 'var(--text-label)', fontWeight: 600 }}
+            className="mb-2 px-1 text-[9px] font-medium uppercase tracking-[0.24em]"
+            style={{ color: 'rgba(255,255,255,0.26)', fontWeight: 500 }}
           >
             Discover
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <DiscoverButton
               label="Explore Spaces"
               onClick={() => onNavigate('Explore Spaces')}
@@ -187,7 +187,7 @@ export function Sidebar({
           </div>
         </div>
 
-        <div className="px-4 pb-4 pt-[18px]">
+        <div className="px-4 pb-3 pt-4">
           <Section title="My Spaces">
             {mySpaces.length === 0 ? (
               <EmptyState compact>Create or join a space to get started.</EmptyState>
