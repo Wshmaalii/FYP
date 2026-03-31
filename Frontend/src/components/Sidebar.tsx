@@ -1,17 +1,11 @@
 import type { ReactNode } from 'react';
-import { Plus } from 'lucide-react';
+import { Globe, Lock, MessageSquare, Plus } from 'lucide-react';
 import { MarketDashboard } from './MarketDashboard';
-import type { ConversationSummary } from '../api/messaging';
 import { View } from '../App';
 
 interface SidebarProps {
   selectedView: View;
-  selectedConversationKey: string | null;
-  mySpaces: ConversationSummary[];
-  directMessages: ConversationSummary[];
-  privateGroups: ConversationSummary[];
   onNavigate: (view: View) => void;
-  onOpenConversation: (conversationKey: string) => void;
   onOpenComposer: () => void;
   onOpenStock: (ticker: string) => void;
 }
@@ -36,22 +30,55 @@ function Section({
   );
 }
 
-function EmptyState({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
+function NavigationButton({
+  label,
+  icon: Icon,
+  selected,
+  onClick,
+}: {
+  label: string;
+  icon?: typeof Globe;
+  selected: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div
-      className={`rounded-[7px] px-2.5 ${compact ? 'py-1' : 'py-1.5'} text-[11px] leading-[1.4]`}
-      style={{ color: 'rgba(255,255,255,0.27)' }}
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2.5 rounded-[12px] px-3 py-1.5 text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
+      style={{
+        background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
+        color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
+        fontWeight: selected ? 500 : 400,
+      }}
+      onMouseEnter={(event) => {
+        if (!selected) {
+          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+          event.currentTarget.style.color = 'rgba(255,255,255,0.66)';
+        }
+      }}
+      onMouseLeave={(event) => {
+        if (!selected) {
+          event.currentTarget.style.background = 'transparent';
+          event.currentTarget.style.color = 'rgba(255,255,255,0.52)';
+        }
+      }}
     >
-      {children}
-    </div>
+      {Icon ? (
+        <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: selected ? '#67c8b5' : 'rgba(255,255,255,0.34)' }} />
+      ) : null}
+      <span>{label}</span>
+    </button>
   );
 }
 
 function DiscoverButton({
   label,
+  selected,
   onClick,
 }: {
   label: string;
+  selected: boolean;
   onClick: () => void;
 }) {
   return (
@@ -60,17 +87,21 @@ function DiscoverButton({
       onClick={onClick}
       className="w-full rounded-[10px] px-3 py-[6px] text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
       style={{
-        background: 'transparent',
-        color: 'rgba(255,255,255,0.52)',
-        fontWeight: 500,
+        background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
+        color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
+        fontWeight: selected ? 500 : 500,
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-        event.currentTarget.style.color = 'rgba(255,255,255,0.66)';
+        if (!selected) {
+          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+          event.currentTarget.style.color = 'rgba(255,255,255,0.66)';
+        }
       }}
       onMouseLeave={(event) => {
-        event.currentTarget.style.background = 'transparent';
-        event.currentTarget.style.color = 'rgba(255,255,255,0.52)';
+        if (!selected) {
+          event.currentTarget.style.background = 'transparent';
+          event.currentTarget.style.color = 'rgba(255,255,255,0.52)';
+        }
       }}
     >
       {label}
@@ -78,54 +109,9 @@ function DiscoverButton({
   );
 }
 
-function ConversationButton({
-  label,
-  dotColor,
-  selected,
-  onClick,
-}: {
-  label: string;
-  dotColor: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-[14px] px-3 py-1.5 text-left transition-all duration-150 active:translate-y-px"
-      style={{
-        background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
-        color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.41)',
-      }}
-      onMouseEnter={(event) => {
-        if (!selected) {
-          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-        }
-      }}
-      onMouseLeave={(event) => {
-        if (!selected) {
-          event.currentTarget.style.background = 'transparent';
-        }
-      }}
-    >
-      <span
-        className="h-[8px] w-[8px] flex-shrink-0 rounded-full"
-        style={{ background: dotColor }}
-      />
-      <span className="truncate text-[11px] font-normal tracking-[-0.01em]" style={{ fontWeight: selected ? 500 : 400 }}>{label}</span>
-    </button>
-  );
-}
-
 export function Sidebar({
   selectedView,
-  selectedConversationKey,
-  mySpaces,
-  directMessages,
-  privateGroups,
   onNavigate,
-  onOpenConversation,
   onOpenComposer,
   onOpenStock,
 }: SidebarProps) {
@@ -178,58 +164,32 @@ export function Sidebar({
           <div className="space-y-1">
             <DiscoverButton
               label="Explore Spaces"
+              selected={selectedView === 'Explore Spaces'}
               onClick={() => onNavigate('Explore Spaces')}
             />
           </div>
         </div>
 
         <div className="px-4 pb-2.5 pt-3.5">
-          <Section title="Public Spaces">
-            {mySpaces.length === 0 ? (
-              <EmptyState compact>Create or join a public space to get started.</EmptyState>
-            ) : (
-              mySpaces.map((space) => (
-                <ConversationButton
-                  key={space.conversation_key}
-                  label={space.name}
-                  dotColor="var(--accent-blue)"
-                  selected={selectedConversationKey === space.conversation_key}
-                  onClick={() => onOpenConversation(space.conversation_key)}
-                />
-              ))
-            )}
-          </Section>
-
-          <Section title="Direct Messages">
-            {directMessages.length === 0 ? (
-              <EmptyState compact>Start a direct message from New Chat.</EmptyState>
-            ) : (
-              directMessages.map((dm) => (
-                <ConversationButton
-                  key={dm.conversation_key}
-                  label={dm.name}
-                  dotColor="var(--accent-teal)"
-                  selected={selectedConversationKey === dm.conversation_key}
-                  onClick={() => onOpenConversation(dm.conversation_key)}
-                />
-              ))
-            )}
-          </Section>
-
-          <Section title="Private Rooms">
-            {privateGroups.length === 0 ? (
-              <EmptyState compact>Create a private room for invite-only discussions.</EmptyState>
-            ) : (
-              privateGroups.map((group) => (
-                <ConversationButton
-                  key={group.conversation_key}
-                  label={group.name}
-                  dotColor="var(--color-red)"
-                  selected={selectedConversationKey === group.conversation_key}
-                  onClick={() => onOpenConversation(group.conversation_key)}
-                />
-              ))
-            )}
+          <Section title="Messaging">
+            <NavigationButton
+              label="Public Spaces"
+              icon={Globe}
+              selected={selectedView === 'Public Spaces'}
+              onClick={() => onNavigate('Public Spaces')}
+            />
+            <NavigationButton
+              label="Direct Messages"
+              icon={MessageSquare}
+              selected={selectedView === 'Direct Messages'}
+              onClick={() => onNavigate('Direct Messages')}
+            />
+            <NavigationButton
+              label="Private Rooms"
+              icon={Lock}
+              selected={selectedView === 'Private Rooms'}
+              onClick={() => onNavigate('Private Rooms')}
+            />
           </Section>
         </div>
       </div>

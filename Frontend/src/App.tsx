@@ -11,6 +11,9 @@ import { LoginPage } from './components/auth/LoginPage';
 import { SignupPage } from './components/auth/SignupPage';
 import { ConversationPage } from './components/messaging/ConversationPage';
 import { ExploreSpacesPage } from './components/messaging/ExploreSpacesPage';
+import { PublicSpacesPage } from './components/messaging/PublicSpacesPage';
+import { DirectMessagesPage } from './components/messaging/DirectMessagesPage';
+import { PrivateRoomsPage } from './components/messaging/PrivateRoomsPage';
 import { NewChatModal } from './components/messaging/NewChatModal';
 import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
 import { fetchMyProfile, type UserProfile } from './api/profile';
@@ -28,7 +31,18 @@ import {
   type MessagingUser,
 } from './api/messaging';
 
-export type View = 'Explore Spaces' | 'Conversation' | 'My Profile' | 'Account Settings' | 'Top Movers' | 'Watchlist' | 'Market Overview' | 'Stock Detail';
+export type View =
+  | 'Explore Spaces'
+  | 'Public Spaces'
+  | 'Direct Messages'
+  | 'Private Rooms'
+  | 'Conversation'
+  | 'My Profile'
+  | 'Account Settings'
+  | 'Top Movers'
+  | 'Watchlist'
+  | 'Market Overview'
+  | 'Stock Detail';
 type NavigableView = Exclude<View, 'Stock Detail'>;
 type AuthView = 'login' | 'signup';
 type AuthStatus = 'loading' | 'guest' | 'authed';
@@ -56,11 +70,6 @@ export default function App() {
   const [searchResults, setSearchResults] = useState<MessagingUser[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [joiningSpaceKey, setJoiningSpaceKey] = useState<string | null>(null);
-
-  const allConversations = useMemo(
-    () => [...sidebarData.my_spaces, ...sidebarData.direct_messages, ...sidebarData.private_groups],
-    [sidebarData],
-  );
 
   const refreshMessagingState = async () => {
     const [sidebar, publicSpaces] = await Promise.all([fetchMessagingSidebar(), fetchSpaces()]);
@@ -227,8 +236,8 @@ export default function App() {
     if (currentView === 'Conversation' && selectedConversation) {
       return selectedConversation.name;
     }
-    if (currentView === 'Explore Spaces') {
-      return 'TradeLink';
+    if (currentView === 'Explore Spaces' || currentView === 'Public Spaces' || currentView === 'Direct Messages' || currentView === 'Private Rooms') {
+      return currentView;
     }
     if (currentView === 'Stock Detail' && selectedStock) {
       return selectedStock;
@@ -250,6 +259,15 @@ export default function App() {
     if (currentView === 'Explore Spaces') {
       return 'Public spaces and private conversations';
     }
+    if (currentView === 'Public Spaces') {
+      return 'Joined public spaces';
+    }
+    if (currentView === 'Direct Messages') {
+      return '1:1 conversations';
+    }
+    if (currentView === 'Private Rooms') {
+      return 'Invite-only group conversations';
+    }
     if (currentView === 'Market Overview') {
       return '#market-overview';
     }
@@ -259,6 +277,20 @@ export default function App() {
     return undefined;
   }, [currentView, selectedConversation, selectedChannelKey]);
 
+  const sidebarSelectedView = useMemo<View>(() => {
+    if (currentView === 'Conversation' && selectedConversation) {
+      if (selectedConversation.kind === 'public_space') {
+        return 'Public Spaces';
+      }
+      if (selectedConversation.kind === 'direct_message') {
+        return 'Direct Messages';
+      }
+      return 'Private Rooms';
+    }
+
+    return currentView;
+  }, [currentView, selectedConversation]);
+
   const renderView = () => {
     switch (currentView) {
       case 'Explore Spaces':
@@ -267,6 +299,27 @@ export default function App() {
             spaces={spaces}
             joiningKey={joiningSpaceKey}
             onJoin={handleJoinSpace}
+            onOpen={(conversationKey) => void openConversation(conversationKey)}
+          />
+        );
+      case 'Public Spaces':
+        return (
+          <PublicSpacesPage
+            spaces={sidebarData.my_spaces}
+            onOpen={(conversationKey) => void openConversation(conversationKey)}
+          />
+        );
+      case 'Direct Messages':
+        return (
+          <DirectMessagesPage
+            conversations={sidebarData.direct_messages}
+            onOpen={(conversationKey) => void openConversation(conversationKey)}
+          />
+        );
+      case 'Private Rooms':
+        return (
+          <PrivateRoomsPage
+            conversations={sidebarData.private_groups}
             onOpen={(conversationKey) => void openConversation(conversationKey)}
           />
         );
@@ -339,13 +392,8 @@ export default function App() {
   return (
     <div className="flex h-screen" style={{ background: 'var(--bg-app)', color: 'var(--text-primary)' }}>
       <Sidebar
-        selectedView={currentView}
-        selectedConversationKey={selectedConversation?.conversation_key || null}
-        mySpaces={sidebarData.my_spaces}
-        directMessages={sidebarData.direct_messages}
-        privateGroups={sidebarData.private_groups}
+        selectedView={sidebarSelectedView}
         onNavigate={setCurrentView}
-        onOpenConversation={(conversationKey) => void openConversation(conversationKey)}
         onOpenComposer={() => setNewChatOpen(true)}
         onOpenStock={openStockDetail}
       />
