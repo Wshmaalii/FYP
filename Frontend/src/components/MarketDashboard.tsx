@@ -32,7 +32,7 @@ function StockItem({
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-1 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
+      className="flex w-full min-w-0 max-w-full flex-col gap-1 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
       style={{
         borderBottom: showDivider ? '0.5px solid var(--border-faint)' : 'none',
       }}
@@ -215,7 +215,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
             Showing most recent available data.
           </p>
         ) : overviewStatus?.isCachedFallback ? (
-          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)', overflowWrap: 'anywhere' }}>
             {overviewStatus.message || 'Showing most recent available data.'}
             {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
@@ -266,7 +266,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
           icon={<Star className="h-3.5 w-3.5" style={{ color: 'var(--accent-teal)' }} />}
         />
         {watchlistStatus?.isCachedFallback ? (
-          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)', overflowWrap: 'anywhere' }}>
             {watchlistStatus.message || 'Showing most recent available data.'}
             {watchlistStatus.lastUpdatedAt ? ` Last updated ${new Date(watchlistStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>

@@ -115,10 +115,19 @@ export function Sidebar({
   onOpenComposer,
   onOpenStock,
 }: SidebarProps) {
+  const sidebarWidth = '11.75rem';
+
   return (
     <aside
-      className="flex w-[11.75rem] min-w-[11.75rem] max-w-[11.75rem] shrink-0 flex-col overflow-x-hidden"
-      style={{ background: '#111214', borderRight: '0.5px solid rgba(255,255,255,0.05)' }}
+      className="flex shrink-0 flex-col overflow-x-hidden"
+      style={{
+        background: '#111214',
+        borderRight: '0.5px solid rgba(255,255,255,0.05)',
+        width: sidebarWidth,
+        minWidth: sidebarWidth,
+        maxWidth: sidebarWidth,
+        flex: `0 0 ${sidebarWidth}`,
+      }}
     >
       <div className="px-2.5 pb-2 pt-3" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
         <div className="mb-2 flex items-center gap-1.5">
