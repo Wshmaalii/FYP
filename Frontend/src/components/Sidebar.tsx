@@ -115,7 +115,7 @@ export function Sidebar({
   onOpenComposer,
   onOpenStock,
 }: SidebarProps) {
-  const sidebarWidth = '11.75rem';
+  const sidebarWidth = '12.75rem';
 
   return (
     <aside
