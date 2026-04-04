@@ -397,7 +397,7 @@ export default function App() {
         onOpenComposer={() => setNewChatOpen(true)}
         onOpenStock={openStockDetail}
       />
-      <div className="flex-1 flex flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
           currentView={currentView}
           onNavigate={setCurrentView}

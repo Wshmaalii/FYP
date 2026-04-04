@@ -117,7 +117,7 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <aside
-      className="flex w-[11.75rem] min-w-[11.75rem] flex-col"
+      className="flex w-[11.75rem] min-w-[11.75rem] max-w-[11.75rem] shrink-0 flex-col overflow-x-hidden"
       style={{ background: '#111214', borderRight: '0.5px solid rgba(255,255,255,0.05)' }}
     >
       <div className="px-2.5 pb-2 pt-3" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
@@ -153,7 +153,7 @@ export function Sidebar({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         <div className="px-2.5 pb-3 pt-3" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
           <div
             className="mb-1 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
@@ -194,7 +194,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <div style={{ borderTop: '0.5px solid var(--border-subtle)' }}>
+      <div className="min-w-0 overflow-hidden" style={{ borderTop: '0.5px solid var(--border-subtle)' }}>
         <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
       </div>
     </aside>

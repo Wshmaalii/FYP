@@ -32,7 +32,7 @@ function StockItem({
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
+      className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-1 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
       style={{
         borderBottom: showDivider ? '0.5px solid var(--border-faint)' : 'none',
       }}
@@ -49,12 +49,12 @@ function StockItem({
         </div>
         <p className="mt-px truncate text-[10px]" style={{ color: 'var(--text-faint)' }}>{stock.name}</p>
       </div>
-      <div className="text-right">
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-left">
         <p className="text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>
           {stock.price !== null ? stock.price.toFixed(2) : '--'}
         </p>
         <p
-          className="mt-px text-[10px]"
+          className="text-[10px]"
           style={{ color: isPositive ? 'var(--color-green)' : 'var(--color-red)' }}
         >
           {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
@@ -79,7 +79,7 @@ function SectionHeader({
     <button
       type="button"
       onClick={onClick}
-      className="mb-1.5 flex w-full items-center justify-between text-left transition-colors duration-150"
+      className="mb-1.5 flex w-full min-w-0 max-w-full items-start justify-between gap-2 overflow-hidden text-left transition-colors duration-150"
       style={{ color: 'var(--text-label)' }}
       onMouseEnter={(event) => {
         event.currentTarget.style.color = 'var(--text-muted)';
@@ -88,11 +88,11 @@ function SectionHeader({
         event.currentTarget.style.color = 'var(--text-label)';
       }}
     >
-      <div className="flex items-center gap-1.5">
+      <div className="flex min-w-0 items-center gap-1.5">
         {icon}
-        <span className="text-[10px] font-semibold uppercase tracking-[1px]">{title}</span>
+        <span className="truncate text-[10px] font-semibold uppercase tracking-[1px]">{title}</span>
       </div>
-      <div className="flex items-center gap-0.5">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5 overflow-hidden">
         {trailing}
         <ChevronRight className="h-3 w-3" />
       </div>
@@ -201,28 +201,28 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   }, [loadDashboardData]);
 
   return (
-    <div className="mt-auto px-2.5 py-2">
+    <div className="mt-auto min-w-0 max-w-full overflow-hidden px-2.5 py-2">
       <div className="pb-2">
         <SectionHeader
           title="Snapshot"
           onClick={() => onNavigate('Market Overview')}
-          trailing={<span className="text-[10px]" style={{ color: 'var(--accent-teal)' }}>Stored snapshots</span>}
+          trailing={<span className="truncate text-[10px]" style={{ color: 'var(--accent-teal)' }}>Stored snapshots</span>}
         />
         {liveDataError ? (
-          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>{MARKET_DATA_LIMITED_MESSAGE}</p>
+          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>{MARKET_DATA_LIMITED_MESSAGE}</p>
         ) : !overviewStatus?.isCachedFallback && marketIndices.length > 0 ? (
-          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
             Showing most recent available data.
           </p>
         ) : overviewStatus?.isCachedFallback ? (
-          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
             {overviewStatus.message || 'Showing most recent available data.'}
             {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
         ) : null}
         <div className="space-y-0">
           {marketIndices.length === 0 && !liveDataError ? (
-            <p className="py-1.5 text-[10px]" style={{ color: 'var(--text-faint)' }}>No stored market snapshots yet.</p>
+            <p className="max-w-full break-words py-1.5 text-[10px]" style={{ color: 'var(--text-faint)' }}>No stored market snapshots yet.</p>
           ) : (
             marketIndices.map((stock, index) => (
               <StockItem
@@ -243,7 +243,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         />
         <div className="space-y-0">
           {topMovers.length === 0 ? (
-            <p className="py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+            <p className="max-w-full break-words py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
               {topMoversMessage || 'Mention a ticker like #SPY or $AAPL to start.'}
             </p>
           ) : (
@@ -266,14 +266,14 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
           icon={<Star className="h-3.5 w-3.5" style={{ color: 'var(--accent-teal)' }} />}
         />
         {watchlistStatus?.isCachedFallback ? (
-          <p className="mb-2 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
             {watchlistStatus.message || 'Showing most recent available data.'}
             {watchlistStatus.lastUpdatedAt ? ` Last updated ${new Date(watchlistStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
           </p>
         ) : null}
         <div className="space-y-0">
           {watchlist.length === 0 ? (
-            <p className="py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>No watchlist items yet.</p>
+            <p className="max-w-full break-words py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>No watchlist items yet.</p>
           ) : (
             watchlist.map((stock, index) => (
               <StockItem
