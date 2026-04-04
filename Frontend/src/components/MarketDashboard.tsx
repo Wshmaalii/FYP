@@ -217,7 +217,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         <SectionHeader
           title="Snapshot"
           onClick={() => onNavigate('Market Overview')}
-          trailing={<span className="truncate text-[10px]" style={{ color: 'var(--accent-teal)' }}>Stored snapshots</span>}
+          trailing={<span className="truncate text-[10px]" style={{ color: 'var(--accent-teal)' }}>Snapshots ›</span>}
         />
         {liveDataError ? (
           <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>{MARKET_DATA_LIMITED_MESSAGE}</p>
