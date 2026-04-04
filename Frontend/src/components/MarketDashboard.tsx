@@ -17,6 +17,10 @@ interface MarketDashboardProps {
   onOpenStock: (ticker: string) => void;
 }
 
+function SidebarDivider() {
+  return <div className="h-px w-full" style={{ background: 'var(--border-subtle)' }} />;
+}
+
 function StockItem({
   stock,
   onOpenStock,
@@ -249,7 +253,8 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t pt-2" style={{ borderColor: 'var(--border-subtle)' }}>
+      <SidebarDivider />
+      <div className="pt-2">
         <SectionHeader
           title="Most Discussed"
           onClick={() => onNavigate('Top Movers')}
@@ -272,7 +277,8 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t pt-2" style={{ borderColor: 'var(--border-subtle)' }}>
+      <SidebarDivider />
+      <div className="pt-2">
         <SectionHeader
           title="Watchlist"
           onClick={() => onNavigate('Watchlist')}

@@ -203,7 +203,8 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="min-w-0 overflow-hidden" style={{ borderTop: '0.5px solid var(--border-subtle)' }}>
+      <div className="h-px w-full" style={{ background: 'var(--border-subtle)' }} />
+      <div className="min-w-0 overflow-hidden">
         <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
       </div>
     </aside>
