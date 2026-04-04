@@ -69,11 +69,13 @@ function SectionHeader({
   onClick,
   trailing,
   icon,
+  showChevron = true,
 }: {
   title: string;
   onClick: () => void;
   trailing?: ReactNode;
   icon?: ReactNode;
+  showChevron?: boolean;
 }) {
   return (
     <button
@@ -94,7 +96,7 @@ function SectionHeader({
       </div>
       <div className="flex min-w-0 flex-1 items-baseline justify-end gap-0.5 overflow-hidden">
         {trailing}
-        <ChevronRight className="h-3 w-3" />
+        {showChevron ? <ChevronRight className="h-3 w-3" /> : null}
       </div>
     </button>
   );
@@ -217,6 +219,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         <SectionHeader
           title="Snapshot"
           onClick={() => onNavigate('Market Overview')}
+          showChevron={false}
           trailing={<span className="truncate text-[10px]" style={{ color: 'var(--accent-teal)' }}>Snapshots ›</span>}
         />
         {liveDataError ? (
@@ -253,7 +256,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         />
         <div className="space-y-0">
           {topMovers.length === 0 ? (
-            <p className="max-w-full break-words py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
+            <p className="max-w-full truncate py-1.5 text-[10px] leading-4 whitespace-nowrap" style={{ color: 'var(--text-faint)' }}>
               {topMoversMessage || 'Mention a ticker like #SPY or $AAPL to start.'}
             </p>
           ) : (
