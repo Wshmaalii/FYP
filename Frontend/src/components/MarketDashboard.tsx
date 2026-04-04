@@ -32,7 +32,7 @@ function StockItem({
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
+      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
       style={{
         borderBottom: showDivider ? '0.5px solid var(--border-faint)' : 'none',
       }}
@@ -201,8 +201,8 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   }, [loadDashboardData]);
 
   return (
-    <div className="mt-auto px-3.5 py-3">
-      <div className="pb-3">
+    <div className="mt-auto px-3 py-2.5">
+      <div className="pb-2.5">
         <SectionHeader
           title="Snapshot"
           onClick={() => onNavigate('Market Overview')}
@@ -236,7 +236,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="border-t pt-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
         <SectionHeader
           title="Most Discussed"
           onClick={() => onNavigate('Top Movers')}
@@ -259,7 +259,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t pt-3" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="border-t pt-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
         <SectionHeader
           title="Watchlist"
           onClick={() => onNavigate('Watchlist')}
