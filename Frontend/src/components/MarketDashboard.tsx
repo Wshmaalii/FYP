@@ -32,7 +32,7 @@ function StockItem({
     <button
       type="button"
       onClick={() => onOpenStock(stock.ticker)}
-      className="flex w-full min-w-0 max-w-full flex-col gap-1 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
+      className="flex w-full min-w-0 max-w-full items-start justify-between gap-2 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
       style={{
         borderBottom: showDivider ? '0.5px solid var(--border-faint)' : 'none',
       }}
@@ -43,18 +43,18 @@ function StockItem({
         event.currentTarget.style.background = 'transparent';
       }}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[12px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{stock.ticker}</span>
         </div>
-        <p className="mt-px truncate text-[10px]" style={{ color: 'var(--text-faint)' }}>{stock.name}</p>
+        <p className="mt-0.5 truncate text-[10px]" style={{ color: 'var(--text-faint)' }}>{stock.name}</p>
       </div>
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-left">
+      <div className="flex min-w-[3.5rem] flex-col items-end text-right">
         <p className="text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>
           {stock.price !== null ? stock.price.toFixed(2) : '--'}
         </p>
         <p
-          className="text-[10px]"
+          className="mt-0.5 text-[10px]"
           style={{ color: isPositive ? 'var(--color-green)' : 'var(--color-red)' }}
         >
           {stock.changePercent !== null ? `${isPositive ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unavailable'}
@@ -79,7 +79,7 @@ function SectionHeader({
     <button
       type="button"
       onClick={onClick}
-      className="mb-1.5 flex w-full min-w-0 max-w-full items-start justify-between gap-2 overflow-hidden text-left transition-colors duration-150"
+      className="mb-1.5 flex w-full min-w-0 max-w-full items-baseline justify-between gap-2 overflow-hidden text-left transition-colors duration-150"
       style={{ color: 'var(--text-label)' }}
       onMouseEnter={(event) => {
         event.currentTarget.style.color = 'var(--text-muted)';
@@ -88,11 +88,11 @@ function SectionHeader({
         event.currentTarget.style.color = 'var(--text-label)';
       }}
     >
-      <div className="flex min-w-0 items-center gap-1.5">
+      <div className="flex min-w-0 items-baseline gap-1.5">
         {icon}
         <span className="truncate text-[10px] font-semibold uppercase tracking-[1px]">{title}</span>
       </div>
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-0.5 overflow-hidden">
+      <div className="flex min-w-0 flex-1 items-baseline justify-end gap-0.5 overflow-hidden">
         {trailing}
         <ChevronRight className="h-3 w-3" />
       </div>
