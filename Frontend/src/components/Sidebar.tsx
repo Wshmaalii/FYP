@@ -18,9 +18,9 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="pb-3">
+    <section className="pb-2.5">
       <h3
-        className="mb-1 px-0.5 text-[9px] font-medium uppercase tracking-[0.24em]"
+        className="mb-1 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
         style={{ color: 'rgba(255,255,255,0.24)', fontWeight: 500 }}
       >
         {title}
@@ -45,7 +45,7 @@ function NavigationButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2 rounded-[10px] px-2.5 py-1.5 text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
+      className="flex w-full items-center gap-1.5 rounded-[10px] px-2 py-1.5 text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
       style={{
         background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
         color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
@@ -85,7 +85,7 @@ function DiscoverButton({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[10px] px-2.5 py-[6px] text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
+      className="w-full rounded-[10px] px-2 py-[6px] text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
       style={{
         background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
         color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
@@ -117,11 +117,11 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <aside
-      className="flex w-[13.5rem] min-w-[13.5rem] flex-col"
+      className="flex w-[11.75rem] min-w-[11.75rem] flex-col"
       style={{ background: '#111214', borderRight: '0.5px solid rgba(255,255,255,0.05)' }}
     >
-      <div className="px-3 pb-2.5 pt-3.5" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
-        <div className="mb-2 flex items-center gap-2">
+      <div className="px-2.5 pb-2 pt-3" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
+        <div className="mb-2 flex items-center gap-1.5">
           <div
             className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[10px] font-bold text-white"
             style={{ background: '#63c4af' }}
@@ -135,7 +135,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onOpenComposer}
-          className="flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors"
+          className="flex w-full items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors"
           style={{
             background: 'rgba(99,196,175,0.09)',
             border: '0.5px solid rgba(99,196,175,0.24)',
@@ -154,9 +154,9 @@ export function Sidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="px-3 pb-3.5 pt-3.5" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
+        <div className="px-2.5 pb-3 pt-3" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
           <div
-            className="mb-1 px-0.5 text-[9px] font-medium uppercase tracking-[0.24em]"
+            className="mb-1 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
             style={{ color: 'rgba(255,255,255,0.26)', fontWeight: 500 }}
           >
             Discover
@@ -170,7 +170,7 @@ export function Sidebar({
           </div>
         </div>
 
-        <div className="px-3 pb-2 pt-3">
+        <div className="px-2.5 pb-1.5 pt-2.5">
           <Section title="Messaging">
             <NavigationButton
               label="Public Spaces"

@@ -79,7 +79,7 @@ function SectionHeader({
     <button
       type="button"
       onClick={onClick}
-      className="mb-2 flex w-full items-center justify-between text-left transition-colors duration-150"
+      className="mb-1.5 flex w-full items-center justify-between text-left transition-colors duration-150"
       style={{ color: 'var(--text-label)' }}
       onMouseEnter={(event) => {
         event.currentTarget.style.color = 'var(--text-muted)';
@@ -88,11 +88,11 @@ function SectionHeader({
         event.currentTarget.style.color = 'var(--text-label)';
       }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         {icon}
         <span className="text-[10px] font-semibold uppercase tracking-[1px]">{title}</span>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         {trailing}
         <ChevronRight className="h-3 w-3" />
       </div>
@@ -201,8 +201,8 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   }, [loadDashboardData]);
 
   return (
-    <div className="mt-auto px-3 py-2.5">
-      <div className="pb-2.5">
+    <div className="mt-auto px-2.5 py-2">
+      <div className="pb-2">
         <SectionHeader
           title="Snapshot"
           onClick={() => onNavigate('Market Overview')}
@@ -236,7 +236,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t pt-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="border-t pt-2" style={{ borderColor: 'var(--border-subtle)' }}>
         <SectionHeader
           title="Most Discussed"
           onClick={() => onNavigate('Top Movers')}
@@ -259,7 +259,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <div className="border-t pt-2.5" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="border-t pt-2" style={{ borderColor: 'var(--border-subtle)' }}>
         <SectionHeader
           title="Watchlist"
           onClick={() => onNavigate('Watchlist')}
