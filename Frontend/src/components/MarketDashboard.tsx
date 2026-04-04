@@ -200,6 +200,17 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
     };
   }, [loadDashboardData]);
 
+  const snapshotUpdatedLabel = overviewStatus?.lastUpdatedAt
+    ? `Updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })}`
+    : null;
+
   return (
     <div className="mt-auto min-w-0 max-w-full overflow-hidden px-2.5 py-2">
       <div className="pb-2">
@@ -210,14 +221,13 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         />
         {liveDataError ? (
           <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>{MARKET_DATA_LIMITED_MESSAGE}</p>
-        ) : !overviewStatus?.isCachedFallback && marketIndices.length > 0 ? (
-          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>
-            Showing most recent available data.
-          </p>
-        ) : overviewStatus?.isCachedFallback ? (
-          <p className="mb-2 max-w-full break-words text-[10px] leading-4" style={{ color: 'var(--text-faint)', overflowWrap: 'anywhere' }}>
-            {overviewStatus.message || 'Showing most recent available data.'}
-            {overviewStatus.lastUpdatedAt ? ` Last updated ${new Date(overviewStatus.lastUpdatedAt).toLocaleString('en-GB')}.` : ''}
+        ) : snapshotUpdatedLabel ? (
+          <p
+            className="mb-2 max-w-full truncate whitespace-nowrap text-[9px] leading-4"
+            style={{ color: 'var(--text-faint)' }}
+            title={snapshotUpdatedLabel}
+          >
+            {snapshotUpdatedLabel}
           </p>
         ) : null}
         <div className="space-y-0">
