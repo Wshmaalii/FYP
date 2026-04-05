@@ -17,10 +17,6 @@ interface MarketDashboardProps {
   onOpenStock: (ticker: string) => void;
 }
 
-function SidebarDivider() {
-  return <div className="my-2 h-px w-full" style={{ background: 'rgba(255, 255, 255, 0.12)' }} />;
-}
-
 function StockItem({
   stock,
   onOpenStock,
@@ -218,7 +214,10 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
     : null;
 
   return (
-    <div className="mt-auto min-w-0 max-w-full overflow-hidden px-2.5 py-2">
+    <div
+      className="mt-auto min-w-0 max-w-full overflow-hidden px-2.5 py-3"
+      style={{ borderTop: '1px solid rgba(255, 255, 255, 0.14)' }}
+    >
       <div className="pb-2">
         <SectionHeader
           title="Snapshot"
@@ -253,8 +252,10 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <SidebarDivider />
-      <div className="pt-2">
+      <div
+        className="mt-3 pt-3"
+        style={{ borderTop: '1px solid rgba(255, 255, 255, 0.14)' }}
+      >
         <SectionHeader
           title="Most Discussed"
           onClick={() => onNavigate('Top Movers')}
@@ -277,8 +278,10 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         </div>
       </div>
 
-      <SidebarDivider />
-      <div className="pt-2">
+      <div
+        className="mt-3 pt-3"
+        style={{ borderTop: '1px solid rgba(255, 255, 255, 0.14)' }}
+      >
         <SectionHeader
           title="Watchlist"
           onClick={() => onNavigate('Watchlist')}
