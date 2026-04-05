@@ -18,7 +18,7 @@ interface MarketDashboardProps {
 }
 
 function SidebarDivider() {
-  return <div className="h-px w-full" style={{ background: 'var(--border-subtle)' }} />;
+  return <div className="my-2 h-px w-full" style={{ background: 'rgba(255, 255, 255, 0.12)' }} />;
 }
 
 function StockItem({
