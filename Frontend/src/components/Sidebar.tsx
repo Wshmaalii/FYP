@@ -18,14 +18,14 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="pb-2.5">
+    <section className="pb-3">
       <h3
-        className="mb-1 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
+        className="mb-1.5 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
         style={{ color: 'rgba(255,255,255,0.24)', fontWeight: 500 }}
       >
         {title}
       </h3>
-      <div className="space-y-0.5">{children}</div>
+      <div className="space-y-1">{children}</div>
     </section>
   );
 }
@@ -163,14 +163,14 @@ export function Sidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-        <div className="px-2.5 pb-3 pt-3" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
+        <div className="px-2.5 pb-3.5 pt-3.5" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
           <div
-            className="mb-1 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
+            className="mb-1.5 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
             style={{ color: 'rgba(255,255,255,0.26)', fontWeight: 500 }}
           >
             Discover
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             <DiscoverButton
               label="Explore Spaces"
               selected={selectedView === 'Explore Spaces'}
@@ -179,7 +179,7 @@ export function Sidebar({
           </div>
         </div>
 
-        <div className="px-2.5 pb-1.5 pt-2.5">
+        <div className="px-2.5 pb-2.5 pt-3.5">
           <Section title="Messaging">
             <NavigationButton
               label="Public Spaces"
