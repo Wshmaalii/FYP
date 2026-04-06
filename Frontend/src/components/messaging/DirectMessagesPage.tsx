@@ -1,4 +1,4 @@
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Plus, Search } from 'lucide-react';
 import type { ConversationSummary } from '../../api/messaging';
 
 interface DirectMessagesPageProps {
@@ -6,54 +6,333 @@ interface DirectMessagesPageProps {
   onOpen: (conversationKey: string) => void;
 }
 
+const AVATAR_BACKGROUNDS = ['#14b8a6', '#34d399', '#f59e0b', '#4f6ef7', '#ef4444', '#8b5cf6'];
+const TIMESTAMP_LABELS = ['10:32', '09:15', 'Yesterday', 'Yesterday', 'Wednesday', 'Tuesday'];
+
+function getInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return 'DM';
+  }
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+  return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase();
+}
+
+function getAvatarBackground(seed: string, index: number) {
+  const seedValue = [...seed].reduce((total, char) => total + char.charCodeAt(0), 0);
+  return AVATAR_BACKGROUNDS[(seedValue + index) % AVATAR_BACKGROUNDS.length];
+}
+
+function getPreview(conversation: ConversationSummary) {
+  if (conversation.description?.trim()) {
+    return conversation.description;
+  }
+  if (conversation.handle) {
+    return `Start chatting with @${conversation.handle}`;
+  }
+  return 'Open this conversation to start messaging.';
+}
+
+function getTimestamp(index: number) {
+  return TIMESTAMP_LABELS[index % TIMESTAMP_LABELS.length];
+}
+
+function isOnline(index: number) {
+  return index < 2;
+}
+
 export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPageProps) {
   return (
-    <div className="flex-1 overflow-y-auto bg-[#0b0f10]">
-      <div className="mx-auto max-w-[980px] px-4 py-5 lg:px-6 lg:py-6">
-        <div className="mb-5 rounded-[20px] border border-zinc-800/80 bg-[#101417] px-4 py-4 lg:px-5">
-          <div className="mb-1 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-zinc-700 bg-zinc-950/80">
-              <MessageSquare className="h-3.5 w-3.5 text-[#8fb7b2]" />
-            </div>
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.28em] text-zinc-500">Messaging</p>
-              <h2 className="mt-1 text-[24px] font-semibold tracking-tight text-zinc-100">Direct Messages</h2>
-            </div>
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        background: '#0b0f10',
+      }}
+    >
+      <div
+        style={{
+          width: '350px',
+          minWidth: '350px',
+          maxWidth: '350px',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          background: '#111214',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div
+          style={{
+            padding: '1.5rem 1rem 1rem',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+            }}
+          >
+            <h2
+              style={{
+                color: '#f4f4f5',
+                fontSize: '18px',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Direct Messages
+            </h2>
+            <button
+              type="button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2.75rem',
+                height: '2.75rem',
+                borderRadius: '14px',
+                border: '0.5px solid rgba(0,196,160,0.18)',
+                background: 'rgba(0,196,160,0.12)',
+                color: '#00c4a0',
+              }}
+              aria-label="Start conversation"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
           </div>
-          <p className="max-w-2xl text-[12px] leading-5 text-zinc-500">Open your one-to-one conversations.</p>
+
+          <div
+            style={{
+              position: 'relative',
+              marginTop: '1.25rem',
+            }}
+          >
+            <Search
+              className="h-4 w-4"
+              style={{
+                position: 'absolute',
+                left: '1rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#71717a',
+                pointerEvents: 'none',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              style={{
+                width: '100%',
+                borderRadius: '16px',
+                border: '1px solid rgba(255,255,255,0.07)',
+                background: '#17171a',
+                color: '#e4e4e7',
+                fontSize: '13px',
+                padding: '0.95rem 1rem 0.95rem 3rem',
+                outline: 'none',
+              }}
+            />
+          </div>
         </div>
 
-        {conversations.length === 0 ? (
-          <div className="rounded-[18px] border border-zinc-800/80 bg-[#111518] px-5 py-5 text-[13px] leading-6 text-zinc-500">
-            No direct messages yet. Start a 1:1 conversation from New Chat.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {conversations.map((conversation) => (
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+          }}
+        >
+          {conversations.length === 0 ? (
+            <div
+              style={{
+                padding: '1.25rem 1rem',
+                color: '#71717a',
+                fontSize: '13px',
+                lineHeight: '1.7',
+              }}
+            >
+              No direct messages yet. Start a 1:1 conversation from New Chat.
+            </div>
+          ) : (
+            conversations.map((conversation, index) => (
               <button
                 key={conversation.conversation_key}
                 type="button"
                 onClick={() => onOpen(conversation.conversation_key)}
-                className="w-full rounded-[18px] border border-zinc-800/80 bg-[#111518] px-4 py-4 text-left transition-colors duration-150 hover:border-zinc-700 hover:bg-[#14181b]"
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '1rem',
+                  padding: '1.25rem 1rem',
+                  textAlign: 'left',
+                  borderTop: index === 0 ? 'none' : '1px solid rgba(255,255,255,0.03)',
+                  transition: 'background-color 150ms ease',
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.background = 'transparent';
+                }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-[15px] font-medium tracking-tight text-zinc-100">{conversation.name}</h3>
-                    <p className="mt-1 text-[12px] leading-5 text-zinc-500">
-                      {conversation.handle ? `@${conversation.handle}` : 'Direct message'}
-                    </p>
-                    {conversation.description ? (
-                      <p className="mt-2 text-[12px] leading-5 text-zinc-400">{conversation.description}</p>
-                    ) : null}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '4rem',
+                    height: '4rem',
+                    borderRadius: '999px',
+                    background: getAvatarBackground(conversation.conversation_key, index),
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {getInitials(conversation.name)}
+                </div>
+                <div
+                  style={{
+                    minWidth: 0,
+                    flex: 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    <div
+                      style={{
+                        minWidth: 0,
+                        flex: 1,
+                        color: '#f4f4f5',
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        letterSpacing: '-0.01em',
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {conversation.name}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: '#52525b',
+                          fontSize: '12px',
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {getTimestamp(index)}
+                      </span>
+                      {isOnline(index) ? (
+                        <span
+                          style={{
+                            width: '0.625rem',
+                            height: '0.625rem',
+                            borderRadius: '999px',
+                            background: '#14b8a6',
+                          }}
+                        />
+                      ) : null}
+                    </div>
                   </div>
-                  <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-zinc-400">
-                    1:1
-                  </span>
+                  <p
+                    style={{
+                      marginTop: '0.45rem',
+                      color: '#71717a',
+                      fontSize: '13px',
+                      lineHeight: 1.5,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {getPreview(conversation)}
+                  </p>
                 </div>
               </button>
-            ))}
+            ))
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#0d0e11',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '2rem',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '6.5rem',
+              height: '6.5rem',
+              borderRadius: '999px',
+              background: 'rgba(255,255,255,0.04)',
+              color: '#a1a1aa',
+            }}
+          >
+            <MessageSquare className="h-10 w-10" />
           </div>
-        )}
+          <h3
+            style={{
+              marginTop: '1.5rem',
+              color: '#f4f4f5',
+              fontSize: '20px',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Select a conversation
+          </h3>
+          <p
+            style={{
+              marginTop: '0.75rem',
+              color: '#71717a',
+              fontSize: '13px',
+              lineHeight: '1.7',
+              maxWidth: '28rem',
+            }}
+          >
+            Choose a conversation from the list to start messaging.
+          </p>
+        </div>
       </div>
     </div>
   );
