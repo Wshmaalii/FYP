@@ -22,7 +22,7 @@ export function ExploreSpacesPage({ spaces, joiningKey, onJoin, onOpen }: Explor
           {spaces.map((space) => (
             <div
               key={space.conversation_key}
-              className="rounded-[16px] border bg-[#14161b] px-5 py-5 transition-colors duration-150"
+              className="rounded-[18px] border bg-[#14161b] px-5 py-5 transition-colors duration-150"
               style={{ borderColor: 'rgba(255,255,255,0.06)' }}
               onMouseEnter={(event) => {
                 event.currentTarget.style.background = '#171920';
@@ -33,56 +33,59 @@ export function ExploreSpacesPage({ spaces, joiningKey, onJoin, onOpen }: Explor
                 event.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
               }}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center justify-between gap-5">
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-                    <h3 className="text-[18px] font-semibold tracking-tight text-zinc-100">{space.name}</h3>
-                    <span className="rounded-full bg-[rgba(88,122,255,0.12)] px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-[rgba(132,153,255,0.88)]">
-                      Public Space
-                    </span>
+                  <div className="inline-flex rounded-full bg-[rgba(88,122,255,0.12)] px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-[rgba(132,153,255,0.88)]">
+                    Public Space
                   </div>
+                  <h3 className="mt-3 text-[20px] font-semibold tracking-tight text-zinc-100">{space.name}</h3>
+                  <p className="mt-2 max-w-3xl text-[13px] leading-6 text-zinc-500">{space.description}</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                    {space.channels.map((channel) => (
+                      <span
+                        key={channel.channel_key}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] text-zinc-400"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          borderColor: 'rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        <Hash className="h-3 w-3" />
+                        <span>{channel.slug}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-[11px] text-zinc-600">{space.member_count} members</p>
                 </div>
-                {space.is_member ? (
-                  <button
-                    type="button"
-                    onClick={() => onOpen(space.conversation_key)}
-                    className="shrink-0 rounded-full px-4 py-2 text-[12px] font-medium text-zinc-300 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.1)]"
-                    style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '0.5px solid rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    Open
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void onJoin(space.conversation_key)}
-                    disabled={joiningKey === space.conversation_key}
-                    className="shrink-0 rounded-full px-4 py-2 text-[12px] font-medium text-zinc-300 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.1)] disabled:opacity-60"
-                    style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '0.5px solid rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    {joiningKey === space.conversation_key ? 'Joining...' : 'Join'}
-                  </button>
-                )}
+                <div className="flex shrink-0 self-center">
+                  {space.is_member ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpen(space.conversation_key)}
+                      className="rounded-full px-4 py-2 text-[12px] font-medium text-zinc-300 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.1)]"
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '0.5px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      Open
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void onJoin(space.conversation_key)}
+                      disabled={joiningKey === space.conversation_key}
+                      className="rounded-full px-4 py-2 text-[12px] font-medium text-zinc-300 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.1)] disabled:opacity-60"
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '0.5px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      {joiningKey === space.conversation_key ? 'Joining...' : 'Join'}
+                    </button>
+                  )}
+                </div>
               </div>
-              <p className="mt-3 max-w-3xl text-[13px] leading-6 text-zinc-500">{space.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {space.channels.map((channel) => (
-                  <span
-                    key={channel.channel_key}
-                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] text-zinc-500"
-                    style={{ background: 'rgba(255,255,255,0.05)' }}
-                  >
-                    <Hash className="h-3 w-3" />
-                    {channel.slug}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-4 text-[11px] text-zinc-600">{space.member_count} members</p>
             </div>
           ))}
         </div>
