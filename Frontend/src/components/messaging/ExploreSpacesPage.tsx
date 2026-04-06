@@ -1,4 +1,3 @@
-import { Hash } from 'lucide-react';
 import type { ConversationSummary } from '../../api/messaging';
 
 interface ExploreSpacesPageProps {
@@ -10,81 +9,231 @@ interface ExploreSpacesPageProps {
 
 export function ExploreSpacesPage({ spaces, joiningKey, onJoin, onOpen }: ExploreSpacesPageProps) {
   return (
-    <div className="flex-1 overflow-y-auto bg-[#0b0f10]">
-      <div className="mx-auto max-w-[980px] px-4 py-6 lg:px-6 lg:py-7">
-        <div className="mb-7 px-1">
-          <p className="text-[9px] uppercase tracking-[0.28em] text-zinc-500">Discover</p>
-          <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-zinc-100">Explore Spaces</h2>
-          <p className="mt-2 max-w-2xl text-[12px] leading-5 text-zinc-500">Join public trading communities and move straight into conversation.</p>
+    <div
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        background: '#0b0f10',
+      }}
+    >
+      <div
+        style={{
+          margin: '0 auto',
+          maxWidth: '980px',
+          padding: '1.5rem 1rem',
+        }}
+      >
+        <div
+          style={{
+            marginBottom: '1.75rem',
+            paddingInline: '0.25rem',
+          }}
+        >
+          <p
+            style={{
+              color: '#71717a',
+              fontSize: '9px',
+              letterSpacing: '0.28em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Discover
+          </p>
+          <h2
+            style={{
+              marginTop: '0.5rem',
+              color: '#f4f4f5',
+              fontSize: '22px',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Explore Spaces
+          </h2>
+          <p
+            style={{
+              marginTop: '0.5rem',
+              maxWidth: '42rem',
+              color: '#71717a',
+              fontSize: '12px',
+              lineHeight: '1.7',
+            }}
+          >
+            Join public trading communities and move straight into conversation.
+          </p>
         </div>
 
-        <div className="space-y-5">
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+          }}
+        >
           {spaces.map((space) => (
             <div
               key={space.conversation_key}
-              className="rounded-[18px] border bg-[#14161b] px-5 py-5 transition-colors duration-150"
-              style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1.25rem',
+                borderRadius: '18px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: '#14161b',
+                padding: '1.25rem',
+                transition: 'background-color 150ms ease, border-color 150ms ease',
+              }}
               onMouseEnter={(event) => {
                 event.currentTarget.style.background = '#171920';
-                event.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)';
+                event.currentTarget.style.borderColor = 'rgba(255,255,255,0.11)';
               }}
               onMouseLeave={(event) => {
                 event.currentTarget.style.background = '#14161b';
-                event.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                event.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
               }}
             >
-              <div className="flex items-center justify-between gap-5">
-                <div className="min-w-0 flex-1">
-                  <div className="inline-flex rounded-full bg-[rgba(88,122,255,0.12)] px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-[rgba(132,153,255,0.88)]">
+              <div
+                style={{
+                  minWidth: 0,
+                  flex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    borderRadius: '999px',
+                    background: 'rgba(88,122,255,0.16)',
+                    color: 'rgba(132,153,255,0.92)',
+                    padding: '0.3rem 0.65rem',
+                    fontSize: '9px',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                  }}
+                >
                     Public Space
-                  </div>
-                  <h3 className="mt-3 text-[20px] font-semibold tracking-tight text-zinc-100">{space.name}</h3>
-                  <p className="mt-2 max-w-3xl text-[13px] leading-6 text-zinc-500">{space.description}</p>
-                  <div className="mt-4 flex flex-wrap items-center gap-2.5">
-                    {space.channels.map((channel) => (
-                      <span
-                        key={channel.channel_key}
-                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] text-zinc-400"
-                        style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          borderColor: 'rgba(255,255,255,0.08)',
-                        }}
-                      >
-                        <Hash className="h-3 w-3" />
-                        <span>{channel.slug}</span>
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-4 text-[11px] text-zinc-600">{space.member_count} members</p>
                 </div>
-                <div className="flex shrink-0 self-center">
-                  {space.is_member ? (
-                    <button
-                      type="button"
-                      onClick={() => onOpen(space.conversation_key)}
-                      className="rounded-full px-4 py-2 text-[12px] font-medium text-zinc-300 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.1)]"
+                <h3
+                  style={{
+                    marginTop: '0.75rem',
+                    color: '#f4f4f5',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  {space.name}
+                </h3>
+                <p
+                  style={{
+                    marginTop: '0.5rem',
+                    maxWidth: '48rem',
+                    color: '#71717a',
+                    fontSize: '13px',
+                    lineHeight: '1.7',
+                  }}
+                >
+                  {space.description}
+                </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: '0.625rem',
+                    marginTop: '1rem',
+                  }}
+                >
+                  {space.channels.map((channel) => (
+                    <span
+                      key={channel.channel_key}
                       style={{
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '0.5px solid rgba(255,255,255,0.08)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        borderRadius: '999px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'rgba(255,255,255,0.04)',
+                        color: '#a1a1aa',
+                        padding: '0.35rem 0.75rem',
+                        fontSize: '10px',
+                        lineHeight: 1,
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      Open
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => void onJoin(space.conversation_key)}
-                      disabled={joiningKey === space.conversation_key}
-                      className="rounded-full px-4 py-2 text-[12px] font-medium text-zinc-300 transition-colors duration-150 hover:bg-[rgba(255,255,255,0.1)] disabled:opacity-60"
-                      style={{
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '0.5px solid rgba(255,255,255,0.08)',
-                      }}
-                    >
-                      {joiningKey === space.conversation_key ? 'Joining...' : 'Join'}
-                    </button>
-                  )}
+                      #{channel.slug}
+                    </span>
+                  ))}
                 </div>
+                <p
+                  style={{
+                    marginTop: '1rem',
+                    color: '#52525b',
+                    fontSize: '11px',
+                  }}
+                >
+                  {space.member_count} members
+                </p>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexShrink: 0,
+                  alignItems: 'center',
+                  alignSelf: 'center',
+                }}
+              >
+                {space.is_member ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpen(space.conversation_key)}
+                    style={{
+                      borderRadius: '999px',
+                      border: '0.5px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#d4d4d8',
+                      padding: '0.5rem 1rem',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      transition: 'background-color 150ms ease',
+                    }}
+                    onMouseEnter={(event) => {
+                      event.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                    }}
+                  >
+                    Open
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void onJoin(space.conversation_key)}
+                    disabled={joiningKey === space.conversation_key}
+                    style={{
+                      borderRadius: '999px',
+                      border: '0.5px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#d4d4d8',
+                      padding: '0.5rem 1rem',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      transition: 'background-color 150ms ease, opacity 150ms ease',
+                      opacity: joiningKey === space.conversation_key ? 0.6 : 1,
+                    }}
+                    onMouseEnter={(event) => {
+                      if (joiningKey !== space.conversation_key) {
+                        event.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                      }
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                    }}
+                  >
+                    {joiningKey === space.conversation_key ? 'Joining...' : 'Join'}
+                  </button>
+                )}
               </div>
             </div>
           ))}
