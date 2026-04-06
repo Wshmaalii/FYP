@@ -1,4 +1,3 @@
-import { Lock, Users } from 'lucide-react';
 import type { ConversationSummary } from '../../api/messaging';
 
 interface PrivateRoomsPageProps {
@@ -8,48 +7,212 @@ interface PrivateRoomsPageProps {
 
 export function PrivateRoomsPage({ conversations, onOpen }: PrivateRoomsPageProps) {
   return (
-    <div className="flex-1 overflow-y-auto bg-[#0b0f10]">
-      <div className="mx-auto max-w-[980px] px-4 py-5 lg:px-6 lg:py-6">
-        <div className="mb-5 rounded-[20px] border border-zinc-800/80 bg-[#101417] px-4 py-4 lg:px-5">
-          <div className="mb-1 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-zinc-700 bg-zinc-950/80">
-              <Lock className="h-3.5 w-3.5 text-[#8fb7b2]" />
-            </div>
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.28em] text-zinc-500">Messaging</p>
-              <h2 className="mt-1 text-[24px] font-semibold tracking-tight text-zinc-100">Private Rooms</h2>
-            </div>
-          </div>
-          <p className="max-w-2xl text-[12px] leading-5 text-zinc-500">Open invite-only group conversations.</p>
+    <div
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        background: '#0b0f10',
+      }}
+    >
+      <div
+        style={{
+          margin: '0 auto',
+          maxWidth: '980px',
+          padding: '1.5rem 1rem',
+        }}
+      >
+        <div
+          style={{
+            marginBottom: '1.75rem',
+            paddingInline: '0.25rem',
+          }}
+        >
+          <p
+            style={{
+              color: '#71717a',
+              fontSize: '9px',
+              letterSpacing: '0.28em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Messaging
+          </p>
+          <h2
+            style={{
+              marginTop: '0.5rem',
+              color: '#f4f4f5',
+              fontSize: '22px',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Private Rooms
+          </h2>
+          <p
+            style={{
+              marginTop: '0.5rem',
+              maxWidth: '42rem',
+              color: '#71717a',
+              fontSize: '12px',
+              lineHeight: '1.7',
+            }}
+          >
+            Open invite-only group conversations.
+          </p>
         </div>
 
         {conversations.length === 0 ? (
-          <div className="rounded-[18px] border border-zinc-800/80 bg-[#111518] px-5 py-5 text-[13px] leading-6 text-zinc-500">
+          <div
+            style={{
+              borderRadius: '18px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: '#111518',
+              color: '#71717a',
+              fontSize: '13px',
+              lineHeight: '1.7',
+              padding: '1.25rem',
+            }}
+          >
             No private rooms yet. Create an invite-only room from New Chat.
           </div>
         ) : (
-          <div className="space-y-3">
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem',
+            }}
+          >
             {conversations.map((conversation) => (
               <button
                 key={conversation.conversation_key}
                 type="button"
                 onClick={() => onOpen(conversation.conversation_key)}
-                className="w-full rounded-[18px] border border-zinc-800/80 bg-[#111518] px-4 py-4 text-left transition-colors duration-150 hover:border-zinc-700 hover:bg-[#14181b]"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1.25rem',
+                  width: '100%',
+                  borderRadius: '18px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: '#14161b',
+                  padding: '1.25rem',
+                  textAlign: 'left',
+                  transition: 'background-color 150ms ease, border-color 150ms ease',
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.background = '#171920';
+                  event.currentTarget.style.borderColor = 'rgba(255,255,255,0.11)';
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.background = '#14161b';
+                  event.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                      <h3 className="text-[15px] font-medium tracking-tight text-zinc-100">{conversation.name}</h3>
-                      <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[9px] uppercase tracking-[0.18em] text-zinc-400">
-                        Private Room
+                <div
+                  style={{
+                    minWidth: 0,
+                    flex: 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      borderRadius: '999px',
+                      background: 'rgba(244,114,182,0.12)',
+                      color: 'rgba(244,114,182,0.9)',
+                      padding: '0.3rem 0.65rem',
+                      fontSize: '9px',
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Private Room
+                  </div>
+                  <h3
+                    style={{
+                      marginTop: '0.75rem',
+                      color: '#f4f4f5',
+                      fontSize: '20px',
+                      fontWeight: 600,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {conversation.name}
+                  </h3>
+                  <p
+                    style={{
+                      marginTop: '0.5rem',
+                      maxWidth: '48rem',
+                      color: '#71717a',
+                      fontSize: '13px',
+                      lineHeight: '1.7',
+                    }}
+                  >
+                    {conversation.description || 'Invite-only conversation for selected members.'}
+                  </p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: '0.625rem',
+                      marginTop: '1rem',
+                    }}
+                  >
+                    {(conversation.members || []).slice(0, 4).map((member) => (
+                      <span
+                        key={member.user_id}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          borderRadius: '999px',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'rgba(255,255,255,0.04)',
+                          color: '#a1a1aa',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '10px',
+                          lineHeight: 1,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        @{member.username}
                       </span>
-                    </div>
-                    <p className="text-[12px] leading-5 text-zinc-400">{conversation.description}</p>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2 text-[12px] text-zinc-500">
-                    <Users className="h-3.5 w-3.5" />
-                    <span>{conversation.member_count}</span>
-                  </div>
+                  <p
+                    style={{
+                      marginTop: '1rem',
+                      color: '#52525b',
+                      fontSize: '11px',
+                    }}
+                  >
+                    {conversation.member_count} members
+                  </p>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexShrink: 0,
+                    alignItems: 'center',
+                    alignSelf: 'center',
+                  }}
+                >
+                  <span
+                    style={{
+                      borderRadius: '999px',
+                      border: '0.5px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#d4d4d8',
+                      padding: '0.5rem 1rem',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Open
+                  </span>
                 </div>
               </button>
             ))}
