@@ -279,13 +279,10 @@ export default function App() {
 
   const sidebarSelectedView = useMemo<View>(() => {
     if (currentView === 'Conversation' && selectedConversation) {
-      if (selectedConversation.kind === 'public_space') {
-        return 'Public Spaces';
-      }
       if (selectedConversation.kind === 'direct_message') {
         return 'Direct Messages';
       }
-      return 'Private Rooms';
+      return 'Conversation';
     }
 
     return currentView;
@@ -393,7 +390,11 @@ export default function App() {
     <div className="flex h-screen" style={{ background: 'var(--bg-app)', color: 'var(--text-primary)' }}>
       <Sidebar
         selectedView={sidebarSelectedView}
+        selectedConversationKey={selectedConversation?.conversation_key || null}
+        selectedConversationKind={selectedConversation?.kind || null}
+        mySpaces={sidebarData.my_spaces}
         onNavigate={setCurrentView}
+        onOpenSpace={(conversationKey) => void openConversation(conversationKey)}
         onOpenComposer={() => setNewChatOpen(true)}
         onOpenStock={openStockDetail}
       />

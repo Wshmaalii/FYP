@@ -1,13 +1,25 @@
 import type { ReactNode } from 'react';
-import { Globe, Lock, MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus } from 'lucide-react';
 import { MarketDashboard } from './MarketDashboard';
 import { View } from '../App';
+import type { ConversationSummary } from '../api/messaging';
 
 interface SidebarProps {
   selectedView: View;
+  selectedConversationKey: string | null;
+  selectedConversationKind: ConversationSummary['kind'] | null;
+  mySpaces: ConversationSummary[];
   onNavigate: (view: View) => void;
+  onOpenSpace: (conversationKey: string) => void;
   onOpenComposer: () => void;
   onOpenStock: (ticker: string) => void;
+}
+
+const SPACE_DOT_COLORS = ['#4f6ef7', '#f59e0b', '#2dd4aa', '#f26b6b', '#8b5cf6', '#00c4a0'];
+
+function getSpaceDotColor(seed: string, index: number) {
+  const total = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return SPACE_DOT_COLORS[(total + index) % SPACE_DOT_COLORS.length];
 }
 
 function Section({
@@ -18,14 +30,20 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="pb-3">
+    <section style={{ paddingBottom: '0.75rem' }}>
       <h3
-        className="mb-1.5 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
-        style={{ color: 'rgba(255,255,255,0.24)', fontWeight: 500 }}
+        style={{
+          marginBottom: '0.75rem',
+          color: 'rgba(255,255,255,0.28)',
+          fontSize: '9px',
+          fontWeight: 500,
+          letterSpacing: '0.26em',
+          textTransform: 'uppercase',
+        }}
       >
         {title}
       </h3>
-      <div className="space-y-1">{children}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>{children}</div>
     </section>
   );
 }
@@ -45,11 +63,15 @@ function NavigationButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-1.5 rounded-[10px] px-2 py-1.5 text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
+      className="flex w-full items-center gap-1.5 rounded-[10px] text-left transition-all duration-150"
       style={{
         background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
         color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
         fontWeight: selected ? 500 : 400,
+        fontSize: '11px',
+        lineHeight: 1.35,
+        letterSpacing: '-0.01em',
+        padding: '0.45rem 0.5rem',
       }}
       onMouseEnter={(event) => {
         if (!selected) {
@@ -85,11 +107,15 @@ function DiscoverButton({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[10px] px-2 py-[6px] text-left text-[11px] font-normal leading-[1.35] tracking-[-0.01em] transition-all duration-150"
+      className="w-full rounded-[10px] text-left transition-all duration-150"
       style={{
         background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
         color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
         fontWeight: selected ? 500 : 500,
+        fontSize: '11px',
+        lineHeight: 1.35,
+        letterSpacing: '-0.01em',
+        padding: '0.45rem 0.5rem',
       }}
       onMouseEnter={(event) => {
         if (!selected) {
@@ -109,9 +135,74 @@ function DiscoverButton({
   );
 }
 
+function SpaceButton({
+  label,
+  selected,
+  dotColor,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  dotColor: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center rounded-[10px] text-left transition-all duration-150"
+      style={{
+        alignItems: 'center',
+        gap: '0.75rem',
+        background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
+        color: selected ? 'rgba(255,255,255,0.86)' : 'rgba(255,255,255,0.52)',
+        fontSize: '11px',
+        lineHeight: 1.35,
+        letterSpacing: '-0.01em',
+        padding: '0.45rem 0.5rem',
+      }}
+      onMouseEnter={(event) => {
+        if (!selected) {
+          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+          event.currentTarget.style.color = 'rgba(255,255,255,0.66)';
+        }
+      }}
+      onMouseLeave={(event) => {
+        if (!selected) {
+          event.currentTarget.style.background = 'transparent';
+          event.currentTarget.style.color = 'rgba(255,255,255,0.52)';
+        }
+      }}
+    >
+      <span
+        style={{
+          width: '0.65rem',
+          height: '0.65rem',
+          borderRadius: '999px',
+          background: dotColor,
+          flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
 export function Sidebar({
   selectedView,
+  selectedConversationKey,
+  selectedConversationKind,
+  mySpaces,
   onNavigate,
+  onOpenSpace,
   onOpenComposer,
   onOpenStock,
 }: SidebarProps) {
@@ -163,42 +254,62 @@ export function Sidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-        <div className="px-2.5 pb-3.5 pt-3.5" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
-          <div
-            className="mb-1.5 px-0 text-[9px] font-medium uppercase tracking-[0.22em]"
-            style={{ color: 'rgba(255,255,255,0.26)', fontWeight: 500 }}
-          >
-            Discover
-          </div>
-          <div className="space-y-1">
+        <div
+          style={{
+            padding: '1rem 0.625rem 1rem',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <Section title="Discover">
             <DiscoverButton
               label="Explore Spaces"
               selected={selectedView === 'Explore Spaces'}
               onClick={() => onNavigate('Explore Spaces')}
             />
-          </div>
-        </div>
-
-        <div className="px-2.5 pb-2.5 pt-3.5">
-          <Section title="Messaging">
-            <NavigationButton
-              label="Public Spaces"
-              icon={Globe}
+            <DiscoverButton
+              label="Browse Communities"
               selected={selectedView === 'Public Spaces'}
               onClick={() => onNavigate('Public Spaces')}
             />
+          </Section>
+
+          <Section title="Messages">
             <NavigationButton
               label="Direct Messages"
               icon={MessageSquare}
               selected={selectedView === 'Direct Messages'}
               onClick={() => onNavigate('Direct Messages')}
             />
-            <NavigationButton
-              label="Private Rooms"
-              icon={Lock}
-              selected={selectedView === 'Private Rooms'}
-              onClick={() => onNavigate('Private Rooms')}
-            />
+          </Section>
+        </div>
+
+        <div
+          style={{
+            padding: '1rem 0.625rem 1rem',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <Section title="My Spaces">
+            {mySpaces.length > 0 ? mySpaces.map((space, index) => (
+              <SpaceButton
+                key={space.conversation_key}
+                label={space.name}
+                selected={selectedConversationKind === 'public_space' && selectedConversationKey === space.conversation_key}
+                dotColor={getSpaceDotColor(space.conversation_key, index)}
+                onClick={() => onOpenSpace(space.conversation_key)}
+              />
+            )) : (
+              <div
+                style={{
+                  color: 'rgba(255,255,255,0.34)',
+                  fontSize: '11px',
+                  lineHeight: 1.5,
+                  padding: '0.1rem 0.5rem 0',
+                }}
+              >
+                No joined spaces yet.
+              </div>
+            )}
           </Section>
         </div>
       </div>
