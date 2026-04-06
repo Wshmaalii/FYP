@@ -43,32 +43,99 @@ export function ChatMessage({ message, onOpenTradeTicket }: ChatMessageProps) {
   const avatarColor = getAvatarColor(message.user);
 
   return (
-    <div className="flex gap-3">
+    <div
+      style={{
+        display: 'flex',
+        gap: '14px',
+        alignItems: 'flex-start',
+      }}
+    >
       <div
-        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
-        style={{ background: avatarColor }}
+        style={{
+          display: 'flex',
+          width: '48px',
+          height: '48px',
+          flexShrink: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '999px',
+          background: avatarColor,
+          color: '#ffffff',
+          fontSize: '16px',
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+        }}
       >
         {message.user.split(' ').map((name) => name[0]).join('')}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[14px] font-semibold" style={{ color: 'var(--text-primary)' }}>{message.user}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '6px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span
+            style={{
+              color: 'var(--text-primary)',
+              fontSize: '15px',
+              fontWeight: 600,
+              lineHeight: 1.25,
+            }}
+          >
+            {message.user}
+          </span>
           {message.verified && (
             <ShieldCheck className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />
           )}
-          <span className="text-[11px]" style={{ color: 'var(--text-label)' }}>{formatTimestamp(message.timestamp)}</span>
+          <span
+            style={{
+              color: 'var(--text-label)',
+              fontSize: '12px',
+              lineHeight: 1.25,
+            }}
+          >
+            {formatTimestamp(message.timestamp)}
+          </span>
         </div>
 
         <div
-          className="inline-block max-w-2xl rounded-2xl rounded-tl-sm px-4 py-3"
-          style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+          style={{
+            display: 'inline-block',
+            maxWidth: '42rem',
+            borderRadius: '18px',
+            borderTopLeftRadius: '8px',
+            padding: '14px 16px',
+            background: 'rgba(255,255,255,0.035)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+          }}
         >
-          <p className="text-[13px] leading-6" style={{ color: 'var(--text-secondary)' }}>{message.content}</p>
+          <p
+            style={{
+              margin: 0,
+              color: 'var(--text-secondary)',
+              fontSize: '14px',
+              lineHeight: 1.65,
+            }}
+          >
+            {message.content}
+          </p>
         </div>
 
         {message.tickers && message.tickers.length > 0 && (
-          <div className="grid gap-3 mt-3 max-w-2xl">
+          <div
+            style={{
+              display: 'grid',
+              gap: '12px',
+              marginTop: '12px',
+              maxWidth: '42rem',
+            }}
+          >
             {message.tickers.map((ticker) => (
               <MarketDataCard key={ticker} ticker={ticker} onOpenTradeTicket={onOpenTradeTicket} />
             ))}

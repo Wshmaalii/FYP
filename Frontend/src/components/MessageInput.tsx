@@ -36,7 +36,7 @@ function getSensitiveContentPrompt(message: string) {
 export function MessageInput({
   onSend,
   isSending = false,
-  placeholder = 'Type a message... Use $AAPL or #SPY for tickers',
+  placeholder = 'Type a message... Use @ to mention, # for tickers',
   privacyMode = 'public',
   contextLabel = 'channel',
   externalDraft = null,
@@ -79,26 +79,62 @@ export function MessageInput({
   };
 
   return (
-    <div className="px-6 py-4" style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-sidebar)' }}>
-      <div className="flex items-end gap-3">
-        <div className="flex gap-2 pb-2">
+    <div
+      style={{
+        padding: '16px 24px 14px',
+        borderTop: '1px solid var(--border-subtle)',
+        background: 'var(--bg-sidebar)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: '12px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            paddingBottom: '2px',
+          }}
+        >
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
-            style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+            style={{
+              display: 'flex',
+              width: '44px',
+              height: '44px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '14px',
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer',
+            }}
             title="Attach ticker"
           >
             <TrendingUp className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />
           </button>
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
-            style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+            style={{
+              display: 'flex',
+              width: '44px',
+              height: '44px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '14px',
+              background: 'var(--bg-card)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer',
+            }}
             title="Attach file"
           >
             <Paperclip className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
           </button>
         </div>
 
-        <div className="flex-1 relative">
+        <div style={{ position: 'relative', flex: 1 }}>
           <textarea
             value={message}
             onChange={(e) => {
@@ -107,15 +143,21 @@ export function MessageInput({
             }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full resize-none rounded-lg px-4 py-3 text-[13px] leading-5 placeholder:text-zinc-600 focus:outline-none"
             rows={1}
             style={{
+              width: '100%',
+              resize: 'none',
+              borderRadius: '18px',
+              padding: '14px 18px',
+              fontSize: '14px',
+              lineHeight: 1.5,
               minHeight: '44px',
               maxHeight: '120px',
               background: 'var(--bg-card)',
-              border: '0.5px solid var(--border-primary)',
+              border: '1px solid rgba(255,255,255,0.08)',
               color: 'var(--text-primary)',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+              outline: 'none',
             }}
           />
         </div>
@@ -123,10 +165,18 @@ export function MessageInput({
         <button
           onClick={() => void handleSend()}
           disabled={!hasMessage || isSending}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed"
           style={{
+            display: 'flex',
+            width: '44px',
+            height: '44px',
+            flexShrink: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '14px',
             background: hasMessage && !isSending ? 'var(--accent-teal)' : 'var(--bg-card)',
-            border: `0.5px solid ${hasMessage && !isSending ? 'var(--accent-teal-border)' : 'var(--border-primary)'}`,
+            border: `1px solid ${hasMessage && !isSending ? 'var(--accent-teal-border)' : 'rgba(255,255,255,0.08)'}`,
+            cursor: !hasMessage || isSending ? 'not-allowed' : 'pointer',
+            opacity: !hasMessage || isSending ? 0.75 : 1,
           }}
         >
           <Send className="w-5 h-5" style={{ color: hasMessage && !isSending ? '#ffffff' : 'var(--text-muted)' }} />
@@ -134,16 +184,35 @@ export function MessageInput({
       </div>
 
       {sendWarning && (
-        <div className="mt-3 rounded-lg border p-3 text-sm text-amber-300" style={{ background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.2)' }}>
-          <p>{sendWarning}</p>
-          <p className="text-amber-400/80 text-xs mt-1">Press send again to post in this public {contextLabel}, or edit the message first.</p>
+        <div
+          style={{
+            marginTop: '12px',
+            borderRadius: '12px',
+            border: '1px solid rgba(245,158,11,0.2)',
+            padding: '12px',
+            background: 'rgba(245,158,11,0.08)',
+            color: '#fcd34d',
+            fontSize: '14px',
+            lineHeight: 1.5,
+          }}
+        >
+          <p style={{ margin: 0 }}>{sendWarning}</p>
+          <p style={{ margin: '4px 0 0', color: 'rgba(251,191,36,0.8)', fontSize: '12px' }}>
+            Press send again to post in this public {contextLabel}, or edit the message first.
+          </p>
         </div>
       )}
 
-      <div className="mt-2 px-1 text-[11px]" style={{ color: 'var(--text-label)' }}>
-        {privacyMode === 'public'
-          ? `Public ${contextLabel}: your display name, timestamp, and explicit ticker mentions are visible here. Use $AAPL or #SPY for ticker cards. Press Enter to send, Shift+Enter for new line.`
-          : `Private ${contextLabel}: only members can see your message metadata here. Use $AAPL or #SPY for ticker cards. Press Enter to send, Shift+Enter for new line.`}
+      <div
+        style={{
+          marginTop: '10px',
+          paddingLeft: '2px',
+          color: 'var(--text-label)',
+          fontSize: '11px',
+          lineHeight: 1.4,
+        }}
+      >
+        Press Enter to send, Shift+Enter for new line
       </div>
     </div>
   );

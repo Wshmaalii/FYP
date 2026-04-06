@@ -204,7 +204,7 @@ export function ConversationPage({
       <MessageInput
         onSend={handleSend}
         isSending={isSending}
-        placeholder={conversation.kind === 'direct_message' ? 'Send a direct message...' : 'Send a message...'}
+        placeholder={conversation.kind === 'direct_message' ? 'Send a direct message...' : 'Type a message... Use @ to mention, # for tickers'}
         privacyMode={privacy.privacyMode}
         contextLabel={privacy.contextLabel}
         externalDraft={prefilledMessage}
