@@ -66,3 +66,13 @@ export async function updatePassword(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export async function exportMyData(): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>('/api/account/export');
+}
+
+export async function deleteMyAccount(): Promise<void> {
+  await request<{ message: string }>('/api/account', {
+    method: 'DELETE',
+  });
+}

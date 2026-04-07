@@ -59,6 +59,7 @@
   --chart-4: var(--color-red);
   --chart-5: var(--color-green);
   --radius: 0.625rem;
+  --color-scheme: dark;
   --sidebar: var(--bg-sidebar);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--accent-teal);
@@ -67,6 +68,27 @@
   --sidebar-accent-foreground: var(--text-primary);
   --sidebar-border: var(--border-secondary);
   --sidebar-ring: var(--ring);
+}
+
+:root[data-theme='light'] {
+  --bg-body: #edf2f7;
+  --bg-app: #f4f7fb;
+  --bg-sidebar: #eef2f7;
+  --bg-card: #ffffff;
+  --bg-hover: rgba(15, 23, 42, 0.05);
+  --bg-active: rgba(15, 23, 42, 0.08);
+
+  --text-primary: rgba(15, 23, 42, 0.92);
+  --text-secondary: rgba(15, 23, 42, 0.76);
+  --text-muted: rgba(15, 23, 42, 0.58);
+  --text-subtle: rgba(15, 23, 42, 0.42);
+  --text-faint: rgba(15, 23, 42, 0.32);
+  --text-label: rgba(15, 23, 42, 0.34);
+
+  --border-primary: rgba(15, 23, 42, 0.12);
+  --border-secondary: rgba(15, 23, 42, 0.1);
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --color-scheme: light;
 }
 
 @theme inline {
@@ -144,4 +166,59 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+:root[data-theme='light'] .bg-zinc-950 {
+  background-color: #f4f7fb !important;
+}
+
+:root[data-theme='light'] .bg-zinc-900,
+:root[data-theme='light'] .bg-black {
+  background-color: #ffffff !important;
+}
+
+:root[data-theme='light'] .bg-zinc-800,
+:root[data-theme='light'] .hover\:bg-zinc-800:hover {
+  background-color: #edf2f7 !important;
+}
+
+:root[data-theme='light'] .text-zinc-100,
+:root[data-theme='light'] .hover\:text-zinc-100:hover,
+:root[data-theme='light'] .text-white {
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+:root[data-theme='light'] .text-zinc-300 {
+  color: rgba(15, 23, 42, 0.78) !important;
+}
+
+:root[data-theme='light'] .text-zinc-400,
+:root[data-theme='light'] .text-zinc-500 {
+  color: rgba(15, 23, 42, 0.58) !important;
+}
+
+:root[data-theme='light'] .border-zinc-800,
+:root[data-theme='light'] .border-zinc-900 {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+:root[data-theme='light'] .bg-amber-950 {
+  background-color: #fff7db !important;
+}
+
+:root[data-theme='light'] .border-amber-900 {
+  border-color: rgba(217, 119, 6, 0.24) !important;
+}
+
+:root[data-theme='light'] .text-amber-300,
+:root[data-theme='light'] .text-amber-400 {
+  color: #b45309 !important;
+}
+
+:root[data-theme='light'] .bg-red-950 {
+  background-color: #fff1f2 !important;
+}
+
+:root[data-theme='light'] .border-red-900 {
+  border-color: rgba(225, 29, 72, 0.22) !important;
 }

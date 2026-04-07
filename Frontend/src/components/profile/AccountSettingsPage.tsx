@@ -1,9 +1,21 @@
-import { ArrowLeft, Lock, Bell, Shield, Eye, Database, Moon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { fetchSettings, updatePassword, updateSettings, type UserSettings } from '../../api/settings';
+import { ArrowLeft, Bell, Database, Eye, Lock, Moon, Shield } from 'lucide-react';
+import { type KeyboardEvent, useEffect, useState } from 'react';
+import { fetchMyProfile, updateMyProfile, type UserProfile } from '../../api/profile';
+import {
+  deleteMyAccount,
+  exportMyData,
+  fetchSettings,
+  updatePassword,
+  updateSettings,
+  type UserSettings,
+} from '../../api/settings';
+import { applyDarkModePreference } from '../../theme';
 
 interface AccountSettingsPageProps {
+  currentProfile: UserProfile | null;
   onBack: () => void;
+  onProfileUpdated: (profile: UserProfile) => void;
+  onAccountDeleted: () => void;
 }
 
 interface PasswordFormState {
@@ -12,16 +24,40 @@ interface PasswordFormState {
   confirm_password: string;
 }
 
-export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
+const PRIVACY_POLICY_TEXT = [
+  'TradeLink Privacy Policy',
+  '',
+  'We store your profile details, account settings, watchlist items, notifications, and conversation activity so the app can function correctly.',
+  '',
+  'Trading discussions may be visible to other members depending on the space or room you join. Avoid sharing personal, financial, or sensitive information in chats.',
+  '',
+  'You can export your data at any time from this page. Deleting your account permanently removes your profile, settings, watchlist items, memberships, messages, and notifications.',
+].join('\n');
+
+export function AccountSettingsPage({
+  currentProfile,
+  onBack,
+  onProfileUpdated,
+  onAccountDeleted,
+}: AccountSettingsPageProps) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [profileData, setProfileData] = useState<UserProfile | null>(currentProfile);
+  const [displayName, setDisplayName] = useState(currentProfile?.full_name ?? '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [dataMessage, setDataMessage] = useState<string | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isDownloadingData, setIsDownloadingData] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [passwordForm, setPasswordForm] = useState<PasswordFormState>({
     current_password: '',
     new_password: '',
@@ -36,9 +72,16 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
       setError(null);
 
       try {
-        const data = await fetchSettings();
+        const [loadedSettings, loadedProfile] = await Promise.all([
+          fetchSettings(),
+          currentProfile ? Promise.resolve(currentProfile) : fetchMyProfile(),
+        ]);
+
         if (isMounted) {
-          setSettings(data);
+          setSettings(loadedSettings);
+          setProfileData(loadedProfile);
+          setDisplayName(loadedProfile.full_name);
+          applyDarkModePreference(loadedSettings.dark_mode);
         }
       } catch (err) {
         if (isMounted) {
@@ -56,13 +99,18 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [currentProfile]);
 
   const persistSettings = async (nextSettings: UserSettings) => {
+    const previousSettings = settings;
     setSettings(nextSettings);
     setIsSavingSettings(true);
     setSettingsError(null);
     setSettingsMessage(null);
+
+    if (previousSettings && previousSettings.dark_mode !== nextSettings.dark_mode) {
+      applyDarkModePreference(nextSettings.dark_mode);
+    }
 
     try {
       const saved = await updateSettings({
@@ -73,14 +121,19 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
         dark_mode: nextSettings.dark_mode,
       });
       setSettings(saved);
+      applyDarkModePreference(saved.dark_mode);
       setSettingsMessage('Settings saved');
     } catch (err) {
       setSettingsError(err instanceof Error ? err.message : 'Failed to save settings');
       try {
         const restored = await fetchSettings();
         setSettings(restored);
+        applyDarkModePreference(restored.dark_mode);
       } catch {
-        // Keep the optimistic UI if reload also fails.
+        if (previousSettings) {
+          setSettings(previousSettings);
+          applyDarkModePreference(previousSettings.dark_mode);
+        }
       }
     } finally {
       setIsSavingSettings(false);
@@ -111,10 +164,93 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
     });
   };
 
+  const saveDisplayName = async () => {
+    if (!settings) {
+      return;
+    }
+
+    const trimmedName = displayName.trim();
+    const currentName = profileData?.full_name ?? settings.full_name;
+
+    setProfileError(null);
+    setProfileMessage(null);
+
+    if (!trimmedName) {
+      setProfileError('Display name is required');
+      setDisplayName(currentName);
+      return;
+    }
+
+    if (trimmedName === currentName) {
+      return;
+    }
+
+    setIsSavingProfile(true);
+
+    try {
+      const baseProfile = profileData ?? await fetchMyProfile();
+      const updatedProfile = await updateMyProfile({
+        full_name: trimmedName,
+        username: baseProfile.username,
+        bio: baseProfile.bio,
+        avatar_url: baseProfile.avatar_url,
+      });
+
+      setProfileData(updatedProfile);
+      setSettings((current) => (
+        current
+          ? {
+              ...current,
+              full_name: updatedProfile.full_name,
+              username: updatedProfile.username,
+            }
+          : current
+      ));
+      setDisplayName(updatedProfile.full_name);
+      setProfileMessage('Display name updated');
+      onProfileUpdated(updatedProfile);
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Failed to update display name');
+      setDisplayName(currentName);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleDisplayNameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    event.preventDefault();
+    void saveDisplayName();
+  };
+
   const handlePasswordUpdate = async () => {
-    setIsSavingPassword(true);
     setPasswordError(null);
     setPasswordMessage(null);
+
+    if (!passwordForm.current_password || !passwordForm.new_password || !passwordForm.confirm_password) {
+      setPasswordError('All password fields are required');
+      return;
+    }
+
+    if (passwordForm.new_password.length < 6) {
+      setPasswordError('New password must be at least 6 characters');
+      return;
+    }
+
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordError('New password confirmation does not match');
+      return;
+    }
+
+    if (passwordForm.current_password === passwordForm.new_password) {
+      setPasswordError('New password must be different from current password');
+      return;
+    }
+
+    setIsSavingPassword(true);
 
     try {
       await updatePassword(passwordForm);
@@ -128,6 +264,59 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
       setPasswordError(err instanceof Error ? err.message : 'Failed to update password');
     } finally {
       setIsSavingPassword(false);
+    }
+  };
+
+  const handleDownloadData = async () => {
+    if (!settings) {
+      return;
+    }
+
+    setIsDownloadingData(true);
+    setDataError(null);
+    setDataMessage(null);
+
+    try {
+      const payload = await exportMyData();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `tradelink-data-${settings.username}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      setDataMessage('Your data download has started');
+    } catch (err) {
+      setDataError(err instanceof Error ? err.message : 'Failed to download your data');
+    } finally {
+      setIsDownloadingData(false);
+    }
+  };
+
+  const handleViewPrivacyPolicy = () => {
+    window.alert(PRIVACY_POLICY_TEXT);
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Delete your TradeLink account permanently? This is irreversible and will remove your profile, settings, watchlist items, messages, memberships, and notifications.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setDataError(null);
+
+    try {
+      await deleteMyAccount();
+      onAccountDeleted();
+    } catch (err) {
+      setDataError(err instanceof Error ? err.message : 'Failed to delete account');
+      setIsDeletingAccount(false);
     }
   };
 
@@ -182,14 +371,32 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-zinc-950 border border-zinc-800 rounded p-4">
-                <p className="text-zinc-500 text-xs mb-1">Display Name</p>
-                <p className="text-zinc-100">{settings.full_name}</p>
+                <label className="block text-zinc-500 text-xs mb-1" htmlFor="display-name">
+                  Display Name
+                </label>
+                <input
+                  id="display-name"
+                  type="text"
+                  value={displayName}
+                  onBlur={() => void saveDisplayName()}
+                  onChange={(event) => {
+                    setDisplayName(event.target.value);
+                    setProfileError(null);
+                    setProfileMessage(null);
+                  }}
+                  onKeyDown={handleDisplayNameKeyDown}
+                  className="w-full bg-transparent text-zinc-100 focus:outline-none"
+                  placeholder="Enter display name"
+                />
               </div>
               <div className="bg-zinc-950 border border-zinc-800 rounded p-4">
                 <p className="text-zinc-500 text-xs mb-1">Username</p>
                 <p className="text-zinc-100">@{settings.username}</p>
               </div>
             </div>
+            {isSavingProfile && <p className="text-zinc-500 text-sm">Saving display name...</p>}
+            {profileError && <p className="text-red-400 text-sm">{profileError}</p>}
+            {profileMessage && <p className="text-emerald-400 text-sm">{profileMessage}</p>}
             <div>
               <label className="block text-zinc-300 text-sm mb-2">Current Password</label>
               <input
@@ -331,15 +538,28 @@ export function AccountSettingsPage({ onBack }: AccountSettingsPageProps) {
               <p className="text-zinc-500 text-xs mb-1">Account holder</p>
               <p>{settings.full_name}</p>
             </div>
-            <button className="w-full px-4 py-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded transition-colors text-left">
-              Download Your Data
+            <button
+              onClick={() => void handleDownloadData()}
+              disabled={isDownloadingData}
+              className="w-full px-4 py-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded transition-colors text-left disabled:opacity-70"
+            >
+              {isDownloadingData ? 'Preparing your data...' : 'Download Your Data'}
             </button>
-            <button className="w-full px-4 py-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded transition-colors text-left">
+            <button
+              onClick={handleViewPrivacyPolicy}
+              className="w-full px-4 py-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded transition-colors text-left"
+            >
               View Privacy Policy
             </button>
-            <button className="w-full px-4 py-2 bg-red-950 hover:bg-red-900 border border-red-900 text-red-400 rounded transition-colors text-left">
-              Delete Account
+            <button
+              onClick={() => void handleDeleteAccount()}
+              disabled={isDeletingAccount}
+              className="w-full px-4 py-2 bg-red-950 hover:bg-red-900 border border-red-900 text-red-400 rounded transition-colors text-left disabled:opacity-70"
+            >
+              {isDeletingAccount ? 'Deleting Account...' : 'Delete Account'}
             </button>
+            {dataError && <p className="text-red-400 text-sm">{dataError}</p>}
+            {dataMessage && <p className="text-emerald-400 text-sm">{dataMessage}</p>}
           </div>
         </div>
 

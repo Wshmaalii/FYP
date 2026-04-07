@@ -1509,6 +1509,96 @@ def settings_me():
     return jsonify({"settings": build_settings_payload(user)})
 
 
+@app.route("/api/account/export", methods=["GET"])
+def export_account_data():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    memberships = (
+        ConversationMember.query
+        .filter_by(user_id=user.id)
+        .join(Conversation, Conversation.id == ConversationMember.conversation_id)
+        .order_by(Conversation.updated_at.desc())
+        .all()
+    )
+    messages = (
+        ChatMessage.query
+        .filter_by(user_id=user.id)
+        .order_by(ChatMessage.created_at.desc())
+        .all()
+    )
+    watchlist_items = (
+        WatchlistItem.query
+        .filter_by(user_id=user.id)
+        .order_by(WatchlistItem.created_at.desc())
+        .all()
+    )
+    notifications = (
+        Notification.query
+        .filter_by(user_id=user.id)
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+    activities = (
+        UserActivity.query
+        .filter_by(user_id=user.id)
+        .order_by(UserActivity.created_at.desc())
+        .all()
+    )
+
+    return jsonify(
+        {
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "account": user.to_dict(),
+            "profile": build_profile_payload(user),
+            "settings": build_settings_payload(user),
+            "stats": build_profile_stats_payload(user),
+            "watchlist": [item.to_dict() for item in watchlist_items],
+            "notifications": [notification.to_dict() for notification in notifications],
+            "activities": [activity.to_dict() for activity in activities],
+            "messages": [message.to_dict() for message in messages],
+            "conversations": [
+                {
+                    "conversation_key": membership.conversation.conversation_key,
+                    "name": membership.conversation.name,
+                    "kind": membership.conversation.kind,
+                    "visibility": membership.conversation.visibility,
+                    "role": membership.role,
+                    "joined_at": membership.created_at.isoformat() if membership.created_at else None,
+                    "channels": [
+                        {
+                            "channel_key": channel.channel_key,
+                            "name": channel.name,
+                            "slug": channel.slug,
+                        }
+                        for channel in membership.conversation.channels
+                    ],
+                }
+                for membership in memberships
+            ],
+        }
+    )
+
+
+@app.route("/api/account", methods=["DELETE"])
+def delete_account():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    token = get_authorization_token()
+    payload = decode_token(token) if token else None
+    jti = payload.get("jti") if isinstance(payload, dict) else None
+
+    db.session.delete(user)
+    if jti:
+        db.session.add(RevokedToken(jti=jti))
+    db.session.commit()
+
+    return jsonify({"message": "Account deleted"})
+
+
 @app.route("/api/users/search", methods=["GET"])
 def user_search():
     user, error_response = get_authenticated_user()

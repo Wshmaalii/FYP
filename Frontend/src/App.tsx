@@ -19,6 +19,8 @@ import { NewChatModal } from './components/messaging/NewChatModal';
 import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
 import { fetchMyProfile, type UserProfile } from './api/profile';
 import { fetchNotifications, type NotificationRecord } from './api/notifications';
+import { fetchSettings } from './api/settings';
+import { applyDarkModePreference, restoreStoredThemePreference } from './theme';
 import {
   createSpace,
   createDirectMessage,
@@ -80,6 +82,10 @@ export default function App() {
   const [joiningSpaceKey, setJoiningSpaceKey] = useState<string | null>(null);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
+  useEffect(() => {
+    restoreStoredThemePreference();
+  }, []);
+
   const refreshMessagingState = async () => {
     const [sidebar, publicSpaces] = await Promise.all([fetchMessagingSidebar(), fetchSpaces()]);
     setSidebarData(sidebar);
@@ -120,10 +126,15 @@ export default function App() {
       }
 
       try {
-        const user = await getCurrentUser(token);
-        const profile = await fetchMyProfile();
+        const [user, profile] = await Promise.all([getCurrentUser(token), fetchMyProfile()]);
         setCurrentUser(user);
         setCurrentProfile(profile);
+        try {
+          const settings = await fetchSettings();
+          applyDarkModePreference(settings.dark_mode);
+        } catch {
+          // Keep the last applied local theme if settings cannot be loaded.
+        }
         const { sidebar } = await refreshMessagingState();
         setAuthStatus('authed');
         await refreshNotificationSummary();
@@ -146,6 +157,12 @@ export default function App() {
     const profile = await fetchMyProfile();
     setCurrentUser(user);
     setCurrentProfile(profile);
+    try {
+      const settings = await fetchSettings();
+      applyDarkModePreference(settings.dark_mode);
+    } catch {
+      // Keep the previously applied theme if settings fetch fails.
+    }
     const { sidebar } = await refreshMessagingState();
     setAuthStatus('authed');
     await refreshNotificationSummary();
@@ -161,6 +178,12 @@ export default function App() {
     const profile = await fetchMyProfile();
     setCurrentUser(user);
     setCurrentProfile(profile);
+    try {
+      const settings = await fetchSettings();
+      applyDarkModePreference(settings.dark_mode);
+    } catch {
+      // Keep the previously applied theme if settings fetch fails.
+    }
     await refreshMessagingState();
     setAuthStatus('authed');
     await refreshNotificationSummary();
@@ -177,6 +200,38 @@ export default function App() {
     setSpaces([]);
     setSelectedConversation(null);
     setSelectedChannelKey(null);
+    setNotificationUnreadCount(0);
+    setAuthStatus('guest');
+    setAuthView('login');
+    setCurrentView('Explore Spaces');
+  };
+
+  const handleProfileUpdated = (profile: UserProfile) => {
+    setCurrentProfile(profile);
+    setCurrentUser((current) => (
+      current
+        ? {
+            ...current,
+            name: profile.full_name,
+            username: profile.username,
+          }
+        : current
+    ));
+  };
+
+  const handleAccountDeleted = () => {
+    clearStoredToken();
+    setCurrentUser(null);
+    setCurrentProfile(null);
+    setSidebarData(EMPTY_SIDEBAR);
+    setSpaces([]);
+    setSelectedConversation(null);
+    setSelectedChannelKey(null);
+    setSelectedStock(null);
+    setConversationDraft(null);
+    setHighlightedMessageId(null);
+    setNewChatOpen(false);
+    setSearchResults([]);
     setNotificationUnreadCount(0);
     setAuthStatus('guest');
     setAuthView('login');
@@ -403,7 +458,14 @@ export default function App() {
           />
         );
       case 'Account Settings':
-        return <AccountSettingsPage onBack={() => setCurrentView(selectedConversation ? 'Conversation' : 'Explore Spaces')} />;
+        return (
+          <AccountSettingsPage
+            currentProfile={currentProfile}
+            onBack={() => setCurrentView(selectedConversation ? 'Conversation' : 'Explore Spaces')}
+            onProfileUpdated={handleProfileUpdated}
+            onAccountDeleted={handleAccountDeleted}
+          />
+        );
       case 'Top Movers':
         return <TopMoversPage onBack={() => setCurrentView('Conversation')} />;
       case 'Watchlist':
