@@ -15,21 +15,95 @@ export function ChannelPrivacyCard({
   tickerVisibility,
   metadataVisibility,
 }: ChannelPrivacyCardProps) {
+  const compactSummary = (() => {
+    const scope = scopeLabel.toLowerCase();
+
+    if (scope.includes('public')) {
+      return 'Public space · Members and ticker mentions visible';
+    }
+
+    if (scope.includes('private')) {
+      return 'Private room · Messages, members, and ticker mentions stay inside';
+    }
+
+    if (scope.includes('direct')) {
+      return 'Direct message · Only participants can see messages and mentions';
+    }
+
+    return visibilitySummary;
+  })();
+
+  const detailLine = [
+    membershipVisibility.replace(/^Room membership is visible only to invited members inside this room\.?$/i, 'Members only'),
+    tickerVisibility.replace(/^Ticker mentions stay inside this room and are only visible to invited members\.?$/i, 'Ticker mentions stay inside'),
+    metadataVisibility.replace(/^Display name, verification badge, timestamp, and room membership are visible only to invited members\.?$/i, 'Metadata private'),
+  ].join(' · ');
+
   return (
-    <div className="px-6 py-3" style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-sidebar)' }}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded px-2 py-1 text-[10px] uppercase tracking-[0.18em]" style={{ background: 'var(--accent-teal-bg)', border: '0.5px solid var(--accent-teal-border)', color: 'var(--accent-teal)' }}>
+    <div
+      style={{
+        padding: '10px 24px 12px',
+        borderBottom: '1px solid var(--border-subtle)',
+        background: 'var(--bg-sidebar)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            borderRadius: '999px',
+            padding: '5px 10px',
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            background: 'var(--accent-teal-bg)',
+            border: '1px solid var(--accent-teal-border)',
+            color: 'var(--accent-teal)',
+          }}
+        >
           {scopeLabel}
         </span>
-        <span className="rounded px-2 py-1 text-[10px] uppercase tracking-[0.18em]" style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)', color: 'var(--text-muted)' }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            borderRadius: '999px',
+            padding: '5px 10px',
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            background: 'rgba(255,255,255,0.035)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'var(--text-muted)',
+          }}
+        >
           {audienceLabel}
         </span>
-        <p className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>{visibilitySummary}</p>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px]" style={{ color: 'var(--text-label)' }}>
-        <span>Membership: {membershipVisibility}</span>
-        <span>Ticker mentions: {tickerVisibility}</span>
-        <span>Metadata: {metadataVisibility}</span>
+        <span
+          style={{
+            color: 'var(--text-label)',
+            fontSize: '12px',
+            lineHeight: 1.4,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            minWidth: 0,
+            flex: 1,
+          }}
+          title={`${visibilitySummary} ${detailLine}`}
+        >
+          {compactSummary}
+        </span>
       </div>
     </div>
   );
