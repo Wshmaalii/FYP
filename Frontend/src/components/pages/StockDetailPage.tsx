@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, MessageSquareText, Plus, Star, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowLeft, BarChart3, MessageSquareText, Plus, Star, TrendingDown, TrendingUp } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { fetchHistory, getQuotes, MARKET_SYMBOL_NAMES, type MarketDataStatus, type StockHistoryPoint } from '../../api/market';
 import { addWatchlistItem, fetchWatchlist, removeWatchlistItem } from '../../api/watchlist';
@@ -33,6 +33,7 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
 
   const companyName = MARKET_SYMBOL_NAMES[ticker] || ticker;
   const isPositive = (change ?? 0) >= 0;
+  const headerMetaLine = `Source · Stored market snapshot${updatedAt ? ` · Last updated ${formatTimestamp(updatedAt)}` : ''}`;
 
   useEffect(() => {
     let isMounted = true;
@@ -117,41 +118,139 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
 
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950">
-      <div className="border-b border-zinc-800 bg-zinc-900 px-8 py-7">
+      <div
+        style={{
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-sidebar)',
+          padding: '28px 32px',
+        }}
+      >
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-zinc-400 hover:text-zinc-100 mb-4 transition-colors"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '18px',
+            color: 'var(--text-muted)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Back to Markets</span>
         </button>
 
-        <div className="flex items-start justify-between gap-8">
-          <div className="max-w-3xl">
-            <div className="mb-3 flex items-center gap-3">
-              <h1 className="text-4xl font-semibold tracking-tight text-white">{ticker}</h1>
-              <span className="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-zinc-400">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '32px',
+          }}
+        >
+          <div style={{ maxWidth: '48rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '10px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: '42px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.04em',
+                  color: '#ffffff',
+                  lineHeight: 1,
+                }}
+              >
+                {ticker}
+              </h1>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: '999px',
+                  padding: '6px 11px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-label)',
+                  background: 'rgba(255,255,255,0.035)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
                 Stored snapshot
               </span>
             </div>
-            <p className="text-lg text-zinc-400">{companyName}</p>
-            <div className="mt-5 space-y-2">
-              <p className="text-sm text-zinc-500"><span className="text-zinc-600">Source</span> · Stored market snapshot</p>
-              <p className="text-sm text-zinc-500"><span className="text-zinc-600">Last updated</span> · {formatTimestamp(updatedAt)}</p>
-            </div>
+            <p
+              style={{
+                margin: 0,
+                color: 'var(--text-muted)',
+                fontSize: '17px',
+                lineHeight: 1.5,
+              }}
+            >
+              {companyName}
+            </p>
+            <p
+              style={{
+                margin: '12px 0 0',
+                color: 'var(--text-label)',
+                fontSize: '12px',
+                lineHeight: 1.5,
+              }}
+            >
+              {headerMetaLine}
+            </p>
           </div>
 
-          <div className="flex gap-3">
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              flexShrink: 0,
+            }}
+          >
             <button
               onClick={() => onMentionInChat(ticker)}
-              className="flex items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-100 transition-all duration-150 hover:bg-zinc-800 active:translate-y-px"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                borderRadius: '16px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.02)',
+                padding: '12px 16px',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+              }}
             >
               <MessageSquareText className="w-4 h-4" />
               Mention in Chat
             </button>
             <button
               onClick={() => void handleToggleWatchlist()}
-              className="flex items-center gap-2 rounded-2xl bg-cyan-600 px-4 py-3 text-white shadow-[0_12px_28px_rgba(8,145,178,0.16)] transition-all duration-150 hover:bg-cyan-500 active:translate-y-px"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                borderRadius: '16px',
+                border: '1px solid var(--accent-teal-border)',
+                background: 'var(--accent-teal)',
+                padding: '12px 16px',
+                color: '#ffffff',
+                boxShadow: '0 12px 28px rgba(8,145,178,0.16)',
+                cursor: 'pointer',
+              }}
             >
               {isWatched ? <Star className="w-4 h-4 fill-white" /> : <Plus className="w-4 h-4" />}
               {isWatched ? 'Watching' : 'Add to Watchlist'}
@@ -166,54 +265,221 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
             {error}
           </div>
         )}
-        {!error && quoteStatus?.isCachedFallback && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-400 text-sm leading-6">
-            {quoteStatus.message || 'Showing most recent available data.'}
-            {quoteStatus.lastUpdatedAt ? ` Last updated ${formatTimestamp(quoteStatus.lastUpdatedAt)}.` : ''}
-          </div>
-        )}
         {watchMessage && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-300 text-sm">
             {watchMessage}
           </div>
         )}
 
-        <div className="grid grid-cols-4 gap-5">
-          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Latest Price</p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight text-zinc-100">{price !== null ? price.toFixed(2) : '--'}</p>
-          </div>
-          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Change</p>
-            <div className={`mt-4 flex items-center gap-2 ${change !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
-              {change !== null ? (isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />) : null}
-              <p className="text-4xl font-semibold tracking-tight">{change !== null ? `${isPositive ? '+' : ''}${change.toFixed(2)}` : '--'}</p>
+        <div
+          style={{
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.03)',
+            padding: '24px 26px',
+            boxShadow: '0 18px 40px rgba(0,0,0,0.18)',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: '24px',
+              alignItems: 'start',
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-label)',
+                }}
+              >
+                Latest Price
+              </p>
+              <p
+                style={{
+                  margin: '14px 0 0',
+                  fontSize: '42px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.04em',
+                  color: 'var(--text-primary)',
+                  lineHeight: 1,
+                }}
+              >
+                {price !== null ? price.toFixed(2) : '--'}
+              </p>
             </div>
-          </div>
-          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Change %</p>
-            <p className={`mt-4 text-4xl font-semibold tracking-tight ${changePercent !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
-              {changePercent !== null ? `${isPositive ? '+' : ''}${changePercent.toFixed(2)}%` : '--'}
-            </p>
-          </div>
-          <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 px-5 py-6 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Source</p>
-            <p className="mt-4 text-base font-medium leading-7 text-zinc-100">Stored market snapshot</p>
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-label)',
+                }}
+              >
+                Change
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '14px',
+                  color: change !== null ? (isPositive ? '#34d399' : '#f87171') : 'var(--text-label)',
+                }}
+              >
+                {change !== null ? (isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />) : null}
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '30px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.03em',
+                    lineHeight: 1,
+                  }}
+                >
+                  {change !== null ? `${isPositive ? '+' : ''}${change.toFixed(2)}` : '--'}
+                </p>
+              </div>
+            </div>
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-label)',
+                }}
+              >
+                Change %
+              </p>
+              <p
+                style={{
+                  margin: '14px 0 0',
+                  fontSize: '30px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1,
+                  color: changePercent !== null ? (isPositive ? '#34d399' : '#f87171') : 'var(--text-label)',
+                }}
+              >
+                {changePercent !== null ? `${isPositive ? '+' : ''}${changePercent.toFixed(2)}%` : '--'}
+              </p>
+            </div>
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-label)',
+                }}
+              >
+                Source
+              </p>
+              <p
+                style={{
+                  margin: '14px 0 0',
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  lineHeight: 1.5,
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Stored market snapshot
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-zinc-800 bg-zinc-900 p-6 shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
-          <h2 className="mb-5 text-lg font-semibold tracking-tight text-zinc-100">Price History</h2>
+        <div
+          style={{
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.03)',
+            padding: '24px',
+            boxShadow: '0 18px 40px rgba(0,0,0,0.2)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 20px',
+              fontSize: '20px',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Price History
+          </h2>
           <div className={history.length === 0 ? 'min-h-[220px]' : 'h-72'}>
             {loading ? (
               <div className="flex h-full items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-950/60 text-sm text-zinc-500">
                 Loading stored history...
               </div>
             ) : history.length === 0 ? (
-              <div className="flex h-full items-center justify-center rounded-[24px] border border-zinc-800 bg-zinc-950/60 px-8 text-center text-sm leading-6 text-zinc-500">
-                <div className="max-w-md">
-                  <p className="font-medium text-zinc-400">Price chart not available yet</p>
-                  <p className="mt-2">Price chart will appear once enough stored snapshots have been collected.</p>
+              <div
+                style={{
+                  display: 'flex',
+                  height: '100%',
+                  minHeight: '220px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(0,0,0,0.18)',
+                  padding: '32px',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ maxWidth: '28rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      width: '56px',
+                      height: '56px',
+                      margin: '0 auto 14px',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '999px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <BarChart3 className="w-6 h-6" style={{ color: 'var(--text-label)' }} />
+                  </div>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    Price chart not available yet
+                  </p>
+                  <p
+                    style={{
+                      margin: '8px 0 0',
+                      fontSize: '13px',
+                      lineHeight: 1.6,
+                      color: 'var(--text-label)',
+                    }}
+                  >
+                    Price history will appear once enough stored snapshots have been collected.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -234,12 +500,6 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
               </ResponsiveContainer>
             )}
           </div>
-          {historyStatus?.isCachedFallback && (
-            <p className="text-zinc-500 text-xs mt-3">
-              {historyStatus.message || 'Showing most recent available data.'}
-              {historyStatus.lastUpdatedAt ? ` Last updated ${formatTimestamp(historyStatus.lastUpdatedAt)}.` : ''}
-            </p>
-          )}
         </div>
       </div>
     </div>
