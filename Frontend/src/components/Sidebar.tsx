@@ -34,7 +34,7 @@ function Section({
       <h3
         style={{
           marginBottom: '0.75rem',
-          color: 'rgba(255,255,255,0.28)',
+          color: 'var(--text-label)',
           fontSize: '9px',
           fontWeight: 500,
           letterSpacing: '0.26em',
@@ -65,8 +65,8 @@ function NavigationButton({
       onClick={onClick}
       className="flex w-full items-center gap-1.5 rounded-[10px] text-left transition-all duration-150"
       style={{
-        background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
-        color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
+        background: selected ? 'var(--bg-active)' : 'transparent',
+        color: selected ? 'var(--text-primary)' : 'var(--text-muted)',
         fontWeight: selected ? 500 : 400,
         fontSize: '11px',
         lineHeight: 1.35,
@@ -75,19 +75,19 @@ function NavigationButton({
       }}
       onMouseEnter={(event) => {
         if (!selected) {
-          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-          event.currentTarget.style.color = 'rgba(255,255,255,0.66)';
+          event.currentTarget.style.background = 'var(--bg-hover)';
+          event.currentTarget.style.color = 'var(--text-secondary)';
         }
       }}
       onMouseLeave={(event) => {
         if (!selected) {
           event.currentTarget.style.background = 'transparent';
-          event.currentTarget.style.color = 'rgba(255,255,255,0.52)';
+          event.currentTarget.style.color = 'var(--text-muted)';
         }
       }}
     >
       {Icon ? (
-        <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: selected ? '#67c8b5' : 'rgba(255,255,255,0.34)' }} />
+        <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: selected ? 'var(--accent-teal)' : 'var(--text-subtle)' }} />
       ) : null}
       <span>{label}</span>
     </button>
@@ -109,8 +109,8 @@ function DiscoverButton({
       onClick={onClick}
       className="w-full rounded-[10px] text-left transition-all duration-150"
       style={{
-        background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
-        color: selected ? 'rgba(255,255,255,0.84)' : 'rgba(255,255,255,0.52)',
+        background: selected ? 'var(--bg-active)' : 'transparent',
+        color: selected ? 'var(--text-primary)' : 'var(--text-muted)',
         fontWeight: selected ? 500 : 500,
         fontSize: '11px',
         lineHeight: 1.35,
@@ -119,14 +119,14 @@ function DiscoverButton({
       }}
       onMouseEnter={(event) => {
         if (!selected) {
-          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-          event.currentTarget.style.color = 'rgba(255,255,255,0.66)';
+          event.currentTarget.style.background = 'var(--bg-hover)';
+          event.currentTarget.style.color = 'var(--text-secondary)';
         }
       }}
       onMouseLeave={(event) => {
         if (!selected) {
           event.currentTarget.style.background = 'transparent';
-          event.currentTarget.style.color = 'rgba(255,255,255,0.52)';
+          event.currentTarget.style.color = 'var(--text-muted)';
         }
       }}
     >
@@ -154,8 +154,8 @@ function SpaceButton({
       style={{
         alignItems: 'center',
         gap: '0.75rem',
-        background: selected ? 'rgba(255,255,255,0.085)' : 'transparent',
-        color: selected ? 'rgba(255,255,255,0.86)' : 'rgba(255,255,255,0.52)',
+        background: selected ? 'var(--bg-active)' : 'transparent',
+        color: selected ? 'var(--text-primary)' : 'var(--text-muted)',
         fontSize: '11px',
         lineHeight: 1.35,
         letterSpacing: '-0.01em',
@@ -163,14 +163,14 @@ function SpaceButton({
       }}
       onMouseEnter={(event) => {
         if (!selected) {
-          event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-          event.currentTarget.style.color = 'rgba(255,255,255,0.66)';
+          event.currentTarget.style.background = 'var(--bg-hover)';
+          event.currentTarget.style.color = 'var(--text-secondary)';
         }
       }}
       onMouseLeave={(event) => {
         if (!selected) {
           event.currentTarget.style.background = 'transparent';
-          event.currentTarget.style.color = 'rgba(255,255,255,0.52)';
+          event.currentTarget.style.color = 'var(--text-muted)';
         }
       }}
     >
@@ -212,8 +212,8 @@ export function Sidebar({
     <aside
       className="flex shrink-0 flex-col overflow-x-hidden"
       style={{
-        background: '#111214',
-        borderRight: '0.5px solid rgba(255,255,255,0.05)',
+        background: 'var(--bg-sidebar)',
+        borderRight: '0.5px solid var(--border-secondary)',
         width: sidebarWidth,
         minWidth: sidebarWidth,
         maxWidth: sidebarWidth,
@@ -223,7 +223,7 @@ export function Sidebar({
       <div
         style={{
           padding: '12px 12px 10px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid var(--border-primary)',
         }}
       >
         <div
@@ -253,7 +253,7 @@ export function Sidebar({
           </div>
           <span
             style={{
-              color: 'rgba(255,255,255,0.84)',
+              color: 'var(--text-primary)',
               fontSize: '12px',
               fontWeight: 600,
               letterSpacing: '-0.01em',
@@ -268,15 +268,15 @@ export function Sidebar({
           onClick={onOpenComposer}
           className="flex w-full items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors"
           style={{
-            background: 'rgba(99,196,175,0.09)',
-            border: '0.5px solid rgba(99,196,175,0.24)',
-            color: '#67c8b5',
+            background: 'var(--accent-teal-bg)',
+            border: '0.5px solid var(--accent-teal-border)',
+            color: 'var(--accent-teal)',
           }}
           onMouseEnter={(event) => {
-            event.currentTarget.style.background = 'rgba(99,196,175,0.12)';
+            event.currentTarget.style.background = 'var(--accent-teal-hover)';
           }}
           onMouseLeave={(event) => {
-            event.currentTarget.style.background = 'rgba(99,196,175,0.09)';
+            event.currentTarget.style.background = 'var(--accent-teal-bg)';
           }}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -288,7 +288,7 @@ export function Sidebar({
         <div
           style={{
             padding: '1rem 0.625rem 1rem',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            borderBottom: '1px solid var(--border-primary)',
           }}
         >
           <Section title="Discover">
@@ -317,7 +317,7 @@ export function Sidebar({
         <div
           style={{
             padding: '1rem 0.625rem 1rem',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            borderBottom: '1px solid var(--border-primary)',
           }}
         >
           <Section title="My Spaces">
@@ -332,7 +332,7 @@ export function Sidebar({
             )) : (
               <div
                 style={{
-                  color: 'rgba(255,255,255,0.34)',
+                  color: 'var(--text-subtle)',
                   fontSize: '11px',
                   lineHeight: 1.5,
                   padding: '0.1rem 0.5rem 0',

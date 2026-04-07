@@ -34,7 +34,7 @@ function StockItem({
       onClick={() => onOpenStock(stock.ticker)}
       className="flex w-full min-w-0 max-w-full items-start justify-between gap-2 rounded-md px-0 py-1.5 text-left transition-all duration-150 active:translate-y-px"
       style={{
-        borderBottom: showDivider ? '0.5px solid var(--border-faint)' : 'none',
+        borderBottom: showDivider ? '0.5px solid var(--border-subtle)' : 'none',
         paddingTop: '0.8rem',
         paddingBottom: '0.8rem',
       }}
@@ -47,7 +47,7 @@ function StockItem({
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span style={{ color: 'rgba(255,255,255,0.84)', fontSize: '13px', fontWeight: 700 }}>{stock.ticker}</span>
+          <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 700 }}>{stock.ticker}</span>
         </div>
         <p
           className="truncate"
@@ -57,7 +57,7 @@ function StockItem({
         </p>
       </div>
       <div className="flex min-w-[3.5rem] flex-col items-end text-right">
-        <p style={{ color: 'rgba(255,255,255,0.84)', fontSize: '13px', fontWeight: 700 }}>
+        <p style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 700 }}>
           {stock.price !== null ? stock.price.toFixed(2) : '--'}
         </p>
         <p
@@ -226,7 +226,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
   return (
     <div
       className="mt-auto min-w-0 max-w-full overflow-hidden px-2.5 py-3"
-      style={{ borderTop: '1px solid rgba(255, 255, 255, 0.14)' }}
+      style={{ borderTop: '1px solid var(--border-primary)' }}
     >
       <div className="pb-2">
         <SectionHeader
@@ -264,7 +264,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
 
       <div
         className="mt-3 pt-3"
-        style={{ borderTop: '1px solid rgba(255, 255, 255, 0.14)' }}
+        style={{ borderTop: '1px solid var(--border-primary)' }}
       >
         <SectionHeader
           title="Most Discussed"
@@ -302,7 +302,7 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
 
       <div
         className="mt-3 pt-3"
-        style={{ borderTop: '1px solid rgba(255, 255, 255, 0.14)' }}
+        style={{ borderTop: '1px solid var(--border-primary)' }}
       >
         <SectionHeader
           title="Watchlist"
