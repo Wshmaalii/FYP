@@ -50,7 +50,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
         flex: 1,
         minHeight: 0,
         display: 'flex',
-        background: '#0b0f10',
+        background: 'var(--bg-app)',
       }}
     >
       <div
@@ -61,14 +61,14 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
-          background: '#111214',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--bg-sidebar)',
+          borderRight: '1px solid var(--border-subtle)',
         }}
       >
         <div
           style={{
             padding: '1.5rem 1rem 1rem',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid var(--border-subtle)',
           }}
         >
           <div
@@ -81,7 +81,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
           >
             <h2
               style={{
-                color: '#f4f4f5',
+                color: 'var(--text-primary)',
                 fontSize: '18px',
                 fontWeight: 600,
                 letterSpacing: '-0.02em',
@@ -98,9 +98,9 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                 width: '2.75rem',
                 height: '2.75rem',
                 borderRadius: '14px',
-                border: '0.5px solid rgba(0,196,160,0.18)',
-                background: 'rgba(0,196,160,0.12)',
-                color: '#00c4a0',
+                border: '0.5px solid var(--accent-teal-border)',
+                background: 'var(--accent-teal-bg)',
+                color: 'var(--accent-teal)',
               }}
               aria-label="Start conversation"
             >
@@ -121,7 +121,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                 left: '1rem',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#71717a',
+                color: 'var(--text-muted)',
                 pointerEvents: 'none',
               }}
             />
@@ -131,9 +131,9 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
               style={{
                 width: '100%',
                 borderRadius: '16px',
-                border: '1px solid rgba(255,255,255,0.07)',
-                background: '#17171a',
-                color: '#e4e4e7',
+                border: '1px solid var(--border-primary)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
                 fontSize: '13px',
                 padding: '0.95rem 1rem 0.95rem 3rem',
                 outline: 'none',
@@ -153,7 +153,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
             <div
               style={{
                 padding: '1.25rem 1rem',
-                color: '#71717a',
+                color: 'var(--text-muted)',
                 fontSize: '13px',
                 lineHeight: '1.7',
               }}
@@ -173,11 +173,11 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                   gap: '1rem',
                   padding: '1.25rem 1rem',
                   textAlign: 'left',
-                  borderTop: index === 0 ? 'none' : '1px solid rgba(255,255,255,0.03)',
+                  borderTop: index === 0 ? 'none' : '1px solid var(--border-subtle)',
                   transition: 'background-color 150ms ease',
                 }}
                 onMouseEnter={(event) => {
-                  event.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                  event.currentTarget.style.background = 'var(--bg-hover)';
                 }}
                 onMouseLeave={(event) => {
                   event.currentTarget.style.background = 'transparent';
@@ -218,7 +218,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                       style={{
                         minWidth: 0,
                         flex: 1,
-                        color: '#f4f4f5',
+                        color: 'var(--text-primary)',
                         fontSize: '15px',
                         fontWeight: 600,
                         letterSpacing: '-0.01em',
@@ -237,7 +237,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                     >
                       <span
                         style={{
-                          color: '#52525b',
+                          color: 'var(--text-subtle)',
                           fontSize: '12px',
                           lineHeight: 1.2,
                         }}
@@ -259,7 +259,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                   <p
                     style={{
                       marginTop: '0.45rem',
-                      color: '#71717a',
+                      color: 'var(--text-muted)',
                       fontSize: '13px',
                       lineHeight: 1.5,
                       whiteSpace: 'nowrap',
@@ -283,7 +283,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0d0e11',
+          background: 'var(--bg-app)',
         }}
       >
         <div
@@ -304,8 +304,8 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
               width: '6.5rem',
               height: '6.5rem',
               borderRadius: '999px',
-              background: 'rgba(255,255,255,0.04)',
-              color: '#a1a1aa',
+              background: 'var(--bg-hover)',
+              color: 'var(--text-muted)',
             }}
           >
             <MessageSquare className="h-10 w-10" />
@@ -313,7 +313,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
           <h3
             style={{
               marginTop: '1.5rem',
-              color: '#f4f4f5',
+              color: 'var(--text-primary)',
               fontSize: '20px',
               fontWeight: 600,
               letterSpacing: '-0.02em',
@@ -324,7 +324,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
           <p
             style={{
               marginTop: '0.75rem',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontSize: '13px',
               lineHeight: '1.7',
               maxWidth: '28rem',

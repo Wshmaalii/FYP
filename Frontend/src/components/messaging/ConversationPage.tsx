@@ -186,7 +186,7 @@ export function ConversationPage({
               padding: '7px 12px',
               fontSize: '11px',
               background: 'var(--bg-card)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid var(--border-primary)',
               color: 'var(--text-muted)',
             }}
           >
@@ -221,7 +221,7 @@ export function ConversationPage({
                   fontWeight: 600,
                   lineHeight: 1,
                   background: channel.channel_key === activeChannelKey ? 'var(--accent-teal-bg)' : 'transparent',
-                  border: `1px solid ${channel.channel_key === activeChannelKey ? 'var(--accent-teal-border)' : 'rgba(255,255,255,0.07)'}`,
+                  border: `1px solid ${channel.channel_key === activeChannelKey ? 'var(--accent-teal-border)' : 'var(--border-primary)'}`,
                   color: channel.channel_key === activeChannelKey ? 'var(--accent-teal)' : 'var(--text-muted)',
                   cursor: 'pointer',
                 }}

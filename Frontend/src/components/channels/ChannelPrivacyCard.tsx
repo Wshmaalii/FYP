@@ -82,8 +82,8 @@ export function ChannelPrivacyCard({
             fontWeight: 700,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            background: 'rgba(255,255,255,0.035)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-hover)',
+            border: '1px solid var(--border-primary)',
             color: 'var(--text-muted)',
           }}
         >

@@ -11,7 +11,7 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
       style={{
         flex: 1,
         overflowY: 'auto',
-        background: '#0b0f10',
+        background: 'var(--bg-app)',
       }}
     >
       <div
@@ -29,7 +29,7 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
         >
           <p
             style={{
-              color: '#71717a',
+              color: 'var(--text-label)',
               fontSize: '9px',
               letterSpacing: '0.28em',
               textTransform: 'uppercase',
@@ -40,7 +40,7 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
           <h2
             style={{
               marginTop: '0.5rem',
-              color: '#f4f4f5',
+              color: 'var(--text-primary)',
               fontSize: '22px',
               fontWeight: 600,
               letterSpacing: '-0.02em',
@@ -52,7 +52,7 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
             style={{
               marginTop: '0.5rem',
               maxWidth: '42rem',
-              color: '#71717a',
+              color: 'var(--text-muted)',
               fontSize: '12px',
               lineHeight: '1.7',
             }}
@@ -65,9 +65,9 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
           <div
             style={{
               borderRadius: '18px',
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: '#111518',
-              color: '#71717a',
+              border: '1px solid var(--border-primary)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-muted)',
               fontSize: '13px',
               lineHeight: '1.7',
               padding: '1.25rem',
@@ -95,19 +95,19 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
                   gap: '1.25rem',
                   width: '100%',
                   borderRadius: '18px',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  background: '#14161b',
+                  border: '1px solid var(--border-primary)',
+                  background: 'var(--bg-card)',
                   padding: '1.25rem',
                   textAlign: 'left',
                   transition: 'background-color 150ms ease, border-color 150ms ease',
                 }}
                 onMouseEnter={(event) => {
-                  event.currentTarget.style.background = '#171920';
-                  event.currentTarget.style.borderColor = 'rgba(255,255,255,0.11)';
+                  event.currentTarget.style.background = 'var(--bg-hover)';
+                  event.currentTarget.style.borderColor = 'var(--border-secondary)';
                 }}
                 onMouseLeave={(event) => {
-                  event.currentTarget.style.background = '#14161b';
-                  event.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                  event.currentTarget.style.background = 'var(--bg-card)';
+                  event.currentTarget.style.borderColor = 'var(--border-primary)';
                 }}
               >
                 <div
@@ -134,7 +134,7 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
                   <h3
                     style={{
                       marginTop: '0.75rem',
-                      color: '#f4f4f5',
+                      color: 'var(--text-primary)',
                       fontSize: '20px',
                       fontWeight: 600,
                       letterSpacing: '-0.02em',
@@ -146,7 +146,7 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
                     style={{
                       marginTop: '0.5rem',
                       maxWidth: '48rem',
-                      color: '#71717a',
+                      color: 'var(--text-muted)',
                       fontSize: '13px',
                       lineHeight: '1.7',
                     }}
@@ -169,9 +169,9 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
                           display: 'inline-flex',
                           alignItems: 'center',
                           borderRadius: '999px',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          background: 'rgba(255,255,255,0.04)',
-                          color: '#a1a1aa',
+                          border: '1px solid var(--border-primary)',
+                          background: 'var(--bg-hover)',
+                          color: 'var(--text-muted)',
                           padding: '0.35rem 0.75rem',
                           fontSize: '10px',
                           lineHeight: 1,
@@ -185,7 +185,7 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
                   <p
                     style={{
                       marginTop: '1rem',
-                      color: '#52525b',
+                      color: 'var(--text-subtle)',
                       fontSize: '11px',
                     }}
                   >
@@ -203,9 +203,9 @@ export function PublicSpacesPage({ spaces, onOpen }: PublicSpacesPageProps) {
                   <span
                     style={{
                       borderRadius: '999px',
-                      border: '0.5px solid rgba(255,255,255,0.08)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#d4d4d8',
+                      border: '0.5px solid var(--border-primary)',
+                      background: 'var(--bg-hover)',
+                      color: 'var(--text-secondary)',
                       padding: '0.5rem 1rem',
                       fontSize: '12px',
                       fontWeight: 500,
