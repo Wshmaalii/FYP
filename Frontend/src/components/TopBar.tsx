@@ -192,10 +192,23 @@ export function TopBar({
 
         {showProfileMenu && (
           <div
-            className="absolute right-0 z-50 mt-3 w-72 overflow-hidden rounded-[18px] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
-            style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+            className="absolute right-0 z-50 overflow-hidden"
+            style={{
+              marginTop: '10px',
+              width: '100%',
+              maxWidth: '248px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: '20px',
+              boxShadow: '0 20px 48px rgba(0,0,0,0.32)',
+            }}
           >
-            <div className="p-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+            <div
+              style={{
+                padding: '16px 16px 14px',
+                borderBottom: '1px solid var(--border-subtle)',
+              }}
+            >
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full shadow-[0_12px_30px_rgba(8,145,178,0.18)]" style={{ background: 'linear-gradient(135deg, var(--accent-blue), var(--accent-teal))' }}>
                   {avatarUrl ? (
@@ -214,14 +227,17 @@ export function TopBar({
               </div>
             </div>
 
-            <div className="py-2">
+            <div style={{ padding: '6px 0' }}>
               <button
                 onClick={() => {
                   onNavigate('My Profile');
                   setShowProfileMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/5"
-                style={{ color: 'var(--text-muted)' }}
+                className="w-full flex items-center gap-3 transition-colors hover:bg-white/5"
+                style={{
+                  padding: '10px 16px',
+                  color: 'var(--text-muted)',
+                }}
               >
                 <User className="w-4 h-4" />
                 <span className="text-sm">My Profile</span>
@@ -231,8 +247,11 @@ export function TopBar({
                   onNavigate('Account Settings');
                   setShowProfileMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/5"
-                style={{ color: 'var(--text-muted)' }}
+                className="w-full flex items-center gap-3 transition-colors hover:bg-white/5"
+                style={{
+                  padding: '10px 16px',
+                  color: 'var(--text-muted)',
+                }}
               >
                 <Settings className="w-4 h-4" />
                 <span className="text-sm">Account Settings</span>
@@ -242,8 +261,11 @@ export function TopBar({
                   onNavigate('Notifications');
                   setShowProfileMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/5"
-                style={{ color: 'var(--text-muted)' }}
+                className="w-full flex items-center gap-3 transition-colors hover:bg-white/5"
+                style={{
+                  padding: '10px 16px',
+                  color: 'var(--text-muted)',
+                }}
               >
                 <Bell className="w-4 h-4" />
                 <span className="text-sm">Notifications</span>
@@ -267,19 +289,31 @@ export function TopBar({
                   </span>
                 ) : null}
               </button>
-              <button className="w-full flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/5" style={{ color: 'var(--text-muted)' }}>
+              <button
+                className="w-full flex items-center gap-3 transition-colors hover:bg-white/5"
+                style={{
+                  padding: '10px 16px',
+                  color: 'var(--text-muted)',
+                }}
+              >
                 <Shield className="w-4 h-4" />
                 <span className="text-sm">Verification Status</span>
               </button>
             </div>
 
-            <div className="py-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+            <div
+              style={{
+                padding: '6px 0',
+                borderTop: '1px solid var(--border-subtle)',
+              }}
+            >
               <button
                 onClick={() => {
                   setShowProfileMenu(false);
                   void onLogout();
                 }}
-                className="w-full flex items-center gap-3 px-5 py-3 text-red-400 transition-colors hover:bg-white/5"
+                className="w-full flex items-center gap-3 text-red-400 transition-colors hover:bg-white/5"
+                style={{ padding: '10px 16px' }}
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Log Out</span>
