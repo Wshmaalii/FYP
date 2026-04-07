@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { MessageSquare, Plus, Search } from 'lucide-react';
 import type { ConversationSummary } from '../../api/messaging';
 
@@ -44,30 +45,44 @@ function isOnline(index: number) {
 }
 
 export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPageProps) {
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false,
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileViewport(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div
       style={{
         flex: 1,
         minHeight: 0,
         display: 'flex',
+        flexDirection: isMobileViewport ? 'column' : 'row',
         background: 'var(--bg-app)',
       }}
     >
       <div
         style={{
-          width: '350px',
-          minWidth: '350px',
-          maxWidth: '350px',
+          width: isMobileViewport ? '100%' : '350px',
+          minWidth: isMobileViewport ? '100%' : '350px',
+          maxWidth: isMobileViewport ? '100%' : '350px',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
           background: 'var(--bg-sidebar)',
-          borderRight: '1px solid var(--border-subtle)',
+          borderRight: isMobileViewport ? 'none' : '1px solid var(--border-subtle)',
         }}
       >
         <div
           style={{
-            padding: '1.5rem 1rem 1rem',
+            padding: isMobileViewport ? '1rem 0.875rem 0.875rem' : '1.5rem 1rem 1rem',
             borderBottom: '1px solid var(--border-subtle)',
           }}
         >
@@ -82,7 +97,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
             <h2
               style={{
                 color: 'var(--text-primary)',
-                fontSize: '18px',
+                fontSize: isMobileViewport ? '17px' : '18px',
                 fontWeight: 600,
                 letterSpacing: '-0.02em',
               }}
@@ -95,8 +110,8 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '2.75rem',
-                height: '2.75rem',
+                width: isMobileViewport ? '2.5rem' : '2.75rem',
+                height: isMobileViewport ? '2.5rem' : '2.75rem',
                 borderRadius: '14px',
                 border: '0.5px solid var(--accent-teal-border)',
                 background: 'var(--accent-teal-bg)',
@@ -111,7 +126,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
           <div
             style={{
               position: 'relative',
-              marginTop: '1.25rem',
+              marginTop: isMobileViewport ? '1rem' : '1.25rem',
             }}
           >
             <Search
@@ -135,7 +150,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                 background: 'var(--bg-card)',
                 color: 'var(--text-primary)',
                 fontSize: '13px',
-                padding: '0.95rem 1rem 0.95rem 3rem',
+                padding: isMobileViewport ? '0.85rem 1rem 0.85rem 3rem' : '0.95rem 1rem 0.95rem 3rem',
                 outline: 'none',
               }}
             />
@@ -152,7 +167,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
           {conversations.length === 0 ? (
             <div
               style={{
-                padding: '1.25rem 1rem',
+                padding: isMobileViewport ? '1rem 0.875rem' : '1.25rem 1rem',
                 color: 'var(--text-muted)',
                 fontSize: '13px',
                 lineHeight: '1.7',
@@ -171,7 +186,7 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '1rem',
-                  padding: '1.25rem 1rem',
+                  padding: isMobileViewport ? '1rem 0.875rem' : '1.25rem 1rem',
                   textAlign: 'left',
                   borderTop: index === 0 ? 'none' : '1px solid var(--border-subtle)',
                   transition: 'background-color 150ms ease',
@@ -188,12 +203,12 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '4rem',
-                    height: '4rem',
+                    width: isMobileViewport ? '3.25rem' : '4rem',
+                    height: isMobileViewport ? '3.25rem' : '4rem',
                     borderRadius: '999px',
                     background: getAvatarBackground(conversation.conversation_key, index),
                     color: '#ffffff',
-                    fontSize: '16px',
+                    fontSize: isMobileViewport ? '14px' : '16px',
                     fontWeight: 700,
                     flexShrink: 0,
                   }}
@@ -276,64 +291,66 @@ export function DirectMessagesPage({ conversations, onOpen }: DirectMessagesPage
         </div>
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'var(--bg-app)',
-        }}
-      >
+      {!isMobileViewport ? (
         <div
           style={{
+            flex: 1,
+            minWidth: 0,
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            textAlign: 'center',
-            padding: '2rem',
+            background: 'var(--bg-app)',
           }}
         >
           <div
             style={{
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '6.5rem',
-              height: '6.5rem',
-              borderRadius: '999px',
-              background: 'var(--bg-hover)',
-              color: 'var(--text-muted)',
+              textAlign: 'center',
+              padding: '2rem',
             }}
           >
-            <MessageSquare className="h-10 w-10" />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '6.5rem',
+                height: '6.5rem',
+                borderRadius: '999px',
+                background: 'var(--bg-hover)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              <MessageSquare className="h-10 w-10" />
+            </div>
+            <h3
+              style={{
+                marginTop: '1.5rem',
+                color: 'var(--text-primary)',
+                fontSize: '20px',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Select a conversation
+            </h3>
+            <p
+              style={{
+                marginTop: '0.75rem',
+                color: 'var(--text-muted)',
+                fontSize: '13px',
+                lineHeight: '1.7',
+                maxWidth: '28rem',
+              }}
+            >
+              Choose a conversation from the list to start messaging.
+            </p>
           </div>
-          <h3
-            style={{
-              marginTop: '1.5rem',
-              color: 'var(--text-primary)',
-              fontSize: '20px',
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Select a conversation
-          </h3>
-          <p
-            style={{
-              marginTop: '0.75rem',
-              color: 'var(--text-muted)',
-              fontSize: '13px',
-              lineHeight: '1.7',
-              maxWidth: '28rem',
-            }}
-          >
-            Choose a conversation from the list to start messaging.
-          </p>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

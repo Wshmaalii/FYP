@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Settings, Bell, Shield, LogOut, Lock } from 'lucide-react';
+import { User, Settings, Bell, Shield, LogOut, Lock, Menu } from 'lucide-react';
 import { View } from '../App';
 
 interface TopBarProps {
@@ -14,6 +14,8 @@ interface TopBarProps {
   headerSubtitle?: string;
   isPrivateConversation?: boolean;
   unreadNotificationCount?: number;
+  isMobileViewport?: boolean;
+  onToggleMobileSidebar?: () => void;
 }
 
 export function TopBar({
@@ -28,6 +30,8 @@ export function TopBar({
   headerSubtitle,
   isPrivateConversation = false,
   unreadNotificationCount = 0,
+  isMobileViewport = false,
+  onToggleMobileSidebar,
 }: TopBarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,33 +62,56 @@ export function TopBar({
     <div
       style={{
         display: 'flex',
-        minHeight: '58px',
+        minHeight: isMobileViewport ? '54px' : '58px',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 18px 0 18px',
+        padding: isMobileViewport ? '0 12px' : '0 18px',
         background: 'var(--bg-sidebar)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        borderBottom: '1px solid var(--border-primary)',
       }}
     >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          paddingLeft: '4px',
+          gap: isMobileViewport ? '10px' : '12px',
+          paddingLeft: isMobileViewport ? 0 : '4px',
           minWidth: 0,
+          flex: 1,
         }}
       >
+        {isMobileViewport ? (
+          <button
+            type="button"
+            onClick={onToggleMobileSidebar}
+            aria-label="Toggle sidebar"
+            style={{
+              display: 'flex',
+              width: '38px',
+              height: '38px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              borderRadius: '12px',
+              border: '1px solid var(--border-primary)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+            }}
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+        ) : null}
         <div
           style={{
             display: 'flex',
-            width: '38px',
-            height: '38px',
+            width: isMobileViewport ? '34px' : '38px',
+            height: isMobileViewport ? '34px' : '38px',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            borderRadius: '10px',
-            fontSize: '13px',
+            borderRadius: isMobileViewport ? '9px' : '10px',
+            fontSize: isMobileViewport ? '12px' : '13px',
             fontWeight: 700,
             background: 'var(--accent-teal-bg)',
             color: 'var(--accent-teal)',
@@ -104,11 +131,14 @@ export function TopBar({
             <h1
               style={{
                 margin: 0,
-                fontSize: '16px',
+                fontSize: isMobileViewport ? '15px' : '16px',
                 fontWeight: 700,
                 lineHeight: 1.2,
                 letterSpacing: '-0.02em',
                 color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
               {displayTitle}
@@ -124,6 +154,7 @@ export function TopBar({
                 fontSize: '11px',
                 lineHeight: 1.3,
                 color: 'var(--text-faint)',
+                display: isMobileViewport ? 'none' : 'block',
               }}
             >
               {displaySubtitle}
@@ -192,8 +223,13 @@ export function TopBar({
 
         {showProfileMenu && (
           <div
-            className="absolute right-0 z-50 mt-3 w-72 overflow-hidden rounded-[18px] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
-            style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+            className="absolute z-50 mt-3 overflow-hidden rounded-[18px] shadow-[0_28px_80px_rgba(0,0,0,0.45)]"
+            style={{
+              right: 0,
+              width: isMobileViewport ? 'min(18rem, calc(100vw - 24px))' : '18rem',
+              background: 'var(--bg-card)',
+              border: '0.5px solid var(--border-primary)',
+            }}
           >
             <div className="p-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center gap-3">

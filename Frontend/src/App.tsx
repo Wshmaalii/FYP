@@ -59,6 +59,9 @@ const EMPTY_SIDEBAR: MessagingSidebarData = {
 };
 
 export default function App() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => (
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  ));
   const [currentView, setCurrentView] = useState<View>(() => (
     typeof window !== 'undefined' && window.location.pathname === '/notifications'
       ? 'Notifications'
@@ -81,9 +84,28 @@ export default function App() {
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [joiningSpaceKey, setJoiningSpaceKey] = useState<string | null>(null);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     restoreStoredThemePreference();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileViewport(isMobile);
+      if (!isMobile) {
+        setMobileSidebarOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const refreshMessagingState = async () => {
@@ -105,6 +127,7 @@ export default function App() {
     setSelectedChannelKey(preferredChannelKey || conversation.channels[0]?.channel_key || null);
     setHighlightedMessageId(null);
     setCurrentView('Conversation');
+    setMobileSidebarOpen(false);
   };
 
   const refreshNotificationSummary = async () => {
@@ -204,6 +227,7 @@ export default function App() {
     setAuthStatus('guest');
     setAuthView('login');
     setCurrentView('Explore Spaces');
+    setMobileSidebarOpen(false);
   };
 
   const handleProfileUpdated = (profile: UserProfile) => {
@@ -236,6 +260,7 @@ export default function App() {
     setAuthStatus('guest');
     setAuthView('login');
     setCurrentView('Explore Spaces');
+    setMobileSidebarOpen(false);
   };
 
   const openStockDetail = (ticker: string) => {
@@ -244,6 +269,7 @@ export default function App() {
     }
     setSelectedStock(ticker);
     setCurrentView('Stock Detail');
+    setMobileSidebarOpen(false);
   };
 
   const handleMentionInChat = async (ticker: string) => {
@@ -252,6 +278,7 @@ export default function App() {
 
     if (selectedConversation) {
       setCurrentView('Conversation');
+      setMobileSidebarOpen(false);
       return;
     }
 
@@ -269,6 +296,7 @@ export default function App() {
     }
 
     setCurrentView('Explore Spaces');
+    setMobileSidebarOpen(false);
   };
 
   const handleJoinSpace = async (conversationKey: string) => {
@@ -531,10 +559,19 @@ export default function App() {
         selectedConversationKey={selectedConversation?.conversation_key || null}
         selectedConversationKind={selectedConversation?.kind || null}
         mySpaces={sidebarData.my_spaces}
-        onNavigate={setCurrentView}
+        onNavigate={(view) => {
+          setCurrentView(view);
+          setMobileSidebarOpen(false);
+        }}
         onOpenSpace={(conversationKey) => void openConversation(conversationKey)}
-        onOpenComposer={() => setNewChatOpen(true)}
+        onOpenComposer={() => {
+          setMobileSidebarOpen(false);
+          setNewChatOpen(true);
+        }}
         onOpenStock={openStockDetail}
+        isMobileViewport={isMobileViewport}
+        isMobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
@@ -549,6 +586,8 @@ export default function App() {
           headerSubtitle={headerSubtitle}
           isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
           unreadNotificationCount={notificationUnreadCount}
+          isMobileViewport={isMobileViewport}
+          onToggleMobileSidebar={() => setMobileSidebarOpen((current) => !current)}
         />
         {renderView()}
       </div>

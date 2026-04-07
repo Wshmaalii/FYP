@@ -44,7 +44,19 @@ export function MessageInput({
 }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [sendWarning, setSendWarning] = useState<string | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false,
+  );
   const hasMessage = message.trim().length > 0;
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileViewport(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!externalDraft) {
@@ -81,30 +93,36 @@ export function MessageInput({
   return (
     <div
       style={{
-        padding: '16px 24px 14px',
+        position: isMobileViewport ? 'sticky' : 'static',
+        bottom: 0,
+        zIndex: isMobileViewport ? 12 : 'auto',
+        padding: isMobileViewport
+          ? '12px 12px calc(12px + env(safe-area-inset-bottom, 0px))'
+          : '16px 24px 14px',
         borderTop: '1px solid var(--border-subtle)',
         background: 'var(--bg-sidebar)',
+        boxShadow: isMobileViewport ? '0 -10px 28px rgba(0, 0, 0, 0.16)' : 'none',
       }}
     >
       <div
         style={{
           display: 'flex',
           alignItems: 'flex-end',
-          gap: '12px',
+          gap: isMobileViewport ? '8px' : '12px',
         }}
       >
         <div
           style={{
             display: 'flex',
             gap: '8px',
-            paddingBottom: '2px',
+            paddingBottom: isMobileViewport ? 0 : '2px',
           }}
         >
           <button
             style={{
               display: 'flex',
-              width: '44px',
-              height: '44px',
+              width: isMobileViewport ? '42px' : '44px',
+              height: isMobileViewport ? '42px' : '44px',
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: '14px',
@@ -119,8 +137,8 @@ export function MessageInput({
           <button
             style={{
               display: 'flex',
-              width: '44px',
-              height: '44px',
+              width: isMobileViewport ? '42px' : '44px',
+              height: isMobileViewport ? '42px' : '44px',
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: '14px',
@@ -148,7 +166,7 @@ export function MessageInput({
               width: '100%',
               resize: 'none',
               borderRadius: '18px',
-              padding: '14px 18px',
+              padding: isMobileViewport ? '13px 16px' : '14px 18px',
               fontSize: '14px',
               lineHeight: 1.5,
               minHeight: '44px',
@@ -167,8 +185,8 @@ export function MessageInput({
           disabled={!hasMessage || isSending}
           style={{
             display: 'flex',
-            width: '44px',
-            height: '44px',
+            width: isMobileViewport ? '42px' : '44px',
+            height: isMobileViewport ? '42px' : '44px',
             flexShrink: 0,
             alignItems: 'center',
             justifyContent: 'center',
@@ -203,17 +221,19 @@ export function MessageInput({
         </div>
       )}
 
-      <div
-        style={{
-          marginTop: '10px',
-          paddingLeft: '2px',
-          color: 'var(--text-label)',
-          fontSize: '11px',
-          lineHeight: 1.4,
-        }}
-      >
-        Press Enter to send, Shift+Enter for new line
-      </div>
+      {!isMobileViewport ? (
+        <div
+          style={{
+            marginTop: '10px',
+            paddingLeft: '2px',
+            color: 'var(--text-label)',
+            fontSize: '11px',
+            lineHeight: 1.4,
+          }}
+        >
+          Press Enter to send, Shift+Enter for new line
+        </div>
+      ) : null}
     </div>
   );
 }

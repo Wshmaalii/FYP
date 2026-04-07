@@ -13,6 +13,9 @@ interface SidebarProps {
   onOpenSpace: (conversationKey: string) => void;
   onOpenComposer: () => void;
   onOpenStock: (ticker: string) => void;
+  isMobileViewport?: boolean;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const SPACE_DOT_COLORS = ['#4f6ef7', '#f59e0b', '#2dd4aa', '#f26b6b', '#8b5cf6', '#00c4a0'];
@@ -205,19 +208,43 @@ export function Sidebar({
   onOpenSpace,
   onOpenComposer,
   onOpenStock,
+  isMobileViewport = false,
+  isMobileOpen = false,
+  onMobileClose,
 }: SidebarProps) {
   const sidebarWidth = '12.75rem';
+  const shouldRenderMobileSidebar = isMobileViewport && isMobileOpen;
 
-  return (
+  const handleOpenSpace = (conversationKey: string) => {
+    onOpenSpace(conversationKey);
+    onMobileClose?.();
+  };
+
+  const handleOpenComposer = () => {
+    onOpenComposer();
+    onMobileClose?.();
+  };
+
+  const handleOpenStock = (ticker: string) => {
+    onOpenStock(ticker);
+    onMobileClose?.();
+  };
+
+  const sidebarContent = (
     <aside
       className="flex shrink-0 flex-col overflow-x-hidden"
       style={{
         background: 'var(--bg-sidebar)',
         borderRight: '0.5px solid var(--border-secondary)',
-        width: sidebarWidth,
-        minWidth: sidebarWidth,
-        maxWidth: sidebarWidth,
-        flex: `0 0 ${sidebarWidth}`,
+        width: isMobileViewport ? 'min(85vw, 18rem)' : sidebarWidth,
+        minWidth: isMobileViewport ? 'min(85vw, 18rem)' : sidebarWidth,
+        maxWidth: isMobileViewport ? 'min(85vw, 18rem)' : sidebarWidth,
+        flex: isMobileViewport ? '0 0 min(85vw, 18rem)' : `0 0 ${sidebarWidth}`,
+        height: isMobileViewport ? '100dvh' : 'auto',
+        position: isMobileViewport ? 'relative' : 'static',
+        zIndex: isMobileViewport ? 30 : 'auto',
+        boxShadow: isMobileViewport ? '0 20px 48px rgba(0,0,0,0.28)' : 'none',
+        animation: isMobileViewport ? 'tl-mobile-sidebar-enter 180ms ease-out' : 'none',
       }}
     >
       <div
@@ -265,7 +292,7 @@ export function Sidebar({
         </div>
         <button
           type="button"
-          onClick={onOpenComposer}
+          onClick={handleOpenComposer}
           className="flex w-full items-center justify-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-colors"
           style={{
             background: 'var(--accent-teal-bg)',
@@ -327,7 +354,7 @@ export function Sidebar({
                 label={space.name}
                 selected={selectedConversationKind === 'public_space' && selectedConversationKey === space.conversation_key}
                 dotColor={getSpaceDotColor(space.conversation_key, index)}
-                onClick={() => onOpenSpace(space.conversation_key)}
+                onClick={() => handleOpenSpace(space.conversation_key)}
               />
             )) : (
               <div
@@ -346,8 +373,47 @@ export function Sidebar({
       </div>
 
       <div className="min-w-0 overflow-hidden">
-        <MarketDashboard onNavigate={onNavigate} onOpenStock={onOpenStock} />
+        <MarketDashboard onNavigate={onNavigate} onOpenStock={handleOpenStock} />
       </div>
     </aside>
   );
+
+  if (isMobileViewport) {
+    if (!shouldRenderMobileSidebar) {
+      return null;
+    }
+
+    return (
+      <>
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={onMobileClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.56)',
+            border: 'none',
+            padding: 0,
+            margin: 0,
+            zIndex: 20,
+            animation: 'tl-mobile-backdrop-enter 160ms ease-out',
+          }}
+        />
+        <div
+          style={{
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 30,
+          }}
+        >
+          {sidebarContent}
+        </div>
+      </>
+    );
+  }
+
+  return sidebarContent;
 }

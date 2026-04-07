@@ -68,9 +68,21 @@ export function ConversationPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false,
+  );
   const privacy = buildPrivacyCopy(conversation);
   const activeChannelKey = selectedChannelKey || conversation.channels[0]?.channel_key || null;
   const activeChannel = conversation.channels.find((channel) => channel.channel_key === activeChannelKey) || conversation.channels[0] || null;
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileViewport(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!activeChannelKey) {
@@ -150,7 +162,7 @@ export function ConversationPage({
     <div className="flex flex-1 flex-col" style={{ background: 'var(--bg-app)' }}>
       <div
         style={{
-          padding: '14px 24px 10px',
+          padding: isMobileViewport ? '12px 14px 10px' : '14px 24px 10px',
           borderBottom: '1px solid var(--border-subtle)',
           background: 'var(--bg-sidebar)',
         }}
@@ -169,11 +181,11 @@ export function ConversationPage({
                 margin: 0,
                 maxWidth: '56rem',
                 color: 'var(--text-muted)',
-                fontSize: '13px',
+                fontSize: isMobileViewport ? '12px' : '13px',
                 lineHeight: 1.5,
-                whiteSpace: 'nowrap',
+                whiteSpace: isMobileViewport ? 'normal' : 'nowrap',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                textOverflow: isMobileViewport ? 'clip' : 'ellipsis',
               }}
             >
               {conversation.description || privacy.visibilitySummary}
@@ -184,7 +196,7 @@ export function ConversationPage({
               flexShrink: 0,
               borderRadius: '999px',
               padding: '7px 12px',
-              fontSize: '11px',
+              fontSize: isMobileViewport ? '10px' : '11px',
               background: 'var(--bg-card)',
               border: '1px solid var(--border-primary)',
               color: 'var(--text-muted)',
@@ -216,8 +228,8 @@ export function ConversationPage({
                   gap: '6px',
                   flexShrink: 0,
                   borderRadius: '999px',
-                  padding: '8px 14px',
-                  fontSize: '12px',
+                  padding: isMobileViewport ? '7px 12px' : '8px 14px',
+                  fontSize: isMobileViewport ? '11px' : '12px',
                   fontWeight: 600,
                   lineHeight: 1,
                   background: channel.channel_key === activeChannelKey ? 'var(--accent-teal-bg)' : 'transparent',
@@ -236,7 +248,10 @@ export function ConversationPage({
 
       <ChannelPrivacyCard {...privacy} />
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
+      <div
+        className="flex-1 space-y-4 overflow-y-auto"
+        style={{ padding: isMobileViewport ? '14px 14px 18px' : '16px 24px' }}
+      >
         {error && (
           <div className="rounded-2xl border border-red-900/70 bg-red-950/30 p-4 text-sm text-red-300">
             {error}
