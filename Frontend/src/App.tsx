@@ -7,6 +7,7 @@ import { TopMoversPage } from './components/pages/TopMoversPage';
 import { WatchlistPage } from './components/pages/WatchlistPage';
 import { MarketOverviewPage } from './components/pages/MarketOverviewPage';
 import { StockDetailPage } from './components/pages/StockDetailPage';
+import { NotificationsPage } from './components/pages/NotificationsPage';
 import { LoginPage } from './components/auth/LoginPage';
 import { SignupPage } from './components/auth/SignupPage';
 import { ConversationPage } from './components/messaging/ConversationPage';
@@ -17,6 +18,7 @@ import { PrivateRoomsPage } from './components/messaging/PrivateRoomsPage';
 import { NewChatModal } from './components/messaging/NewChatModal';
 import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
 import { fetchMyProfile, type UserProfile } from './api/profile';
+import { fetchNotifications, type NotificationRecord } from './api/notifications';
 import {
   createSpace,
   createDirectMessage,
@@ -42,6 +44,7 @@ export type View =
   | 'Top Movers'
   | 'Watchlist'
   | 'Market Overview'
+  | 'Notifications'
   | 'Stock Detail';
 type NavigableView = Exclude<View, 'Stock Detail'>;
 type AuthView = 'login' | 'signup';
@@ -54,7 +57,11 @@ const EMPTY_SIDEBAR: MessagingSidebarData = {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<View>('Explore Spaces');
+  const [currentView, setCurrentView] = useState<View>(() => (
+    typeof window !== 'undefined' && window.location.pathname === '/notifications'
+      ? 'Notifications'
+      : 'Explore Spaces'
+  ));
   const [authView, setAuthView] = useState<AuthView>('login');
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -66,10 +73,12 @@ export default function App() {
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
   const [stockDetailBackView, setStockDetailBackView] = useState<NavigableView>('Explore Spaces');
   const [conversationDraft, setConversationDraft] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [newChatOpen, setNewChatOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<MessagingUser[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [joiningSpaceKey, setJoiningSpaceKey] = useState<string | null>(null);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   const refreshMessagingState = async () => {
     const [sidebar, publicSpaces] = await Promise.all([fetchMessagingSidebar(), fetchSpaces()]);
@@ -78,13 +87,27 @@ export default function App() {
     return { sidebar, publicSpaces: publicSpaces.spaces };
   };
 
-  const openConversation = async (conversationKey: string, fallbackConversation?: ConversationSummary | null) => {
+  const openConversation = async (
+    conversationKey: string,
+    fallbackConversation?: ConversationSummary | null,
+    preferredChannelKey: string | null = null,
+  ) => {
     const conversation = fallbackConversation && fallbackConversation.conversation_key === conversationKey
       ? fallbackConversation
       : await fetchConversation(conversationKey);
     setSelectedConversation(conversation);
-    setSelectedChannelKey(conversation.channels[0]?.channel_key || null);
+    setSelectedChannelKey(preferredChannelKey || conversation.channels[0]?.channel_key || null);
+    setHighlightedMessageId(null);
     setCurrentView('Conversation');
+  };
+
+  const refreshNotificationSummary = async () => {
+    try {
+      const data = await fetchNotifications(1);
+      setNotificationUnreadCount(data.unread_count);
+    } catch {
+      // Keep the existing badge state if refresh fails.
+    }
   };
 
   useEffect(() => {
@@ -103,9 +126,10 @@ export default function App() {
         setCurrentProfile(profile);
         const { sidebar } = await refreshMessagingState();
         setAuthStatus('authed');
-        if (sidebar.my_spaces.length > 0) {
+        await refreshNotificationSummary();
+        if (currentView !== 'Notifications' && sidebar.my_spaces.length > 0) {
           await openConversation(sidebar.my_spaces[0].conversation_key, sidebar.my_spaces[0]);
-        } else {
+        } else if (currentView !== 'Notifications') {
           setCurrentView('Explore Spaces');
         }
       } catch {
@@ -124,9 +148,10 @@ export default function App() {
     setCurrentProfile(profile);
     const { sidebar } = await refreshMessagingState();
     setAuthStatus('authed');
-    if (sidebar.my_spaces.length > 0) {
+    await refreshNotificationSummary();
+    if (currentView !== 'Notifications' && sidebar.my_spaces.length > 0) {
       await openConversation(sidebar.my_spaces[0].conversation_key, sidebar.my_spaces[0]);
-    } else {
+    } else if (currentView !== 'Notifications') {
       setCurrentView('Explore Spaces');
     }
   };
@@ -138,7 +163,10 @@ export default function App() {
     setCurrentProfile(profile);
     await refreshMessagingState();
     setAuthStatus('authed');
-    setCurrentView('Explore Spaces');
+    await refreshNotificationSummary();
+    if (currentView !== 'Notifications') {
+      setCurrentView('Explore Spaces');
+    }
   };
 
   const handleLogout = async () => {
@@ -149,6 +177,7 @@ export default function App() {
     setSpaces([]);
     setSelectedConversation(null);
     setSelectedChannelKey(null);
+    setNotificationUnreadCount(0);
     setAuthStatus('guest');
     setAuthView('login');
     setCurrentView('Explore Spaces');
@@ -274,8 +303,34 @@ export default function App() {
     if (currentView === 'Watchlist') {
       return '#watchlist';
     }
+    if (currentView === 'Notifications') {
+      return 'Mentions and watchlist alerts';
+    }
     return undefined;
   }, [currentView, selectedConversation, selectedChannelKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const desiredPath = currentView === 'Notifications' ? '/notifications' : '/';
+    if (window.location.pathname !== desiredPath) {
+      window.history.replaceState({ view: currentView }, '', desiredPath);
+    }
+  }, [currentView]);
+
+  useEffect(() => {
+    if (authStatus !== 'authed') {
+      return;
+    }
+
+    void refreshNotificationSummary();
+    const intervalId = window.setInterval(() => {
+      void refreshNotificationSummary();
+    }, 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, [authStatus]);
 
   const sidebarSelectedView = useMemo<View>(() => {
     if (currentView === 'Conversation' && selectedConversation) {
@@ -328,6 +383,8 @@ export default function App() {
             onChannelSelect={setSelectedChannelKey}
             prefilledMessage={conversationDraft}
             onDraftConsumed={() => setConversationDraft(null)}
+            highlightedMessageId={highlightedMessageId}
+            onHighlightConsumed={() => setHighlightedMessageId(null)}
           />
         ) : (
           <ExploreSpacesPage
@@ -353,6 +410,25 @@ export default function App() {
         return <WatchlistPage onBack={() => setCurrentView(selectedConversation ? 'Conversation' : 'Explore Spaces')} onSelectStock={openStockDetail} />;
       case 'Market Overview':
         return <MarketOverviewPage onBack={() => setCurrentView(selectedConversation ? 'Conversation' : 'Explore Spaces')} onSelectStock={openStockDetail} />;
+      case 'Notifications':
+        return (
+          <NotificationsPage
+            onOpenMention={async (notification: NotificationRecord) => {
+              if (notification.type !== 'mention') {
+                return;
+              }
+              const payload = notification.payload as {
+                conversation_key: string;
+                channel_key: string;
+                message_id: string;
+              };
+              await openConversation(payload.conversation_key, null, payload.channel_key);
+              setHighlightedMessageId(payload.message_id);
+            }}
+            onOpenWatchlistAlert={openStockDetail}
+            onUnreadCountChange={setNotificationUnreadCount}
+          />
+        );
       case 'Stock Detail':
         return selectedStock ? (
           <StockDetailPage
@@ -410,6 +486,7 @@ export default function App() {
           headerTitle={headerTitle}
           headerSubtitle={headerSubtitle}
           isPrivateConversation={selectedConversation?.kind === 'private_group' || selectedConversation?.kind === 'direct_message'}
+          unreadNotificationCount={notificationUnreadCount}
         />
         {renderView()}
       </div>

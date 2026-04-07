@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
@@ -23,6 +24,7 @@ class User(db.Model):
     messages = db.relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
     watchlist_items = db.relationship("WatchlistItem", back_populates="user", cascade="all, delete-orphan")
     activities = db.relationship("UserActivity", back_populates="user", cascade="all, delete-orphan")
+    notifications = db.relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     owned_conversations = db.relationship("Conversation", back_populates="owner", cascade="all, delete-orphan")
     conversation_memberships = db.relationship("ConversationMember", back_populates="user", cascade="all, delete-orphan")
 
@@ -221,6 +223,42 @@ class UserActivity(db.Model):
             "description": self.description,
             "ticker": self.ticker,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    notification_type = db.Column(String(32), nullable=False, index=True)
+    entity_key = db.Column(String(255), nullable=True, index=True)
+    is_read = db.Column(Boolean, nullable=False, default=False, index=True)
+    read_at = db.Column(DateTime(timezone=True), nullable=True)
+    payload = db.Column(Text, nullable=False, default="{}")
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+
+    user = db.relationship("User", back_populates="notifications")
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "notification_type", "entity_key", name="uq_notification_user_type_entity"),
+    )
+
+    def payload_dict(self):
+        try:
+            value = json.loads(self.payload or "{}")
+        except (TypeError, ValueError):
+            value = {}
+        return value if isinstance(value, dict) else {}
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "type": self.notification_type,
+            "is_read": self.is_read,
+            "read_at": self.read_at.isoformat() if self.read_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "payload": self.payload_dict(),
         }
 
 

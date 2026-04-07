@@ -12,6 +12,8 @@ interface ConversationPageProps {
   onChannelSelect: (channelKey: string) => void;
   prefilledMessage?: string | null;
   onDraftConsumed?: () => void;
+  highlightedMessageId?: string | null;
+  onHighlightConsumed?: () => void;
 }
 
 function buildPrivacyCopy(conversation: ConversationSummary) {
@@ -59,6 +61,8 @@ export function ConversationPage({
   onChannelSelect,
   prefilledMessage = null,
   onDraftConsumed,
+  highlightedMessageId = null,
+  onHighlightConsumed,
 }: ConversationPageProps) {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +82,7 @@ export function ConversationPage({
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchConversationMessages(activeChannelKey);
+        const data = await fetchConversationMessages(activeChannelKey, highlightedMessageId ? 100 : 50);
         if (isMounted) {
           setMessages(data);
         }
@@ -97,7 +101,25 @@ export function ConversationPage({
     return () => {
       isMounted = false;
     };
-  }, [activeChannelKey]);
+  }, [activeChannelKey, highlightedMessageId]);
+
+  useEffect(() => {
+    if (loading || !highlightedMessageId) {
+      return;
+    }
+
+    const element = document.getElementById(`message-${highlightedMessageId}`);
+    if (!element) {
+      return;
+    }
+
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const timeoutId = window.setTimeout(() => {
+      onHighlightConsumed?.();
+    }, 1800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [highlightedMessageId, loading, messages, onHighlightConsumed]);
 
   const handleSend = async (content: string) => {
     if (!activeChannelKey) {
@@ -227,7 +249,13 @@ export function ConversationPage({
             No messages yet. Start the conversation in {activeChannel ? `#${activeChannel.slug}` : conversation.name}.
           </div>
         ) : (
-          messages.map((message) => <ChatMessage key={message.id} message={message} />)
+          messages.map((message) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              highlighted={highlightedMessageId === message.id}
+            />
+          ))
         )}
       </div>
 

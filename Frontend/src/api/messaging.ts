@@ -103,8 +103,8 @@ export async function fetchConversation(conversationKey: string) {
   return data.conversation;
 }
 
-export async function fetchConversationMessages(channelKey: string) {
-  const data = await request<{ messages: ConversationMessage[] }>(`/api/conversations/${channelKey}/messages`);
+export async function fetchConversationMessages(channelKey: string, limit = 50) {
+  const data = await request<{ messages: ConversationMessage[] }>(`/api/conversations/${channelKey}/messages?limit=${limit}`);
   return data.messages;
 }
 

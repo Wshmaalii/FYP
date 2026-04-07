@@ -47,6 +47,7 @@ try:
         ConversationChannel,
         ConversationMember,
         MarketSnapshot,
+        Notification,
         RevokedToken,
         User,
         UserActivity,
@@ -83,6 +84,7 @@ except ImportError:
         ConversationChannel,
         ConversationMember,
         MarketSnapshot,
+        Notification,
         RevokedToken,
         User,
         UserActivity,
@@ -297,6 +299,15 @@ def _extract_tickers(content: str):
     return tickers[:5]
 
 
+def _extract_mentions(content: str):
+    mentions = []
+    for match in re.finditer(r"(?<!\w)@([A-Za-z0-9_]{3,24})\b", content or ""):
+        username = (match.group(1) or "").strip().lower()
+        if username and username not in mentions:
+            mentions.append(username)
+    return mentions[:10]
+
+
 def _generate_unique_username(base_value: str, excluded_user_id=None) -> str:
     base = _username_seed(base_value)
     candidate = base
@@ -319,6 +330,147 @@ def _create_activity(user_id, activity_type: str, description: str, ticker: str 
     )
     db.session.add(activity)
     return activity
+
+
+def _create_notification(
+    user_id,
+    notification_type: str,
+    *,
+    entity_key: str | None = None,
+    payload: dict | None = None,
+):
+    if entity_key:
+        existing = Notification.query.filter_by(
+            user_id=user_id,
+            notification_type=notification_type,
+            entity_key=entity_key,
+        ).first()
+        if existing:
+            return existing
+
+    notification = Notification(
+        user_id=user_id,
+        notification_type=notification_type,
+        entity_key=entity_key,
+        payload=json.dumps(payload or {}),
+        is_read=False,
+    )
+    db.session.add(notification)
+    db.session.flush()
+    return notification
+
+
+def _message_preview(content: str, max_length: int = 140) -> str:
+    value = (content or "").strip()
+    if len(value) <= max_length:
+        return value
+    return value[: max_length - 1].rstrip() + "…"
+
+
+def _create_mention_notifications(user: User, conversation: Conversation, channel: ConversationChannel, message: ChatMessage):
+    if conversation.kind != "public_space":
+        return []
+
+    mentioned_usernames = _extract_mentions(message.content)
+    if not mentioned_usernames:
+        return []
+
+    profiles = UserProfile.query.filter(UserProfile.username.in_(mentioned_usernames)).all()
+    profile_map = {profile.username.lower(): profile for profile in profiles}
+    author_profile = ensure_user_profile(user)
+    created_notifications = []
+
+    for username in mentioned_usernames:
+        profile = profile_map.get(username)
+        if not profile or profile.user_id == user.id:
+            continue
+        if not _member_exists(conversation.id, profile.user_id):
+            continue
+
+        recipient_settings = ensure_user_settings(profile.user)
+        if not recipient_settings.message_notifications:
+            continue
+
+        created_notifications.append(
+            _create_notification(
+                profile.user_id,
+                "mention",
+                entity_key=f"mention:{message.id}:{profile.user_id}",
+                payload={
+                    "space_name": conversation.name,
+                    "conversation_key": conversation.conversation_key,
+                    "channel_name": channel.name,
+                    "channel_key": channel.channel_key,
+                    "message_id": str(message.id),
+                    "mentioned_by_name": author_profile.full_name,
+                    "mentioned_by_username": author_profile.username,
+                    "message_preview": _message_preview(message.content),
+                },
+            )
+        )
+
+    return created_notifications
+
+
+def _refresh_watchlist_alert_notifications(user: User):
+    settings = ensure_user_settings(user)
+    if not settings.push_notifications:
+        return []
+
+    watchlist_items = (
+        WatchlistItem.query
+        .filter_by(user_id=user.id)
+        .order_by(WatchlistItem.created_at.desc())
+        .all()
+    )
+    if not watchlist_items:
+        return []
+
+    quote_response = fetch_bulk_quotes(
+        get_finnhub_api_key(),
+        [item.ticker for item in watchlist_items],
+        snapshot_loader=load_market_snapshot,
+        snapshot_saver=save_market_snapshot,
+    )
+    quotes = quote_response.get("quotes") or {}
+    created_notifications = []
+
+    for item in watchlist_items:
+        quote = quotes.get(item.ticker)
+        if not quote:
+            continue
+
+        price = quote.get("price")
+        change = quote.get("change")
+        change_percent = quote.get("changePercent")
+        updated_at = quote.get("updatedAt") or datetime.now(timezone.utc).isoformat()
+
+        try:
+            numeric_change = float(change or 0)
+            numeric_change_percent = float(change_percent or 0)
+        except (TypeError, ValueError):
+            continue
+
+        if abs(numeric_change) < 0.01 and abs(numeric_change_percent) < 0.01:
+            continue
+
+        created_notifications.append(
+            _create_notification(
+                user.id,
+                "watchlist_alert",
+                entity_key=f"watchlist:{item.ticker}:{updated_at}",
+                payload={
+                    "ticker": item.ticker,
+                    "stock_name": item.company_name or get_supported_symbol_name(item.ticker) or item.ticker,
+                    "price": price,
+                    "change": numeric_change,
+                    "change_percent": numeric_change_percent,
+                    "movement_label": f"{numeric_change >= 0 and '+' or ''}{numeric_change:.2f} ({numeric_change_percent >= 0 and '+' or ''}{numeric_change_percent:.2f}%)",
+                },
+            )
+        )
+
+    return created_notifications
 
 
 def ensure_user_profile(user: User) -> UserProfile:
@@ -1243,6 +1395,91 @@ def profile_activity():
     return jsonify({"activities": [activity.to_dict() for activity in activities]})
 
 
+@app.route("/api/notifications", methods=["GET"])
+def notifications():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    _refresh_watchlist_alert_notifications(user)
+    db.session.commit()
+
+    try:
+        requested_limit = int(request.args.get("limit", 50))
+    except (TypeError, ValueError):
+        requested_limit = 50
+
+    limit = min(max(requested_limit, 1), 100)
+    requested_type = (request.args.get("type") or "all").strip().lower()
+    type_map = {
+        "mentions": "mention",
+        "watchlist_alerts": "watchlist_alert",
+    }
+
+    notifications_query = Notification.query.filter_by(user_id=user.id)
+    if requested_type in type_map:
+        notifications_query = notifications_query.filter_by(notification_type=type_map[requested_type])
+
+    notifications = (
+        notifications_query
+        .order_by(Notification.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    unread_count = Notification.query.filter_by(user_id=user.id, is_read=False).count()
+    mention_count = Notification.query.filter_by(user_id=user.id, notification_type="mention").count()
+    watchlist_alert_count = Notification.query.filter_by(user_id=user.id, notification_type="watchlist_alert").count()
+
+    return jsonify(
+        {
+            "notifications": [notification.to_dict() for notification in notifications],
+            "unread_count": unread_count,
+            "counts": {
+                "mentions": mention_count,
+                "watchlist_alerts": watchlist_alert_count,
+            },
+        }
+    )
+
+
+@app.route("/api/notifications/read", methods=["POST"])
+def mark_notifications_read():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids") or []
+    mark_all = bool(data.get("mark_all"))
+
+    unread_query = Notification.query.filter_by(user_id=user.id, is_read=False)
+    notifications_to_update = []
+
+    if mark_all:
+        notifications_to_update = unread_query.all()
+    else:
+        valid_ids = []
+        for raw_id in ids:
+            try:
+                valid_ids.append(uuid.UUID(str(raw_id)))
+            except (TypeError, ValueError):
+                continue
+
+        if valid_ids:
+            notifications_to_update = unread_query.filter(Notification.id.in_(valid_ids)).all()
+
+    for notification in notifications_to_update:
+        notification.is_read = True
+        notification.read_at = datetime.now(timezone.utc)
+
+    if notifications_to_update:
+        db.session.commit()
+
+    unread_count = Notification.query.filter_by(user_id=user.id, is_read=False).count()
+    return jsonify({"unread_count": unread_count})
+
+
 @app.route("/api/settings/me", methods=["GET", "PATCH"])
 def settings_me():
     user, error_response = get_authenticated_user()
@@ -1512,10 +1749,12 @@ def conversation_messages(channel_key):
         ticker_symbols=",".join(tickers),
     )
     db.session.add(message)
+    db.session.flush()
 
     profile = ensure_user_profile(user)
     profile.messages_sent_count += 1
     profile.tickers_shared_count += len(tickers)
+    _create_mention_notifications(user, conversation, channel, message)
 
     activity_type = "message_sent"
     activity_description = f"Sent a message in {conversation.name}"
@@ -1575,6 +1814,7 @@ def messages():
         ticker_symbols=",".join(tickers),
     )
     db.session.add(message)
+    db.session.flush()
 
     profile = ensure_user_profile(user)
     profile.messages_sent_count += 1

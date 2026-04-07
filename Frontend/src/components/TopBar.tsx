@@ -13,6 +13,7 @@ interface TopBarProps {
   headerTitle?: string;
   headerSubtitle?: string;
   isPrivateConversation?: boolean;
+  unreadNotificationCount?: number;
 }
 
 export function TopBar({
@@ -26,6 +27,7 @@ export function TopBar({
   headerTitle,
   headerSubtitle,
   isPrivateConversation = false,
+  unreadNotificationCount = 0,
 }: TopBarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -165,6 +167,27 @@ export function TopBar({
               <span className="text-[11px] text-white">{initials}</span>
             )}
           </div>
+          {unreadNotificationCount > 0 ? (
+            <span
+              style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                minWidth: unreadNotificationCount > 9 ? '18px' : '12px',
+                height: unreadNotificationCount > 9 ? '18px' : '12px',
+                padding: unreadNotificationCount > 9 ? '0 5px' : 0,
+                borderRadius: '999px',
+                background: '#ef4444',
+                color: '#ffffff',
+                fontSize: unreadNotificationCount > 9 ? '10px' : '0px',
+                fontWeight: 700,
+                lineHeight: unreadNotificationCount > 9 ? '18px' : '12px',
+                border: '2px solid var(--bg-sidebar)',
+              }}
+            >
+              {unreadNotificationCount > 9 ? '9+' : ''}
+            </span>
+          ) : null}
         </button>
 
         {showProfileMenu && (
@@ -214,9 +237,35 @@ export function TopBar({
                 <Settings className="w-4 h-4" />
                 <span className="text-sm">Account Settings</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/5" style={{ color: 'var(--text-muted)' }}>
+              <button
+                onClick={() => {
+                  onNavigate('Notifications');
+                  setShowProfileMenu(false);
+                }}
+                className="w-full flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/5"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <Bell className="w-4 h-4" />
                 <span className="text-sm">Notifications</span>
+                {unreadNotificationCount > 0 ? (
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      minWidth: '18px',
+                      height: '18px',
+                      padding: '0 5px',
+                      borderRadius: '999px',
+                      background: '#ef4444',
+                      color: '#ffffff',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      lineHeight: '18px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                ) : null}
               </button>
               <button className="w-full flex items-center gap-3 px-5 py-3 transition-colors hover:bg-white/5" style={{ color: 'var(--text-muted)' }}>
                 <Shield className="w-4 h-4" />

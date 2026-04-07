@@ -14,6 +14,7 @@ interface Message {
 interface ChatMessageProps {
   message: Message;
   onOpenTradeTicket?: (ticket: TradeTicketInput) => void;
+  highlighted?: boolean;
 }
 
 function getAvatarColor(user: string): string {
@@ -39,15 +40,17 @@ function formatTimestamp(value: string | null) {
   return parsed.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function ChatMessage({ message, onOpenTradeTicket }: ChatMessageProps) {
+export function ChatMessage({ message, onOpenTradeTicket, highlighted = false }: ChatMessageProps) {
   const avatarColor = getAvatarColor(message.user);
 
   return (
     <div
+      id={`message-${message.id}`}
       style={{
         display: 'flex',
         gap: '14px',
         alignItems: 'flex-start',
+        scrollMarginTop: '88px',
       }}
     >
       <div
@@ -110,8 +113,8 @@ export function ChatMessage({ message, onOpenTradeTicket }: ChatMessageProps) {
             borderRadius: '18px',
             borderTopLeftRadius: '8px',
             padding: '14px 16px',
-            background: 'rgba(255,255,255,0.035)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: highlighted ? 'rgba(8,145,178,0.12)' : 'rgba(255,255,255,0.035)',
+            border: highlighted ? '1px solid rgba(8,145,178,0.28)' : '1px solid rgba(255,255,255,0.07)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
           }}
         >
