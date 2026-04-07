@@ -54,25 +54,76 @@ export function TopBar({
 
   return (
     <div
-      className="flex h-[56px] items-center justify-between px-5"
-      style={{ background: 'var(--bg-sidebar)', borderBottom: '1px solid var(--border-subtle)' }}
+      style={{
+        display: 'flex',
+        minHeight: '58px',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 18px 0 18px',
+        background: 'var(--bg-sidebar)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}
     >
-      <div className="flex items-center gap-3">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          paddingLeft: '4px',
+          minWidth: 0,
+        }}
+      >
         <div
-          className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[11px] font-semibold text-white"
-          style={{ background: 'var(--accent-teal-bg)', color: 'var(--accent-teal)', border: '0.5px solid var(--accent-teal-border)' }}
+          style={{
+            display: 'flex',
+            width: '38px',
+            height: '38px',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            borderRadius: '10px',
+            fontSize: '13px',
+            fontWeight: 700,
+            background: 'var(--accent-teal-bg)',
+            color: 'var(--accent-teal)',
+            border: '1px solid var(--accent-teal-border)',
+          }}
         >
           TL
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[15px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>{displayTitle}</h1>
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <h1
+              style={{
+                margin: 0,
+                fontSize: '16px',
+                fontWeight: 700,
+                lineHeight: 1.2,
+                letterSpacing: '-0.02em',
+                color: 'var(--text-primary)',
+              }}
+            >
+              {displayTitle}
+            </h1>
             {isPrivateConversation && (
               <Lock className="w-4 h-4" style={{ color: 'var(--accent-teal)' }} />
             )}
           </div>
           {displaySubtitle ? (
-            <p className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
+            <p
+              style={{
+                margin: '3px 0 0',
+                fontSize: '11px',
+                lineHeight: 1.3,
+                color: 'var(--text-faint)',
+              }}
+            >
               {displaySubtitle}
             </p>
           ) : null}
@@ -82,20 +133,37 @@ export function TopBar({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowProfileMenu(!showProfileMenu)}
-          className="flex items-center gap-2 rounded-full px-1.5 py-1.5 transition-all duration-150 hover:bg-white/5 md:pl-3"
-          style={{ background: 'var(--bg-card)', border: '0.5px solid var(--border-primary)' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '38px',
+            height: '38px',
+            borderRadius: '999px',
+            padding: 0,
+            background: 'var(--bg-card)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            cursor: 'pointer',
+            marginRight: '2px',
+          }}
         >
-          <span className="hidden text-[12px] md:block" style={{ color: 'var(--text-secondary)' }}>
-            {displayName}
-          </span>
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full shadow-[0_10px_24px_rgba(8,145,178,0.18)]" style={{ background: 'linear-gradient(135deg, var(--accent-blue), var(--accent-teal))' }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" />
-              ) : (
-                <span className="text-[11px] text-white">{initials}</span>
-              )}
-            </div>
+          <div
+            style={{
+              display: 'flex',
+              width: '30px',
+              height: '30px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '999px',
+              boxShadow: '0 10px 24px rgba(8,145,178,0.18)',
+              background: 'linear-gradient(135deg, var(--accent-blue), var(--accent-teal))',
+            }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover rounded-full" />
+            ) : (
+              <span className="text-[11px] text-white">{initials}</span>
+            )}
           </div>
         </button>
 

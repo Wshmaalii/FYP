@@ -220,15 +220,46 @@ export function Sidebar({
         flex: `0 0 ${sidebarWidth}`,
       }}
     >
-      <div className="px-2.5 pb-2 pt-3" style={{ borderBottom: '0.5px solid rgba(255,255,255,0.05)' }}>
-        <div className="mb-2 flex items-center gap-1.5">
+      <div
+        style={{
+          padding: '12px 12px 10px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            minHeight: '36px',
+            marginBottom: '10px',
+          }}
+        >
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[10px] font-bold text-white"
-            style={{ background: '#63c4af' }}
+            style={{
+              display: 'flex',
+              width: '34px',
+              height: '34px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '10px',
+              background: '#63c4af',
+              color: '#ffffff',
+              fontSize: '12px',
+              fontWeight: 700,
+            }}
           >
             TL
           </div>
-          <span className="text-[11px] font-medium tracking-[-0.01em]" style={{ color: 'rgba(255,255,255,0.84)' }}>
+          <span
+            style={{
+              color: 'rgba(255,255,255,0.84)',
+              fontSize: '12px',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              lineHeight: 1.2,
+            }}
+          >
             TradeLink
           </span>
         </div>
