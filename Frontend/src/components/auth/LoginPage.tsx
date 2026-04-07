@@ -1,9 +1,58 @@
-import { Lock } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 interface LoginPageProps {
   onLogin: (username: string, password: string) => Promise<void>;
   onSwitchToSignup: () => void;
+}
+
+function AuthTab({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1,
+        border: 'none',
+        borderRadius: '14px',
+        padding: '0.78rem 1rem',
+        background: active ? 'rgba(23, 207, 183, 0.14)' : 'transparent',
+        color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+        fontSize: '14px',
+        fontWeight: 600,
+        lineHeight: 1,
+        cursor: 'pointer',
+        boxShadow: active ? 'inset 0 0 0 1px var(--accent-teal-border)' : 'none',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function FieldLabel({ children }: { children: string }) {
+  return (
+    <label
+      style={{
+        display: 'block',
+        marginBottom: '0.45rem',
+        color: 'var(--text-secondary)',
+        fontSize: '12px',
+        fontWeight: 500,
+        lineHeight: 1.3,
+      }}
+    >
+      {children}
+    </label>
+  );
 }
 
 export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
@@ -35,126 +84,196 @@ export function LoginPage({ onLogin, onSwitchToSignup }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-6 text-zinc-100">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-7xl overflow-hidden rounded-[32px] border border-zinc-800 bg-zinc-950 shadow-[0_32px_120px_rgba(0,0,0,0.45)]">
-        <div className="relative hidden flex-1 overflow-hidden border-r border-zinc-800 xl:flex">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_30%),radial-gradient(circle_at_80%_18%,rgba(59,130,246,0.12),transparent_28%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-[0.05]" />
-          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-cyan-400/30 to-transparent" />
-          <div className="relative flex w-full flex-col justify-between px-14 py-14">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.28),rgba(37,99,235,0.28))] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <span className="text-lg font-semibold tracking-[0.22em] text-white">TL</span>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.32em] text-cyan-300/80">TradeLink</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">Secure messaging for trader communities</h1>
-              </div>
-            </div>
-
-            <div className="max-w-xl">
-              <p className="max-w-lg text-base leading-8 text-zinc-300">
-                Move between public spaces, private groups, and direct messages with market context embedded where it matters.
-              </p>
-
-              <div className="mt-10 grid gap-4">
-                {[
-                  ['Private-first clarity', 'Know who can read, who can reply, and where ticker mentions stay visible.'],
-                  ['Snapshot-based market context', 'Stored market snapshots support conversation without turning the product into a dashboard.'],
-                  ['Built for community flow', 'Explore spaces, start direct messages, and create invite-only groups without friction.'],
-                ].map(([title, body]) => (
-                  <div
-                    key={title}
-                    className="rounded-2xl border border-zinc-800 bg-zinc-900/70 px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-                  >
-                    <p className="text-sm font-medium text-zinc-100">{title}</p>
-                    <p className="mt-1 text-sm leading-6 text-zinc-400">{body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 text-xs text-zinc-500">
-              <div className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.45)]" />
-              Handle-based identity. Private groups. Direct market context.
-            </div>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        background: 'var(--bg-app)',
+        color: 'var(--text-primary)',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '28rem',
+          borderRadius: '28px',
+          border: '1px solid var(--border-primary)',
+          background: 'var(--bg-card)',
+          boxShadow: '0 28px 80px rgba(0,0,0,0.34)',
+          padding: '30px 28px 22px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            marginBottom: '1.75rem',
+          }}
+        >
+          <div
+            style={{
+              width: '4.25rem',
+              height: '4.25rem',
+              borderRadius: '18px',
+              background: 'var(--accent-teal-bg)',
+              border: '1px solid var(--accent-teal-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--accent-teal)',
+              marginBottom: '1rem',
+            }}
+          >
+            <Shield className="h-7 w-7" />
           </div>
+          <h1
+            style={{
+              margin: 0,
+              color: 'var(--text-primary)',
+              fontSize: '2rem',
+              fontWeight: 700,
+              letterSpacing: '-0.03em',
+            }}
+          >
+            TradeLink
+          </h1>
+          <p
+            style={{
+              margin: '0.65rem 0 0',
+              color: 'var(--text-muted)',
+              fontSize: '14px',
+              lineHeight: 1.6,
+            }}
+          >
+            Secure messaging for trader communities.
+          </p>
         </div>
 
-        <div className="flex w-full items-center justify-center bg-zinc-950 px-6 py-10 xl:max-w-[520px]">
-          <div className="w-full max-w-md rounded-[28px] border border-zinc-800 bg-zinc-900 p-8 shadow-[0_28px_80px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <div className="mb-8 flex items-center gap-4 xl:hidden">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.24),rgba(37,99,235,0.28))]">
-                <span className="font-semibold tracking-[0.2em] text-white">TL</span>
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold tracking-tight text-white">TradeLink</h1>
-                <p className="text-sm text-zinc-500">Secure messaging for trader communities</p>
-              </div>
-            </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: '6px',
+            padding: '6px',
+            borderRadius: '18px',
+            background: 'var(--bg-app)',
+            border: '1px solid var(--border-primary)',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <AuthTab label="Sign in" active onClick={() => undefined} />
+          <AuthTab label="Create account" active={false} onClick={onSwitchToSignup} />
+        </div>
 
-            <div className="mb-8">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/80">Welcome back</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">Log in with your username</h2>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                Access your spaces, direct messages, private groups, watchlist, and stored market context.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2.5">
-                <label className="block text-sm font-medium text-zinc-200">Username</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
-                  placeholder="Enter your username"
-                  minLength={3}
-                  maxLength={24}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  required
-                />
-                <p className="text-xs leading-5 text-zinc-500">Usernames stay case-insensitive at login, but the field no longer forces lowercase while you type.</p>
-              </div>
-
-              <div className="space-y-2.5">
-                <label className="block text-sm font-medium text-zinc-200">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3.5 text-zinc-100 placeholder:text-zinc-600 transition-all duration-150 focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/70"
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-
-              {error && (
-                <div className="rounded-2xl border border-red-900/80 bg-red-950/30 px-4 py-3.5">
-                  <p className="text-sm text-red-300">{error}</p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-4 py-3.5 text-sm font-medium text-white shadow-[0_16px_40px_rgba(8,145,178,0.22)] transition-all duration-150 hover:bg-cyan-500 active:translate-y-px disabled:bg-zinc-700 disabled:shadow-none"
-              >
-                <Lock className="h-4 w-4" />
-                <span>{isSubmitting ? 'Logging In...' : 'Log In'}</span>
-              </button>
-            </form>
-
-            <div className="mt-8 border-t border-zinc-800 pt-5 text-sm text-zinc-500">
-              <span>Need an account? </span>
-              <button onClick={onSwitchToSignup} className="font-medium text-cyan-300 transition-colors hover:text-cyan-200">
-                Sign up
-              </button>
-            </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '1rem' }}>
+            <FieldLabel>Username</FieldLabel>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
+              minLength={3}
+              maxLength={24}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              required
+              style={{
+                width: '100%',
+                borderRadius: '16px',
+                border: '1px solid var(--border-primary)',
+                background: 'var(--bg-app)',
+                color: 'var(--text-primary)',
+                fontSize: '15px',
+                lineHeight: 1.4,
+                padding: '0.95rem 1rem',
+                outline: 'none',
+              }}
+            />
           </div>
+
+          <div style={{ marginBottom: error ? '0.9rem' : '1.15rem' }}>
+            <FieldLabel>Password</FieldLabel>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required
+              style={{
+                width: '100%',
+                borderRadius: '16px',
+                border: '1px solid var(--border-primary)',
+                background: 'var(--bg-app)',
+                color: 'var(--text-primary)',
+                fontSize: '15px',
+                lineHeight: 1.4,
+                padding: '0.95rem 1rem',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          {error ? (
+            <div
+              style={{
+                marginBottom: '1rem',
+                borderRadius: '16px',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                background: 'rgba(127, 29, 29, 0.2)',
+                padding: '0.9rem 1rem',
+                color: '#fca5a5',
+                fontSize: '13px',
+                lineHeight: 1.55,
+              }}
+            >
+              {error}
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              width: '100%',
+              border: '1px solid var(--accent-teal-border)',
+              borderRadius: '16px',
+              background: 'var(--accent-teal)',
+              color: '#ffffff',
+              fontSize: '15px',
+              fontWeight: 600,
+              lineHeight: 1,
+              padding: '1rem 1rem',
+              cursor: isSubmitting ? 'progress' : 'pointer',
+              opacity: isSubmitting ? 0.72 : 1,
+              boxShadow: '0 16px 36px rgba(23, 207, 183, 0.18)',
+            }}
+          >
+            {isSubmitting ? 'Logging In...' : 'Log In'}
+          </button>
+        </form>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.75rem',
+            marginTop: '1.5rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid var(--border-primary)',
+            color: 'var(--text-label)',
+            fontSize: '11px',
+            lineHeight: 1.4,
+          }}
+        >
+          <span>Protected channels, market-grade security.</span>
+          <span>v0.1</span>
         </div>
       </div>
     </div>
