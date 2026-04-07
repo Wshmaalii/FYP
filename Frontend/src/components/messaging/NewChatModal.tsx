@@ -92,21 +92,101 @@ export function NewChatModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-[1px]">
-      <div className="flex h-full w-full max-w-[500px] flex-col overflow-hidden border-l border-zinc-800 bg-[#101417] shadow-[-20px_0_48px_rgba(0,0,0,0.36)]">
-        <div className="flex items-start justify-between border-b border-zinc-800 px-5 py-4">
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(1px)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          height: '100%',
+          width: '100%',
+          maxWidth: '500px',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderLeft: '1px solid rgba(255,255,255,0.08)',
+          background: '#101417',
+          boxShadow: '-20px 0 48px rgba(0,0,0,0.36)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            padding: '18px 20px 16px',
+          }}
+        >
           <div>
-            <p className="text-[9px] uppercase tracking-[0.28em] text-zinc-500">Messaging</p>
-            <h3 className="mt-1.5 text-[22px] font-semibold tracking-tight text-zinc-100">New Chat</h3>
-            <p className="mt-1.5 max-w-md text-[12px] leading-5 text-zinc-500">Start a direct message, create a private group, or open a new public space.</p>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: 700,
+                letterSpacing: '-0.03em',
+                color: 'var(--text-primary)',
+              }}
+            >
+              New Chat
+            </h3>
+            <p
+              style={{
+                margin: '8px 0 0',
+                maxWidth: '28rem',
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--text-muted)',
+              }}
+            >
+              Start a direct message, create a private group, or open a new public space.
+            </p>
           </div>
-          <button type="button" onClick={onClose} className="mt-0.5 rounded-[10px] border border-zinc-800 bg-zinc-950/70 p-2 text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-zinc-200">
-            <X className="w-4 h-4" />
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              marginTop: '2px',
+              display: 'flex',
+              width: '36px',
+              height: '36px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+            }}
+          >
+            <X style={{ width: '16px', height: '16px' }} />
           </button>
         </div>
 
-        <div className="border-b border-zinc-800 px-5 py-3.5">
-          <div className="inline-flex flex-wrap gap-1 rounded-[14px] border border-zinc-800 bg-zinc-950/85 p-1">
+        <div
+          style={{
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            padding: '14px 20px',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              flexWrap: 'wrap',
+              gap: '6px',
+              borderRadius: '14px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(0,0,0,0.24)',
+              padding: '4px',
+            }}
+          >
             {(['dm', 'group', 'space'] as const).map((value) => (
               <button
                 key={value}
@@ -115,11 +195,16 @@ export function NewChatModal({
                   setMode(value);
                   setError(null);
                 }}
-                className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors duration-150 ${
-                  mode === value
-                    ? 'bg-[#131f1f] text-[#d4ece8]'
-                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 active:translate-y-px'
-                }`}
+                style={{
+                  borderRadius: '999px',
+                  padding: '8px 14px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: mode === value ? 'var(--accent-teal-bg)' : 'transparent',
+                  color: mode === value ? 'var(--accent-teal)' : 'var(--text-muted)',
+                }}
               >
                 {value === 'dm' ? 'Direct Message' : value === 'group' ? 'Private Group' : 'Public Space'}
               </button>
@@ -127,42 +212,125 @@ export function NewChatModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <div className="space-y-[18px]">
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '18px 20px',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gap: '18px',
+            }}
+          >
             {(mode === 'group' || mode === 'space') && (
-              <div className="space-y-2">
-                <label className="block text-[12px] font-medium text-zinc-300">{mode === 'group' ? 'Group name' : 'Space name'}</label>
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-label)',
+                  }}
+                >
+                  {mode === 'group' ? 'Group Name' : 'Space Name'}
+                </label>
                 <input
                   value={groupName}
                   onChange={(event) => setGroupName(event.target.value)}
                   placeholder={mode === 'group' ? 'Macro Night Shift' : 'Large Caps Europe'}
-                  className="w-full rounded-[14px] border border-zinc-700 bg-zinc-950/90 px-3.5 py-2.5 text-[13px] text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:border-[#284744] focus:outline-none focus:ring-2 focus:ring-[#213836]"
+                  style={{
+                    width: '100%',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'rgba(0,0,0,0.22)',
+                    padding: '11px 14px',
+                    fontSize: '13px',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                  }}
                 />
               </div>
             )}
 
             {mode === 'space' && (
               <>
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[12px] font-medium">Description</label>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '8px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-label)',
+                    }}
+                  >
+                    Description
+                  </label>
                   <textarea
                     value={spaceDescription}
                     onChange={(event) => setSpaceDescription(event.target.value)}
                     placeholder="What this space is for, who it is useful for, and what gets discussed here."
-                    className="min-h-[104px] w-full rounded-[14px] border border-zinc-700 bg-zinc-950/90 px-3.5 py-2.5 text-[13px] text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:border-[#284744] focus:outline-none focus:ring-2 focus:ring-[#213836]"
+                    style={{
+                      minHeight: '104px',
+                      width: '100%',
+                      borderRadius: '14px',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(0,0,0,0.22)',
+                      padding: '11px 14px',
+                      fontSize: '13px',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      resize: 'vertical',
+                    }}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[12px] font-medium">Visibility</label>
-                  <div className="inline-flex gap-1 rounded-[14px] border border-zinc-800 bg-zinc-950 p-1">
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '8px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-label)',
+                    }}
+                  >
+                    Visibility
+                  </label>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      gap: '6px',
+                      borderRadius: '14px',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(0,0,0,0.22)',
+                      padding: '4px',
+                    }}
+                  >
                     {(['public', 'private'] as const).map((value) => (
                       <button
                         key={value}
                         type="button"
                         onClick={() => setSpaceVisibility(value)}
-                        className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors duration-150 ${
-                          spaceVisibility === value ? 'bg-[#131f1f] text-[#d4ece8]' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
-                        }`}
+                        style={{
+                          borderRadius: '999px',
+                          padding: '8px 14px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: spaceVisibility === value ? 'var(--accent-teal-bg)' : 'transparent',
+                          color: spaceVisibility === value ? 'var(--accent-teal)' : 'var(--text-muted)',
+                        }}
                       >
                         {value === 'public' ? 'Public' : 'Private'}
                       </button>
@@ -173,26 +341,72 @@ export function NewChatModal({
             )}
 
             {mode !== 'space' && (
-              <div className="space-y-2">
-                <label className="block text-zinc-300 text-[12px] font-medium">
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-label)',
+                  }}
+                >
                   {mode === 'dm' ? 'Username' : 'Invite by username'}
                 </label>
-                <div className="relative">
-                  <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <div style={{ position: 'relative' }}>
+                  <Search
+                    style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      width: '16px',
+                      height: '16px',
+                      color: 'var(--text-label)',
+                      transform: 'translateY(-50%)',
+                    }}
+                  />
                   <input
                     value={query}
                     onChange={(event) => void handleSearchChange(event.target.value)}
                     placeholder={mode === 'dm' ? 'Search username' : 'Search usernames to invite'}
-                    className="w-full rounded-[14px] border border-zinc-700 bg-zinc-950/90 py-2.5 pl-10 pr-4 text-[13px] text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:border-[#284744] focus:outline-none focus:ring-2 focus:ring-[#213836]"
+                    style={{
+                      width: '100%',
+                      borderRadius: '14px',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(0,0,0,0.22)',
+                      padding: '11px 14px 11px 40px',
+                      fontSize: '13px',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                    }}
                   />
                 </div>
               </div>
             )}
 
             {mode === 'group' && selectedUsers.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  paddingTop: '4px',
+                }}
+              >
                 {selectedUsers.map((user) => (
-                  <span key={user.user_id} className="rounded-full border border-[#284744] bg-[#131f1f] px-3 py-1 text-[11px] text-[#b7ddd8]">
+                  <span
+                    key={user.user_id}
+                    style={{
+                      borderRadius: '999px',
+                      border: '1px solid var(--accent-teal-border)',
+                      background: 'var(--accent-teal-bg)',
+                      padding: '5px 12px',
+                      fontSize: '11px',
+                      color: '#b7ddd8',
+                    }}
+                  >
                     @{user.username}
                   </span>
                 ))}
@@ -200,15 +414,29 @@ export function NewChatModal({
             )}
 
             {mode !== 'space' && (
-              <div className="overflow-hidden rounded-[16px] border border-zinc-800 bg-zinc-950/95">
+              <div
+                style={{
+                  overflow: 'hidden',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(0,0,0,0.22)',
+                }}
+              >
                 {query.trim().length < 2 ? (
-                  <div className="px-4 py-4 text-zinc-500 text-[12px]">
+                  <div
+                    style={{
+                      padding: '28px 20px',
+                      color: 'var(--text-label)',
+                      fontSize: '12px',
+                      textAlign: 'center',
+                    }}
+                  >
                     Search by username to start a conversation.
                   </div>
                 ) : searching ? (
-                  <div className="px-4 py-4 text-zinc-500 text-[12px]">Searching usernames...</div>
+                  <div style={{ padding: '18px 16px', color: 'var(--text-label)', fontSize: '12px' }}>Searching usernames...</div>
                 ) : searchResults.length === 0 ? (
-                  <div className="px-4 py-4 text-zinc-500 text-[12px]">No usernames match that search yet.</div>
+                  <div style={{ padding: '18px 16px', color: 'var(--text-label)', fontSize: '12px' }}>No usernames match that search yet.</div>
                 ) : (
                   searchResults.map((user) => (
                     <button
@@ -221,14 +449,42 @@ export function NewChatModal({
                           toggleUser(user.username);
                         }
                       }}
-                      className="flex w-full items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3.5 text-left transition-all duration-150 last:border-b-0 hover:bg-zinc-900 active:translate-y-px"
+                      style={{
+                        display: 'flex',
+                        width: '100%',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        border: 'none',
+                        borderBottom: '1px solid rgba(255,255,255,0.08)',
+                        background: 'transparent',
+                        padding: '14px 16px',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
                     >
                       <div>
-                        <div className="text-zinc-100 text-[13px] font-medium">{user.display_name}</div>
-                        <div className="text-zinc-500 text-[11px] mt-0.5">@{user.username}</div>
+                        <div
+                          style={{
+                            color: 'var(--text-primary)',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {user.display_name}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: '2px',
+                            color: 'var(--text-label)',
+                            fontSize: '11px',
+                          }}
+                        >
+                          @{user.username}
+                        </div>
                       </div>
                       {mode === 'group' && selectedUsernames.includes(user.username) && (
-                        <Users className="h-3.5 w-3.5 shrink-0 text-[#8fb7b2]" />
+                        <Users style={{ width: '14px', height: '14px', flexShrink: 0, color: '#8fb7b2' }} />
                       )}
                     </button>
                   ))
@@ -237,22 +493,63 @@ export function NewChatModal({
             )}
 
             {error && (
-              <div className="rounded-[14px] border border-red-900/70 bg-red-950/30 px-4 py-3 text-[12px] text-red-300">
+              <div
+                style={{
+                  borderRadius: '14px',
+                  border: '1px solid rgba(127,29,29,0.7)',
+                  background: 'rgba(69,10,10,0.3)',
+                  padding: '12px 16px',
+                  fontSize: '12px',
+                  color: '#fca5a5',
+                }}
+              >
                 {error}
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 border-t border-zinc-800 px-5 py-3.5">
-          <button type="button" onClick={onClose} className="rounded-[12px] border border-zinc-700 bg-zinc-950 px-3.5 py-2 text-[12px] text-zinc-300 transition-all duration-150 hover:bg-zinc-800 active:translate-y-px">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '10px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            padding: '14px 20px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.02)',
+              padding: '10px 14px',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+            }}
+          >
             Cancel
           </button>
           <button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting}
-            className="min-w-[124px] rounded-[12px] border border-[#284744] bg-[#131f1f] px-4 py-2 text-[12px] text-[#d4ece8] transition-all duration-150 hover:bg-[#182625] active:translate-y-px disabled:opacity-60"
+            style={{
+              minWidth: '124px',
+              borderRadius: '12px',
+              border: '1px solid var(--accent-teal-border)',
+              background: 'var(--accent-teal)',
+              padding: '10px 16px',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#ffffff',
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              opacity: submitting ? 0.6 : 1,
+            }}
           >
             {submitting ? 'Working...' : mode === 'dm' ? 'Start DM' : mode === 'group' ? 'Create Group' : 'Create Space'}
           </button>
