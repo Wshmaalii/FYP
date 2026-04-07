@@ -272,7 +272,19 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         />
         <div className="space-y-0">
           {topMovers.length === 0 ? (
-            <p className="max-w-full truncate py-1.5 text-[10px] leading-4 whitespace-nowrap" style={{ color: 'var(--text-faint)' }}>
+            <p
+              style={{
+                maxWidth: '100%',
+                padding: '6px 0',
+                fontSize: '10px',
+                lineHeight: '16px',
+                fontWeight: 400,
+                color: 'var(--text-faint)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
               {topMoversMessage || 'Mention a ticker like #SPY or $AAPL to start.'}
             </p>
           ) : (
@@ -305,7 +317,21 @@ export function MarketDashboard({ onNavigate, onOpenStock }: MarketDashboardProp
         ) : null}
         <div className="space-y-0">
           {watchlist.length === 0 ? (
-            <p className="max-w-full break-words py-1.5 text-[10px] leading-4" style={{ color: 'var(--text-faint)' }}>No watchlist items yet.</p>
+            <p
+              style={{
+                maxWidth: '100%',
+                padding: '6px 0',
+                fontSize: '10px',
+                lineHeight: '16px',
+                fontWeight: 400,
+                color: 'var(--text-faint)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              No watchlist items yet.
+            </p>
           ) : (
             watchlist.map((stock, index) => (
               <StockItem

@@ -28,6 +28,17 @@ interface Stock {
   watchlistAdds: number;
 }
 
+function sectionLabelStyle() {
+  return {
+    margin: 0,
+    fontSize: '11px',
+    fontWeight: 700,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+    color: 'var(--text-label)',
+  };
+}
+
 function StockRow({
   stock,
   onAddToWatchlist,
@@ -46,28 +57,60 @@ function StockRow({
 
   return (
     <div
-      className="bg-zinc-900 border border-zinc-800 rounded hover:border-cyan-600 transition-colors cursor-pointer"
+      className="cursor-pointer"
       onClick={() => onToggleExpand(stock.ticker)}
+      style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '18px',
+        transition: 'border-color 150ms ease, background 150ms ease',
+      }}
     >
       <div className="flex items-center gap-4 p-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded flex items-center justify-center flex-shrink-0">
+        <div
+          className="flex-shrink-0"
+          style={{
+            width: '44px',
+            height: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, var(--accent-blue), var(--accent-teal))',
+          }}
+        >
           <span className="text-white text-sm">{stock.ticker.substring(0, 2)}</span>
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-zinc-100">{stock.ticker}</h3>
-          <p className="text-zinc-500 text-sm truncate">{stock.name}</p>
+          <h3 className="text-zinc-100" style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{stock.ticker}</h3>
+          <p className="text-zinc-500 text-sm truncate" style={{ margin: '4px 0 0', color: 'var(--text-muted)' }}>{stock.name}</p>
         </div>
 
         <div className="w-24 h-12">
-          <div className="w-full h-full flex items-center justify-center text-[11px] text-zinc-600 border border-zinc-800 rounded">
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '11px',
+              color: 'var(--text-label)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '12px',
+              background: 'rgba(0,0,0,0.16)',
+            }}
+          >
             On demand
           </div>
         </div>
 
         <div className="text-right min-w-[100px]">
-          <p className="text-zinc-100">{stock.price !== null ? `${stock.price.toFixed(2)}p` : '--'}</p>
-          <p className="text-zinc-500 text-sm">{stock.uniqueUsers} members</p>
+          <p className="text-zinc-100" style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+            {stock.price !== null ? `${stock.price.toFixed(2)}p` : '--'}
+          </p>
+          <p className="text-zinc-500 text-sm" style={{ margin: '4px 0 0', color: 'var(--text-label)' }}>{stock.uniqueUsers} members</p>
         </div>
 
         <div className={`flex items-center gap-2 min-w-[120px] justify-end ${hasQuote ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-500'}`}>
@@ -96,15 +139,22 @@ function StockRow({
             event.stopPropagation();
             onAddToWatchlist(stock.ticker);
           }}
-          className="p-2 bg-zinc-950 hover:bg-cyan-600 border border-zinc-800 hover:border-cyan-600 rounded transition-colors flex-shrink-0"
+          className="flex-shrink-0"
           title="Add to Watchlist"
+          style={{
+            padding: '10px',
+            background: 'rgba(0,0,0,0.18)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '12px',
+            cursor: 'pointer',
+          }}
         >
           <Plus className="w-4 h-4 text-zinc-400 hover:text-white" />
         </button>
       </div>
 
       {isExpanded && (
-        <div className="border-t border-zinc-800 px-4 py-3">
+        <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-center justify-between text-sm">
             <span className="text-zinc-400">Live quote details</span>
             <span className="text-zinc-500">{updatedAt ? `Updated: ${updatedAt}` : 'Updated: --'}</span>
@@ -218,8 +268,13 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
 
   return (
     <div className="flex-1 overflow-y-auto bg-zinc-950">
-      {/* Header */}
-      <div className="border-b border-zinc-800 bg-zinc-900 p-6">
+      <div
+        style={{
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-sidebar)',
+          padding: '24px 32px',
+        }}
+      >
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-zinc-400 hover:text-zinc-100 mb-4 transition-colors"
@@ -228,23 +283,39 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
           <span className="text-sm">Back to Dashboard</span>
         </button>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-8">
           <div>
-            <h1 className="text-white text-2xl mb-2">Most Discussed</h1>
-            <p className="text-zinc-400">Most discussed supported tickers in the TradeLink community</p>
+            <p style={sectionLabelStyle()}>Community Signals</p>
+            <h1 className="text-white text-2xl mb-2" style={{ marginTop: '10px', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.03em' }}>
+              Most Discussed
+            </h1>
+            <p className="text-zinc-400" style={{ maxWidth: '36rem', color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>
+              Most discussed supported tickers in the TradeLink community, ranked by mentions and watchlist activity.
+            </p>
           </div>
 
-          {/* Filter Buttons */}
-          <div className="flex gap-2">
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+            }}
+          >
             {(['All', 'Big Tech', 'AI', 'Consumer / Media', 'Finance', 'High Volatility'] as const).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setSelectedFilter(filter)}
-                className={`px-4 py-2 rounded transition-colors ${
-                  selectedFilter === filter
-                    ? 'bg-cyan-600 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                }`}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '14px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: selectedFilter === filter ? 'var(--accent-teal-bg)' : 'rgba(255,255,255,0.04)',
+                  color: selectedFilter === filter ? 'var(--accent-teal)' : 'var(--text-muted)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
               >
                 {filter}
               </button>
@@ -253,7 +324,7 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '24px 24px 32px' }}>
         {watchlistMessage && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-300">
             {watchlistMessage}
@@ -265,14 +336,23 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
           </div>
         )}
         {providerMessage && !error && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
+          <div
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '16px',
+              padding: '16px',
+              color: 'var(--text-label)',
+              fontSize: '14px',
+            }}
+          >
             {providerMessage}
           </div>
         )}
         <div>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-zinc-100">Most Discussed</h2>
+            <h2 className="text-zinc-100" style={{ margin: 0, fontSize: '22px', fontWeight: 700 }}>Most Discussed</h2>
             <span className="text-zinc-500 text-sm">({filteredDiscussed.length} tickers)</span>
           </div>
           <div className="space-y-3">
@@ -281,8 +361,42 @@ export function TopMoversPage({ onBack }: TopMoversPageProps) {
                 Loading discussed tickers...
               </div>
             ) : filteredDiscussed.length === 0 ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-500">
-                {providerMessage || 'Mention a ticker like #SPY or $AAPL to start.'}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '240px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '20px',
+                  padding: '32px',
+                  textAlign: 'center',
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      width: '56px',
+                      height: '56px',
+                      margin: '0 auto 14px',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '999px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <TrendingUp className="w-7 h-7 text-zinc-600" />
+                  </div>
+                  <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '22px', fontWeight: 600 }}>
+                    No discussed tickers yet
+                  </h3>
+                  <p style={{ margin: '8px 0 0', color: 'var(--text-label)', fontSize: '14px', lineHeight: 1.6 }}>
+                    {providerMessage || 'Mention a ticker like #SPY or $AAPL to start.'}
+                  </p>
+                </div>
               </div>
             ) : (
               filteredDiscussed.map((stock) => (
