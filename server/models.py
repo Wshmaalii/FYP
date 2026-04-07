@@ -27,6 +27,18 @@ class User(db.Model):
     notifications = db.relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     owned_conversations = db.relationship("Conversation", back_populates="owner", cascade="all, delete-orphan")
     conversation_memberships = db.relationship("ConversationMember", back_populates="user", cascade="all, delete-orphan")
+    sent_connection_requests = db.relationship(
+        "ConnectionRequest",
+        foreign_keys="ConnectionRequest.requester_id",
+        back_populates="requester",
+        cascade="all, delete-orphan",
+    )
+    received_connection_requests = db.relationship(
+        "ConnectionRequest",
+        foreign_keys="ConnectionRequest.recipient_id",
+        back_populates="recipient",
+        cascade="all, delete-orphan",
+    )
 
     def to_dict(self):
         return {
@@ -223,6 +235,34 @@ class UserActivity(db.Model):
             "description": self.description,
             "ticker": self.ticker,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class ConnectionRequest(db.Model):
+    __tablename__ = "connection_requests"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    requester_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    recipient_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    status = db.Column(String(32), nullable=False, default="pending", index=True)
+    created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+    responded_at = db.Column(DateTime(timezone=True), nullable=True)
+
+    requester = db.relationship("User", foreign_keys=[requester_id], back_populates="sent_connection_requests")
+    recipient = db.relationship("User", foreign_keys=[recipient_id], back_populates="received_connection_requests")
+
+    __table_args__ = (
+        db.UniqueConstraint("requester_id", "recipient_id", name="uq_connection_request_pair"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "requester_id": str(self.requester_id),
+            "recipient_id": str(self.recipient_id),
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "responded_at": self.responded_at.isoformat() if self.responded_at else None,
         }
 
 

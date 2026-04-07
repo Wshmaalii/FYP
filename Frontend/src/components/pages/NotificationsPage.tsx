@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AtSign, BellRing, TrendingDown, TrendingUp } from 'lucide-react';
+import { AtSign, BellRing, TrendingDown, TrendingUp, UserPlus } from 'lucide-react';
 import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationsRead,
+  type ConnectionRequestNotificationPayload,
   type MentionNotificationPayload,
   type NotificationRecord,
   type WatchlistAlertNotificationPayload,
 } from '../../api/notifications';
+import { acceptConnectionRequest, declineConnectionRequest } from '../../api/messaging';
 
 interface NotificationsPageProps {
   onOpenMention: (notification: NotificationRecord) => Promise<void> | void;
@@ -15,7 +17,7 @@ interface NotificationsPageProps {
   onUnreadCountChange?: (count: number) => void;
 }
 
-type NotificationTab = 'mentions' | 'watchlist_alerts';
+type NotificationTab = 'mentions' | 'watchlist_alerts' | 'connections';
 
 function formatRelativeTime(value: string | null) {
   if (!value) {
@@ -59,10 +61,11 @@ export function NotificationsPage({
 }: NotificationsPageProps) {
   const [tab, setTab] = useState<NotificationTab>('mentions');
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
-  const [counts, setCounts] = useState({ mentions: 0, watchlist_alerts: 0 });
+  const [counts, setCounts] = useState({ mentions: 0, watchlist_alerts: 0, connections: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [actingRequestId, setActingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,13 +108,25 @@ export function NotificationsPage({
     () => notifications.filter((notification) => notification.type === 'watchlist_alert'),
     [notifications],
   );
-  const activeNotifications = tab === 'mentions' ? mentionNotifications : watchlistNotifications;
+  const connectionNotifications = useMemo(
+    () => notifications.filter((notification) => notification.type === 'connection_request'),
+    [notifications],
+  );
+  const activeNotifications = tab === 'mentions'
+    ? mentionNotifications
+    : tab === 'watchlist_alerts'
+      ? watchlistNotifications
+      : connectionNotifications;
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.is_read).length,
     [notifications],
   );
 
   const handleOpenNotification = async (notification: NotificationRecord) => {
+    if (notification.type === 'connection_request') {
+      return;
+    }
+
     if (!notification.is_read) {
       try {
         const result = await markNotificationsRead([notification.id]);
@@ -129,6 +144,33 @@ export function NotificationsPage({
 
     const payload = notification.payload as WatchlistAlertNotificationPayload;
     onOpenWatchlistAlert(payload.ticker);
+  };
+
+  const handleConnectionAction = async (notification: NotificationRecord, action: 'accept' | 'decline') => {
+    const payload = notification.payload as ConnectionRequestNotificationPayload;
+    if (!payload.request_id) {
+      return;
+    }
+
+    setActingRequestId(payload.request_id);
+    setError(null);
+
+    try {
+      if (action === 'accept') {
+        await acceptConnectionRequest(payload.request_id);
+      } else {
+        await declineConnectionRequest(payload.request_id);
+      }
+
+      const wasUnread = !notification.is_read;
+      setNotifications((current) => current.filter((item) => item.id !== notification.id));
+      setCounts((current) => ({ ...current, connections: Math.max(0, current.connections - 1) }));
+      onUnreadCountChange?.(Math.max(0, unreadCount - (wasUnread ? 1 : 0)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update connection request');
+    } finally {
+      setActingRequestId(null);
+    }
   };
 
   const handleMarkAllRead = async () => {
@@ -182,7 +224,7 @@ export function NotificationsPage({
                 lineHeight: 1.6,
               }}
             >
-              Mentions in your spaces and price movement alerts for stocks on your watchlist.
+              Mentions in your spaces, price movement alerts, and incoming connection requests.
             </p>
           </div>
           <button
@@ -221,6 +263,7 @@ export function NotificationsPage({
           {[
             { key: 'mentions' as const, label: 'Mentions', count: counts.mentions },
             { key: 'watchlist_alerts' as const, label: 'Watchlist Alerts', count: counts.watchlist_alerts },
+            { key: 'connections' as const, label: 'Connections', count: counts.connections },
           ].map((item) => (
             <button
               key={item.key}
@@ -272,7 +315,9 @@ export function NotificationsPage({
               borderBottom: '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            <p style={sectionLabelStyle()}>{tab === 'mentions' ? 'Mentions' : 'Watchlist Alerts'}</p>
+            <p style={sectionLabelStyle()}>
+              {tab === 'mentions' ? 'Mentions' : tab === 'watchlist_alerts' ? 'Watchlist Alerts' : 'Connections'}
+            </p>
           </div>
 
           {loading ? (
@@ -306,17 +351,21 @@ export function NotificationsPage({
                 >
                   {tab === 'mentions' ? (
                     <AtSign className="w-5 h-5" style={{ color: 'var(--text-label)' }} />
-                  ) : (
+                  ) : tab === 'watchlist_alerts' ? (
                     <BellRing className="w-5 h-5" style={{ color: 'var(--text-label)' }} />
+                  ) : (
+                    <UserPlus className="w-5 h-5" style={{ color: 'var(--text-label)' }} />
                   )}
                 </div>
                 <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '15px', fontWeight: 600 }}>
-                  {tab === 'mentions' ? 'No mentions yet' : 'No watchlist alerts yet'}
+                  {tab === 'mentions' ? 'No mentions yet' : tab === 'watchlist_alerts' ? 'No watchlist alerts yet' : 'No connection requests yet'}
                 </p>
                 <p style={{ margin: '8px 0 0', color: 'var(--text-label)', fontSize: '13px', lineHeight: 1.6 }}>
                   {tab === 'mentions'
                     ? 'When someone mentions your username in a space channel, it will appear here.'
-                    : 'Price movement alerts for stocks on your watchlist will appear here.'}
+                    : tab === 'watchlist_alerts'
+                      ? 'Price movement alerts for stocks on your watchlist will appear here.'
+                      : 'Incoming connection requests will appear here.'}
                 </p>
               </div>
             </div>
@@ -334,7 +383,7 @@ export function NotificationsPage({
                 background: unread ? 'rgba(8,145,178,0.08)' : 'transparent',
                 padding: '16px 18px',
                 textAlign: 'left' as const,
-                cursor: 'pointer',
+                cursor: notification.type === 'connection_request' ? 'default' : 'pointer',
               };
 
               if (notification.type === 'mention') {
@@ -357,6 +406,69 @@ export function NotificationsPage({
                     </div>
                     <span style={{ flexShrink: 0, color: 'var(--text-label)', fontSize: '12px' }}>{formatRelativeTime(notification.created_at)}</span>
                   </button>
+                );
+              }
+
+              if (notification.type === 'connection_request') {
+                const payload = notification.payload as ConnectionRequestNotificationPayload;
+                const isActing = actingRequestId === payload.request_id;
+                return (
+                  <div key={notification.id} style={rowStyle}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700 }}>
+                          {payload.requester_name}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>@{payload.requester_username}</span>
+                        {unread ? (
+                          <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: '#ef4444' }} />
+                        ) : null}
+                      </div>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6 }}>
+                        Sent you a connection request. Accepting will allow direct messages in your main inbox.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
+                      <span style={{ color: 'var(--text-label)', fontSize: '12px' }}>{formatRelativeTime(notification.created_at)}</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => void handleConnectionAction(notification, 'decline')}
+                          disabled={isActing}
+                          style={{
+                            borderRadius: '10px',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            background: 'rgba(255,255,255,0.03)',
+                            padding: '8px 10px',
+                            fontSize: '12px',
+                            color: 'var(--text-muted)',
+                            cursor: isActing ? 'not-allowed' : 'pointer',
+                            opacity: isActing ? 0.65 : 1,
+                          }}
+                        >
+                          Decline
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleConnectionAction(notification, 'accept')}
+                          disabled={isActing}
+                          style={{
+                            borderRadius: '10px',
+                            border: '1px solid var(--accent-teal-border)',
+                            background: 'var(--accent-teal-bg)',
+                            padding: '8px 10px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: 'var(--accent-teal)',
+                            cursor: isActing ? 'not-allowed' : 'pointer',
+                            opacity: isActing ? 0.65 : 1,
+                          }}
+                        >
+                          {isActing ? 'Working…' : 'Accept'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 );
               }
 

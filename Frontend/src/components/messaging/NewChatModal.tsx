@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Search, Users, X } from 'lucide-react';
+import { acceptConnectionRequest, sendConnectionRequest } from '../../api/messaging';
 import type { MessagingUser } from '../../api/messaging';
 
 interface NewChatModalProps {
@@ -36,6 +37,10 @@ export function NewChatModal({
     () => searchResults.filter((user) => selectedUsernames.includes(user.username)),
     [searchResults, selectedUsernames],
   );
+  const selectedDmUser = useMemo(
+    () => searchResults.find((user) => user.username === query.trim().toLowerCase()) || null,
+    [query, searchResults],
+  );
 
   if (!isOpen) {
     return null;
@@ -60,10 +65,19 @@ export function NewChatModal({
     setSubmitting(true);
     try {
       if (mode === 'dm') {
-        if (!query.trim()) {
+        if (!selectedDmUser) {
           throw new Error('Search for a username to start a DM.');
         }
-        await onStartDm(query.trim().toLowerCase());
+        if (selectedDmUser.connection_status === 'incoming_pending' && selectedDmUser.request_id) {
+          await acceptConnectionRequest(selectedDmUser.request_id);
+          await onStartDm(selectedDmUser.username);
+        } else if (selectedDmUser.connection_status === 'outgoing_pending') {
+          throw new Error('Connection request already pending.');
+        } else if (selectedDmUser.connection_status === 'connected') {
+          await onStartDm(selectedDmUser.username);
+        } else {
+          await sendConnectionRequest(selectedDmUser.username);
+        }
       } else if (mode === 'group') {
         if (!groupName.trim()) {
           throw new Error('Group name is required.');
@@ -386,6 +400,33 @@ export function NewChatModal({
               </div>
             )}
 
+            {mode === 'dm' && selectedDmUser ? (
+              <div
+                style={{
+                  borderRadius: '14px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.03)',
+                  padding: '12px 14px',
+                }}
+              >
+                <div style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>
+                  {selectedDmUser.display_name}
+                </div>
+                <div style={{ marginTop: '3px', color: 'var(--text-label)', fontSize: '11px' }}>
+                  @{selectedDmUser.username}
+                </div>
+                <div style={{ marginTop: '8px', color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.5 }}>
+                  {selectedDmUser.connection_status === 'connected'
+                    ? 'This user is already a connection and can move straight into a DM.'
+                    : selectedDmUser.connection_status === 'incoming_pending'
+                      ? 'This user has already sent you a connection request. Accept to start messaging.'
+                      : selectedDmUser.connection_status === 'outgoing_pending'
+                        ? 'Connection request already sent. Messaging will unlock once they accept.'
+                        : 'Send a connection request first before starting a direct message.'}
+                </div>
+              </div>
+            ) : null}
+
             {mode === 'group' && selectedUsers.length > 0 && (
               <div
                 style={{
@@ -483,6 +524,26 @@ export function NewChatModal({
                           @{user.username}
                         </div>
                       </div>
+                      {mode === 'dm' ? (
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            color: user.connection_status === 'connected' || user.connection_status === 'incoming_pending'
+                              ? 'var(--accent-teal)'
+                              : 'var(--text-muted)',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {user.connection_status === 'connected'
+                            ? 'Start DM'
+                            : user.connection_status === 'incoming_pending'
+                              ? 'Accept Request'
+                              : user.connection_status === 'outgoing_pending'
+                                ? 'Pending'
+                                : 'Send Request'}
+                        </span>
+                      ) : null}
                       {mode === 'group' && selectedUsernames.includes(user.username) && (
                         <Users style={{ width: '14px', height: '14px', flexShrink: 0, color: '#8fb7b2' }} />
                       )}
@@ -537,7 +598,10 @@ export function NewChatModal({
           <button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={submitting}
+            disabled={
+              submitting
+              || (mode === 'dm' && (!selectedDmUser || selectedDmUser.connection_status === 'outgoing_pending'))
+            }
             style={{
               minWidth: '124px',
               borderRadius: '12px',
@@ -547,11 +611,25 @@ export function NewChatModal({
               fontSize: '12px',
               fontWeight: 600,
               color: '#ffffff',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.6 : 1,
+              cursor: submitting || (mode === 'dm' && (!selectedDmUser || selectedDmUser.connection_status === 'outgoing_pending'))
+                ? 'not-allowed'
+                : 'pointer',
+              opacity: submitting || (mode === 'dm' && (!selectedDmUser || selectedDmUser.connection_status === 'outgoing_pending')) ? 0.6 : 1,
             }}
           >
-            {submitting ? 'Working...' : mode === 'dm' ? 'Start DM' : mode === 'group' ? 'Create Group' : 'Create Space'}
+            {submitting
+              ? 'Working...'
+              : mode === 'dm'
+                ? selectedDmUser?.connection_status === 'incoming_pending'
+                  ? 'Accept Request'
+                  : selectedDmUser?.connection_status === 'outgoing_pending'
+                    ? 'Request Pending'
+                    : selectedDmUser?.connection_status === 'connected'
+                      ? 'Start DM'
+                      : 'Send Request'
+                : mode === 'group'
+                  ? 'Create Group'
+                  : 'Create Space'}
           </button>
         </div>
       </div>

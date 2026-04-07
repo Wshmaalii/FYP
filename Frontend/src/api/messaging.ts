@@ -7,6 +7,9 @@ export interface MessagingUser {
   user_id: string;
   username: string;
   display_name: string;
+  connection_status?: 'connected' | 'incoming_pending' | 'outgoing_pending' | 'none';
+  request_id?: string | null;
+  conversation_key?: string | null;
 }
 
 export interface ConversationChannel {
@@ -26,6 +29,10 @@ export interface ConversationSummary {
   channels: ConversationChannel[];
   members?: Array<MessagingUser & { role: string }>;
   handle?: string;
+  connection_status?: 'connected' | 'incoming_pending' | 'outgoing_pending' | 'none';
+  request_id?: string | null;
+  last_message_preview?: string;
+  last_message_at?: string | null;
 }
 
 export interface MessagingSidebarData {
@@ -43,6 +50,18 @@ export interface ConversationMessage {
   timestamp: string | null;
   tickers: string[];
   channel: string;
+}
+
+export interface DirectMessageListItem {
+  conversation_key: string | null;
+  user_id: string;
+  username: string;
+  display_name: string;
+  preview: string;
+  timestamp: string | null;
+  connection_status: 'connected' | 'incoming_pending' | 'outgoing_pending' | 'none';
+  request_id: string | null;
+  request_kind: 'connection_request' | 'message_request' | null;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -77,6 +96,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export async function fetchMessagingSidebar() {
   return request<MessagingSidebarData>('/api/messaging/sidebar');
+}
+
+export async function fetchDirectMessagesOverview() {
+  return request<{ inbox: DirectMessageListItem[]; requests: DirectMessageListItem[] }>('/api/dms/overview');
 }
 
 export async function fetchSpaces() {
@@ -119,6 +142,25 @@ export async function sendConversationMessage(channelKey: string, content: strin
 export async function searchMessagingUsers(query: string) {
   const data = await request<{ users: MessagingUser[] }>(`/api/users/search?q=${encodeURIComponent(query)}`);
   return data.users;
+}
+
+export async function sendConnectionRequest(username: string) {
+  return request<{ request: { id: string; status: string } }>('/api/connections/requests', {
+    method: 'POST',
+    body: JSON.stringify({ username }),
+  });
+}
+
+export async function acceptConnectionRequest(requestId: string) {
+  return request<{ request: { id: string; status: string }; conversation: ConversationSummary }>(`/api/connections/requests/${requestId}/accept`, {
+    method: 'POST',
+  });
+}
+
+export async function declineConnectionRequest(requestId: string) {
+  return request<{ request: { id: string; status: string } }>(`/api/connections/requests/${requestId}/decline`, {
+    method: 'POST',
+  });
 }
 
 export async function createDirectMessage(username: string) {

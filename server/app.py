@@ -13,7 +13,7 @@ try:
 except ImportError:
     def load_dotenv(*args, **kwargs):
         return False
-from sqlalchemy import text
+from sqlalchemy import and_, or_, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -43,6 +43,7 @@ try:
     )
     from .models import (
         ChatMessage,
+        ConnectionRequest,
         Conversation,
         ConversationChannel,
         ConversationMember,
@@ -80,6 +81,7 @@ except ImportError:
     )
     from models import (
         ChatMessage,
+        ConnectionRequest,
         Conversation,
         ConversationChannel,
         ConversationMember,
@@ -358,6 +360,136 @@ def _create_notification(
     db.session.add(notification)
     db.session.flush()
     return notification
+
+
+def _connection_request_pair_filter(user_a_id, user_b_id):
+    return or_(
+        and_(ConnectionRequest.requester_id == user_a_id, ConnectionRequest.recipient_id == user_b_id),
+        and_(ConnectionRequest.requester_id == user_b_id, ConnectionRequest.recipient_id == user_a_id),
+    )
+
+
+def _connection_status(user_a_id, user_b_id):
+    accepted_request = (
+        ConnectionRequest.query
+        .filter(
+            _connection_request_pair_filter(user_a_id, user_b_id),
+            ConnectionRequest.status == "accepted",
+        )
+        .order_by(ConnectionRequest.responded_at.desc(), ConnectionRequest.created_at.desc())
+        .first()
+    )
+    if accepted_request:
+        return "connected", accepted_request
+
+    pending_request = (
+        ConnectionRequest.query
+        .filter(
+            _connection_request_pair_filter(user_a_id, user_b_id),
+            ConnectionRequest.status == "pending",
+        )
+        .order_by(ConnectionRequest.created_at.desc())
+        .first()
+    )
+    if pending_request:
+        if pending_request.requester_id == user_a_id:
+            return "outgoing_pending", pending_request
+        return "incoming_pending", pending_request
+
+    return "none", None
+
+
+def _connection_status_payload(current_user: User, other_user: User):
+    status, request_record = _connection_status(current_user.id, other_user.id)
+    conversation = Conversation.query.filter_by(
+        conversation_key=_build_dm_key(current_user.id, other_user.id),
+        kind="direct_message",
+    ).first()
+    return {
+        "connection_status": status,
+        "request_id": str(request_record.id) if request_record else None,
+        "conversation_key": conversation.conversation_key if conversation else None,
+    }
+
+
+def _is_connected(user_a_id, user_b_id) -> bool:
+    status, _ = _connection_status(user_a_id, user_b_id)
+    return status == "connected"
+
+
+def _update_connection_request_notification(connection_request: ConnectionRequest, *, mark_read: bool | None = None):
+    existing = Notification.query.filter_by(
+        user_id=connection_request.recipient_id,
+        notification_type="connection_request",
+        entity_key=f"connection_request:{connection_request.id}",
+    ).first()
+    if existing is None:
+        existing = Notification(
+            user_id=connection_request.recipient_id,
+            notification_type="connection_request",
+            entity_key=f"connection_request:{connection_request.id}",
+            payload="{}",
+            is_read=False,
+        )
+        db.session.add(existing)
+
+    requester_profile = ensure_user_profile(connection_request.requester)
+    existing.payload = json.dumps(
+        {
+            "request_id": str(connection_request.id),
+            "requester_id": str(connection_request.requester_id),
+            "requester_name": requester_profile.full_name,
+            "requester_username": requester_profile.username,
+            "status": connection_request.status,
+        }
+    )
+    if mark_read is not None:
+        existing.is_read = mark_read
+        existing.read_at = datetime.now(timezone.utc) if mark_read else None
+    elif connection_request.status == "pending":
+        existing.is_read = False
+        existing.read_at = None
+    else:
+        existing.is_read = True
+        existing.read_at = datetime.now(timezone.utc)
+    db.session.flush()
+    return existing
+
+
+def _latest_conversation_message(conversation: Conversation):
+    channel_keys = [channel.channel_key for channel in conversation.channels]
+    if not channel_keys:
+        return None
+    return (
+        ChatMessage.query
+        .filter(ChatMessage.channel.in_(channel_keys))
+        .order_by(ChatMessage.created_at.desc())
+        .first()
+    )
+
+
+def _build_dm_list_item(current_user: User, other_user: User, conversation: Conversation | None, *, request_kind: str | None = None):
+    other_profile = ensure_user_profile(other_user)
+    status, request_record = _connection_status(current_user.id, other_user.id)
+    latest_message = _latest_conversation_message(conversation) if conversation else None
+    default_preview = (
+        f"@{other_profile.username} wants to connect before messaging."
+        if request_kind == "connection_request"
+        else f"Start chatting with @{other_profile.username}"
+    )
+    return {
+        "conversation_key": conversation.conversation_key if conversation else None,
+        "user_id": str(other_user.id),
+        "username": other_profile.username,
+        "display_name": other_profile.full_name,
+        "preview": _message_preview(latest_message.content) if latest_message else default_preview,
+        "timestamp": latest_message.created_at.isoformat() if latest_message and latest_message.created_at else (
+            request_record.created_at.isoformat() if request_record and request_record.created_at else None
+        ),
+        "connection_status": status,
+        "request_id": str(request_record.id) if request_record else None,
+        "request_kind": request_kind or ("message_request" if status != "connected" else None),
+    }
 
 
 def _message_preview(content: str, max_length: int = 140) -> str:
@@ -662,6 +794,12 @@ def _conversation_payload(conversation: Conversation, user: User | None = None):
         if other_members:
             payload["name"] = other_members[0]["display_name"]
             payload["handle"] = other_members[0]["username"]
+            other_user = User.query.filter_by(id=uuid.UUID(other_members[0]["user_id"])).first()
+            if other_user:
+                payload.update(_connection_status_payload(user, other_user))
+        latest_message = _latest_conversation_message(conversation)
+        payload["last_message_preview"] = _message_preview(latest_message.content) if latest_message else ""
+        payload["last_message_at"] = latest_message.created_at.isoformat() if latest_message and latest_message.created_at else None
     return payload
 
 
@@ -730,7 +868,14 @@ def _build_conversation_sidebar_payload(user: User):
         if conversation.kind == "public_space":
             my_spaces.append(payload)
         elif conversation.kind == "direct_message":
-            direct_messages.append(payload)
+            other_members = [member for member in payload.get("members", []) if member["user_id"] != str(user.id)]
+            other_member_id = other_members[0]["user_id"] if other_members else None
+            try:
+                other_uuid = uuid.UUID(other_member_id) if other_member_id else None
+            except (TypeError, ValueError):
+                other_uuid = None
+            if other_uuid and _is_connected(user.id, other_uuid):
+                direct_messages.append(payload)
         elif conversation.kind == "private_group":
             private_groups.append(payload)
 
@@ -1414,6 +1559,7 @@ def notifications():
     type_map = {
         "mentions": "mention",
         "watchlist_alerts": "watchlist_alert",
+        "connections": "connection_request",
     }
 
     notifications_query = Notification.query.filter_by(user_id=user.id)
@@ -1423,13 +1569,22 @@ def notifications():
     notifications = (
         notifications_query
         .order_by(Notification.created_at.desc())
-        .limit(limit)
         .all()
     )
+    notifications = [
+        item for item in notifications
+        if item.notification_type != "connection_request" or item.payload_dict().get("status") == "pending"
+    ]
+    notifications = notifications[:limit]
 
     unread_count = Notification.query.filter_by(user_id=user.id, is_read=False).count()
     mention_count = Notification.query.filter_by(user_id=user.id, notification_type="mention").count()
     watchlist_alert_count = Notification.query.filter_by(user_id=user.id, notification_type="watchlist_alert").count()
+    connection_count = (
+        ConnectionRequest.query
+        .filter_by(recipient_id=user.id, status="pending")
+        .count()
+    )
 
     return jsonify(
         {
@@ -1438,6 +1593,7 @@ def notifications():
             "counts": {
                 "mentions": mention_count,
                 "watchlist_alerts": watchlist_alert_count,
+                "connections": connection_count,
             },
         }
     )
@@ -1540,6 +1696,12 @@ def export_account_data():
         .order_by(Notification.created_at.desc())
         .all()
     )
+    connection_requests = (
+        ConnectionRequest.query
+        .filter(or_(ConnectionRequest.requester_id == user.id, ConnectionRequest.recipient_id == user.id))
+        .order_by(ConnectionRequest.created_at.desc())
+        .all()
+    )
     activities = (
         UserActivity.query
         .filter_by(user_id=user.id)
@@ -1556,6 +1718,7 @@ def export_account_data():
             "stats": build_profile_stats_payload(user),
             "watchlist": [item.to_dict() for item in watchlist_items],
             "notifications": [notification.to_dict() for notification in notifications],
+            "connection_requests": [connection_request.to_dict() for connection_request in connection_requests],
             "activities": [activity.to_dict() for activity in activities],
             "messages": [message.to_dict() for message in messages],
             "conversations": [
@@ -1622,14 +1785,183 @@ def user_search():
 
     return jsonify({
         "users": [
-            {
-                "user_id": str(profile.user_id),
-                "username": profile.username,
-                "display_name": profile.full_name,
-            }
+            (
+                {
+                    "user_id": str(profile.user_id),
+                    "username": profile.username,
+                    "display_name": profile.full_name,
+                }
+                | _connection_status_payload(user, profile.user)
+            )
             for profile in profiles
         ]
     })
+
+
+@app.route("/api/connections/requests", methods=["POST"])
+def create_connection_request():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip().lower()
+    if not username:
+        return json_error("Username is required", 400)
+
+    profile = UserProfile.query.filter_by(username=username).first()
+    target_user = profile.user if profile else None
+    if target_user is None:
+        return json_error("User not found", 404)
+    if target_user.id == user.id:
+        return json_error("You cannot connect with yourself", 400)
+
+    connection_status, existing_request = _connection_status(user.id, target_user.id)
+    if connection_status == "connected":
+        return json_error("You are already connected", 400)
+    if connection_status == "outgoing_pending":
+        return jsonify({"request": existing_request.to_dict()}), 200
+    if connection_status == "incoming_pending":
+        return json_error("This user has already sent you a connection request", 409)
+
+    request_record = ConnectionRequest.query.filter_by(requester_id=user.id, recipient_id=target_user.id).first()
+    if request_record is None:
+        request_record = ConnectionRequest(
+            requester_id=user.id,
+            recipient_id=target_user.id,
+            status="pending",
+        )
+        db.session.add(request_record)
+        db.session.flush()
+    else:
+        request_record.status = "pending"
+        request_record.responded_at = None
+        request_record.created_at = datetime.now(timezone.utc)
+
+    _update_connection_request_notification(request_record, mark_read=False)
+    _create_activity(user.id, "connection_requested", f"Sent a connection request to {profile.full_name}")
+    db.session.commit()
+
+    return jsonify({"request": request_record.to_dict()}), 201
+
+
+@app.route("/api/connections/requests/<request_id>/accept", methods=["POST"])
+def accept_connection_request(request_id):
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    try:
+        request_uuid = uuid.UUID(str(request_id))
+    except (TypeError, ValueError):
+        return json_error("Invalid connection request id", 400)
+
+    request_record = ConnectionRequest.query.filter_by(id=request_uuid).first()
+    if request_record is None:
+        return json_error("Connection request not found", 404)
+    if request_record.recipient_id != user.id:
+        return json_error("You cannot accept this connection request", 403)
+    if request_record.status != "pending":
+        return json_error("This connection request has already been handled", 400)
+
+    request_record.status = "accepted"
+    request_record.responded_at = datetime.now(timezone.utc)
+    _update_connection_request_notification(request_record, mark_read=True)
+    _create_activity(user.id, "connection_accepted", f"Accepted a connection request from {request_record.requester.profile.full_name}")
+    conversation = _get_or_create_dm(user, request_record.requester)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "request": request_record.to_dict(),
+            "conversation": _conversation_payload(conversation, user),
+        }
+    )
+
+
+@app.route("/api/connections/requests/<request_id>/decline", methods=["POST"])
+def decline_connection_request(request_id):
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    try:
+        request_uuid = uuid.UUID(str(request_id))
+    except (TypeError, ValueError):
+        return json_error("Invalid connection request id", 400)
+
+    request_record = ConnectionRequest.query.filter_by(id=request_uuid).first()
+    if request_record is None:
+        return json_error("Connection request not found", 404)
+    if request_record.recipient_id != user.id:
+        return json_error("You cannot decline this connection request", 403)
+    if request_record.status != "pending":
+        return json_error("This connection request has already been handled", 400)
+
+    request_record.status = "declined"
+    request_record.responded_at = datetime.now(timezone.utc)
+    _update_connection_request_notification(request_record, mark_read=True)
+    _create_activity(user.id, "connection_declined", f"Declined a connection request from {request_record.requester.profile.full_name}")
+    db.session.commit()
+
+    return jsonify({"request": request_record.to_dict()})
+
+
+@app.route("/api/dms/overview", methods=["GET"])
+def dm_overview():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    memberships = (
+        ConversationMember.query
+        .filter_by(user_id=user.id)
+        .join(Conversation, ConversationMember.conversation_id == Conversation.id)
+        .filter(Conversation.kind == "direct_message")
+        .all()
+    )
+
+    inbox = []
+    requests = []
+    request_user_ids = set()
+
+    for membership in memberships:
+        conversation = membership.conversation
+        other_membership = next((item for item in conversation.members if item.user_id != user.id), None)
+        if other_membership is None or other_membership.user is None:
+            continue
+
+        item = _build_dm_list_item(user, other_membership.user, conversation)
+        if item["connection_status"] == "connected":
+            inbox.append(item)
+        else:
+            item["request_kind"] = "message_request"
+            requests.append(item)
+            request_user_ids.add(item["user_id"])
+
+    incoming_requests = (
+        ConnectionRequest.query
+        .filter_by(recipient_id=user.id, status="pending")
+        .order_by(ConnectionRequest.created_at.desc())
+        .all()
+    )
+    for request_record in incoming_requests:
+        requester = request_record.requester
+        if requester is None or str(requester.id) in request_user_ids:
+            continue
+        requests.append(
+            _build_dm_list_item(
+                user,
+                requester,
+                None,
+                request_kind="connection_request",
+            )
+        )
+
+    inbox.sort(key=lambda item: item["timestamp"] or "", reverse=True)
+    requests.sort(key=lambda item: item["timestamp"] or "", reverse=True)
+
+    return jsonify({"inbox": inbox, "requests": requests})
 
 
 @app.route("/api/messaging/sidebar", methods=["GET"])
@@ -1732,6 +2064,10 @@ def create_dm():
         return json_error("User not found", 404)
     if target_user.id == user.id:
         return json_error("You cannot start a direct message with yourself", 400)
+
+    connection_status, _ = _connection_status(user.id, target_user.id)
+    if connection_status != "connected":
+        return json_error("Send or accept a connection request before starting a direct message", 403)
 
     conversation = _get_or_create_dm(user, target_user)
     return jsonify({"conversation": _conversation_payload(conversation, user)}), 201

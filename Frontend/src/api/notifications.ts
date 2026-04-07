@@ -23,13 +23,21 @@ export interface WatchlistAlertNotificationPayload {
   movement_label: string;
 }
 
+export interface ConnectionRequestNotificationPayload {
+  request_id: string;
+  requester_id: string;
+  requester_name: string;
+  requester_username: string;
+  status: 'pending' | 'accepted' | 'declined';
+}
+
 export interface NotificationRecord {
   id: string;
-  type: 'mention' | 'watchlist_alert';
+  type: 'mention' | 'watchlist_alert' | 'connection_request';
   is_read: boolean;
   read_at: string | null;
   created_at: string | null;
-  payload: MentionNotificationPayload | WatchlistAlertNotificationPayload;
+  payload: MentionNotificationPayload | WatchlistAlertNotificationPayload | ConnectionRequestNotificationPayload;
 }
 
 export interface NotificationsResponse {
@@ -38,6 +46,7 @@ export interface NotificationsResponse {
   counts: {
     mentions: number;
     watchlist_alerts: number;
+    connections: number;
   };
 }
 
