@@ -214,41 +214,66 @@ export function MyProfilePage({ onBack, onViewWatchlist, onProfileUpdated }: MyP
           <span className="text-sm">Back to channels</span>
         </button>
 
-        <div className="flex items-start gap-6">
-          <div className="w-32 h-32 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-white text-4xl">{initials}</span>
-            )}
-          </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '24px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '24px',
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
+            <div className="w-32 h-32 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white text-4xl">{initials}</span>
+              )}
+            </div>
 
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-white text-2xl">{displayName}</h1>
-              <div className={`flex items-center gap-1 px-3 py-1 rounded border ${profile.verified_trader ? 'bg-cyan-950 border-cyan-800' : 'bg-zinc-950 border-zinc-800'}`}>
-                <Shield className={`w-4 h-4 ${profile.verified_trader ? 'text-cyan-400' : 'text-zinc-500'}`} />
-                <span className={`${profile.verified_trader ? 'text-cyan-400' : 'text-zinc-400'} text-sm`}>
-                  {profile.verified_trader ? 'Verified Trader' : 'Member'}
-                </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-white text-2xl">{displayName}</h1>
+                <div className={`flex items-center gap-1 px-3 py-1 rounded border ${profile.verified_trader ? 'bg-cyan-950 border-cyan-800' : 'bg-zinc-950 border-zinc-800'}`}>
+                  <Shield className={`w-4 h-4 ${profile.verified_trader ? 'text-cyan-400' : 'text-zinc-500'}`} />
+                  <span className={`${profile.verified_trader ? 'text-cyan-400' : 'text-zinc-400'} text-sm`}>
+                    {profile.verified_trader ? 'Verified Trader' : 'Member'}
+                  </span>
+                </div>
               </div>
-            </div>
-            <p className="text-zinc-400 mb-3">@{profile.username}</p>
-            <p className="text-zinc-300 mb-4 max-w-xl">
-              {profile.bio || 'No bio added yet.'}
-            </p>
-            <div className="flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2 text-zinc-400">
-                <Calendar className="w-4 h-4" />
-                <span>{formatJoinedDate(profile.joined_at)}</span>
+              <p className="text-zinc-400 mb-3">@{profile.username}</p>
+              <p className="text-zinc-300 mb-4 max-w-xl">
+                {profile.bio || 'No bio added yet.'}
+              </p>
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2 text-zinc-400">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatJoinedDate(profile.joined_at)}</span>
+                </div>
               </div>
+              {saveSuccess && <p className="text-emerald-400 text-sm mt-3">{saveSuccess}</p>}
             </div>
-            {saveSuccess && <p className="text-emerald-400 text-sm mt-3">{saveSuccess}</p>}
           </div>
 
           <button
+            type="button"
             onClick={() => setShowEditModal(true)}
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors"
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              flexShrink: 0,
+              alignSelf: 'flex-start',
+              cursor: 'pointer',
+            }}
           >
             Edit Profile
           </button>
