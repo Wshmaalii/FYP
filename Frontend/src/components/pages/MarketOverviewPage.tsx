@@ -17,20 +17,33 @@ const MARKET_FILTER_SYMBOLS: Record<Exclude<MarketFilter, 'All'>, string[]> = {
   'High Volatility': ['TSLA', 'COIN', 'PLTR', 'AMD', 'NVDA', 'UBER'],
 };
 
-function buildSnapshotCard(ticker: string, quote: { price: number; change: number; changePercent: number; updatedAt: string }): MarketOverviewIndex {
+function buildSnapshotCard(
+  ticker: string,
+  quote: {
+    price: number;
+    change: number;
+    changePercent: number;
+    open?: number | null;
+    high?: number | null;
+    low?: number | null;
+    volume?: number | null;
+    history?: MarketOverviewIndex['history'];
+    updatedAt: string;
+  },
+): MarketOverviewIndex {
   return {
     name: MARKET_SYMBOL_NAMES[ticker] || ticker,
     ticker,
     price: quote.price,
     change: quote.change,
     changePercent: quote.changePercent,
-    open: null,
-    high: null,
-    low: null,
-    volume: null,
+    open: quote.open ?? null,
+    high: quote.high ?? null,
+    low: quote.low ?? null,
+    volume: quote.volume ?? null,
     region: 'US',
     status: 'Tracked',
-    history: [],
+    history: quote.history ?? [],
     available: true,
     sourceSymbol: ticker,
     sourceType: 'direct',

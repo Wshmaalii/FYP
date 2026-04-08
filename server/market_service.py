@@ -807,6 +807,11 @@ def fetch_bulk_quotes(api_key: str, tickers, snapshot_loader=None, snapshot_save
             "price": quote["price"],
             "change": quote["change"],
             "changePercent": _to_float(quote["change_percent"]),
+            "open": _to_float(quote.get("open")),
+            "high": _to_float(quote.get("high")),
+            "low": _to_float(quote.get("low")),
+            "volume": _to_float(quote.get("volume")),
+            "history": _history_points_from_quote_snapshot(quote),
             "updatedAt": _isoformat_timestamp(updated_at),
         }
         if updated_at and (last_updated_at is None or updated_at > last_updated_at):

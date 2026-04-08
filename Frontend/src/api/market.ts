@@ -30,6 +30,11 @@ export interface MarketQuote {
   price: number;
   change: number;
   changePercent: number;
+  open?: number | null;
+  high?: number | null;
+  low?: number | null;
+  volume?: number | null;
+  history?: StockHistoryPoint[];
   updatedAt: string;
 }
 
