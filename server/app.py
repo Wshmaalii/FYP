@@ -239,7 +239,7 @@ def ensure_database_schema():
         if "e2ee_key_algorithm" not in user_profile_columns:
             connection.execute(text("ALTER TABLE user_profiles ADD COLUMN e2ee_key_algorithm VARCHAR(32) DEFAULT 'RSA-OAEP'"))
         if "e2ee_key_updated_at" not in user_profile_columns:
-            connection.execute(text("ALTER TABLE user_profiles ADD COLUMN e2ee_key_updated_at DATETIME"))
+            connection.execute(text("ALTER TABLE user_profiles ADD COLUMN e2ee_key_updated_at TIMESTAMP"))
         if "message_format" not in chat_message_columns:
             connection.execute(text("ALTER TABLE chat_messages ADD COLUMN message_format VARCHAR(32) DEFAULT 'plaintext'"))
         connection.execute(text("UPDATE user_profiles SET e2ee_key_algorithm = COALESCE(e2ee_key_algorithm, 'RSA-OAEP')"))
