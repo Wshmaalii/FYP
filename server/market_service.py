@@ -17,6 +17,7 @@ ALPHA_VANTAGE_DIAGNOSTIC_HISTORY_LIMIT = 25
 ALPHA_VANTAGE_MIN_REQUEST_SPACING_SECONDS = 1.0
 MARKET_REFRESH_BATCH_LIMIT = 5
 MARKET_REFRESH_BUFFER = 5
+SNAPSHOT_HISTORY_LIMIT = 120
 
 SUPPORTED_TICKERS = {
     "SPY": {"name": "SPDR S&P 500 ETF Trust", "bucket": "US", "provider_symbol": "SPY", "aliases": ["SPY"]},
@@ -665,6 +666,49 @@ def _build_history_snapshot_key(symbol: str) -> str:
     return f"history:{canonicalize_symbol(symbol)}"
 
 
+def _normalize_history_points(points):
+    normalized = []
+    for point in points or []:
+        if not isinstance(point, dict):
+            continue
+        timestamp = point.get("time")
+        price = _to_float(point.get("price"), None)
+        if not timestamp or price is None:
+            continue
+        normalized.append({"time": str(timestamp), "price": price})
+    normalized.sort(key=lambda point: point["time"])
+    return normalized
+
+
+def _history_points_from_quote_snapshot(quote_snapshot):
+    if not isinstance(quote_snapshot, dict):
+        return []
+    history = _normalize_history_points(quote_snapshot.get("history") or [])
+    if history:
+        return history
+
+    price = _to_float(quote_snapshot.get("price"), None)
+    timestamp = quote_snapshot.get("captured_at")
+    if not timestamp or price is None:
+        return []
+    return [{"time": str(timestamp), "price": price}]
+
+
+def _append_quote_history_point(existing_quote_snapshot, price, captured_at):
+    points = _history_points_from_quote_snapshot(existing_quote_snapshot)
+    next_point = {
+        "time": _isoformat_timestamp(captured_at),
+        "price": price,
+    }
+
+    if points and points[-1]["time"] == next_point["time"]:
+        points[-1] = next_point
+    else:
+        points.append(next_point)
+
+    return points[-SNAPSHOT_HISTORY_LIMIT:]
+
+
 def get_snapshot_quote(symbol: str, snapshot_loader=None):
     normalized = canonicalize_symbol(symbol)
     if not is_supported_symbol(normalized):
@@ -707,6 +751,18 @@ def get_snapshot_history(symbol: str, snapshot_loader=None):
             snapshot_entry.get("updated_at") or time.time(),
         )
         return snapshot_entry["data"], snapshot_entry.get("updated_at")
+
+    quote_snapshot, quote_updated_at = get_snapshot_quote(normalized, snapshot_loader=snapshot_loader)
+    quote_history = _history_points_from_quote_snapshot(quote_snapshot)
+    if quote_history:
+        _store_cache_entry(
+            stock_history_cache,
+            normalized,
+            quote_history,
+            time.time() + STOCK_HISTORY_CACHE_TTL_SECONDS,
+            quote_updated_at or time.time(),
+        )
+        return quote_history, quote_updated_at
 
     return [], None
 
@@ -873,10 +929,12 @@ def _build_quote_payload(symbol: str, parsed_daily: dict):
         "previous_close": parsed_daily["previous_close"],
         "volume": None,
         "providerSymbol": get_provider_symbol(normalized),
+        "captured_at": None,
+        "history": [],
     }
 
 
-def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_saver=None):
+def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
     normalized = canonicalize_symbol(symbol)
     if not is_supported_symbol(normalized):
         return {
@@ -912,6 +970,7 @@ def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_saver=None):
     }
 
     try:
+        existing_quote_snapshot, _ = get_snapshot_quote(normalized, snapshot_loader=snapshot_loader)
         payload = _finnhub_request(
             "/quote",
             {"symbol": provider_symbol},
@@ -920,6 +979,8 @@ def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_saver=None):
         )
         parsed_daily = _parse_daily_time_series(payload)
         quote_payload = _build_quote_payload(normalized, parsed_daily)
+        quote_payload["captured_at"] = _isoformat_timestamp(now)
+        quote_payload["history"] = _append_quote_history_point(existing_quote_snapshot, quote_payload["price"], now)
         _store_cache_entry(stock_quote_cache, normalized, quote_payload, now + STOCK_QUOTE_CACHE_TTL_SECONDS, now)
         _persist_snapshot(snapshot_saver, _build_quote_snapshot_key(normalized), quote_payload, now)
         _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
@@ -1004,11 +1065,11 @@ def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, sn
             "message": "history skipped until a quote snapshot exists",
         }
 
-    provider_symbol = get_provider_symbol(normalized)
     now = time.time()
+    history_payload = _history_points_from_quote_snapshot(quote_snapshot)
     result = {
         "symbol": normalized,
-        "provider_symbol": provider_symbol,
+        "provider_symbol": get_provider_symbol(normalized),
         "status": "failed",
         "quote_attempted": False,
         "history_attempted": True,
@@ -1022,20 +1083,15 @@ def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, sn
     }
 
     try:
-        end_ts = int(time.time())
-        start_ts = end_ts - (60 * 60 * 24 * 45)
-        payload = _finnhub_request(
-            "/stock/candle",
-            {
-                "symbol": provider_symbol,
-                "resolution": "D",
-                "from": start_ts,
-                "to": end_ts,
-            },
-            endpoint_name="candle",
-            symbol=normalized,
-        )
-        history_payload = _parse_finnhub_candles(payload)
+        if not history_payload:
+            result.update(
+                {
+                    "status": "skipped",
+                    "message": "history will populate as snapshots are collected",
+                }
+            )
+            return result
+
         _store_cache_entry(stock_history_cache, normalized, history_payload, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
         _persist_snapshot(snapshot_saver, _build_history_snapshot_key(normalized), history_payload, now)
         _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
@@ -1044,31 +1100,10 @@ def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, sn
                 "status": "success",
                 "history_refreshed": True,
                 "snapshot_stored": True,
-                "counted_budget": True,
-                "reached_upstream": True,
-                "message": "history snapshot refreshed",
+                "counted_budget": False,
+                "reached_upstream": False,
+                "message": "history derived from stored snapshots",
                 "updated_at": _isoformat_timestamp(now),
-            }
-        )
-        return result
-    except RateLimitError as exc:
-        result.update(
-            {
-                "error_class": "rate_limit",
-                "message": str(exc),
-                "counted_budget": "budget exhausted" not in str(exc).lower(),
-                "reached_upstream": "budget exhausted" not in str(exc).lower(),
-            }
-        )
-        return result
-    except ProviderRequestError as exc:
-        result.update(
-            {
-                "error_class": exc.error_class,
-                "message": exc.reason,
-                "counted_budget": exc.counted_budget,
-                "reached_upstream": exc.reached_upstream,
-                "upstream_status": exc.upstream_status,
             }
         )
         return result
@@ -1085,7 +1120,12 @@ def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, sn
 
 
 def refresh_symbol_snapshot(api_key: str, symbol: str, snapshot_loader=None, snapshot_saver=None):
-    quote_result = refresh_quote_snapshot(api_key, symbol, snapshot_saver=snapshot_saver)
+    quote_result = refresh_quote_snapshot(
+        api_key,
+        symbol,
+        snapshot_loader=snapshot_loader,
+        snapshot_saver=snapshot_saver,
+    )
     if quote_result.get("status") != "success":
         return quote_result
     history_result = refresh_history_snapshot(
@@ -1108,9 +1148,12 @@ def _build_overview_from_snapshot_loader(snapshot_loader=None):
     latest_updated_at = None
     for item in MARKET_OVERVIEW_INDICES:
         quote, updated_at = get_snapshot_quote(item["source_symbol"], snapshot_loader=snapshot_loader)
+        history_points, history_updated_at = get_snapshot_history(item["source_symbol"], snapshot_loader=snapshot_loader)
         available = bool(quote and quote.get("price") is not None)
         if available and updated_at and (latest_updated_at is None or updated_at > latest_updated_at):
             latest_updated_at = updated_at
+        if history_updated_at and (latest_updated_at is None or history_updated_at > latest_updated_at):
+            latest_updated_at = history_updated_at
         indices.append(
             {
                 "name": item["name"],
@@ -1124,7 +1167,7 @@ def _build_overview_from_snapshot_loader(snapshot_loader=None):
                 "volume": quote.get("volume") if available else None,
                 "region": item["region"],
                 "status": _market_status(item["region"]) if available else "Unavailable",
-                "history": [],
+                "history": history_points,
                 "available": available,
                 "sourceSymbol": item["source_symbol"],
                 "sourceType": item["source_type"],
@@ -1314,6 +1357,7 @@ def bootstrap_market_snapshots(api_key: str, snapshot_loader=None, snapshot_save
         refresh_result = refresh_quote_snapshot(
             api_key,
             attempted_symbol,
+            snapshot_loader=snapshot_loader,
             snapshot_saver=snapshot_saver,
         )
     except Exception as exc:

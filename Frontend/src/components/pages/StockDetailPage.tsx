@@ -18,6 +18,19 @@ function formatTimestamp(value: string | null) {
   return new Date(value).toLocaleString('en-GB');
 }
 
+function formatChartTick(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetailPageProps) {
   const [price, setPrice] = useState<number | null>(null);
   const [change, setChange] = useState<number | null>(null);
@@ -478,15 +491,34 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
                       color: 'var(--text-label)',
                     }}
                   >
-                    Price history will appear once enough stored snapshots have been collected.
+                    Chart will populate as snapshots are collected.
                   </p>
                 </div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={history}>
-                  <XAxis dataKey="time" hide />
-                  <YAxis domain={chartDomain} hide />
+                <LineChart
+                  data={history}
+                  margin={{ top: 12, right: 12, left: 0, bottom: 10 }}
+                >
+                  <XAxis
+                    dataKey="time"
+                    tickFormatter={formatChartTick}
+                    minTickGap={28}
+                    stroke="rgba(255,255,255,0.18)"
+                    tick={{ fill: 'var(--text-label)', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                  />
+                  <YAxis
+                    domain={chartDomain}
+                    tickFormatter={(value) => `${Number(value).toFixed(2)}`}
+                    width={68}
+                    stroke="rgba(255,255,255,0.18)"
+                    tick={{ fill: 'var(--text-label)', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#18181b',
@@ -494,8 +526,10 @@ export function StockDetailPage({ ticker, onBack, onMentionInChat }: StockDetail
                       borderRadius: '8px',
                     }}
                     labelStyle={{ color: '#a1a1aa' }}
+                    labelFormatter={(value) => formatChartTick(String(value))}
+                    formatter={(value: number | string) => [`${Number(value).toFixed(2)} USD`, 'Price']}
                   />
-                  <Line type="monotone" dataKey="price" stroke={isPositive ? '#34d399' : '#f87171'} strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="price" stroke="#14b8a6" strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             )}
