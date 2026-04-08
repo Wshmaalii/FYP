@@ -12,6 +12,9 @@ export interface UserProfile {
   avatar_seed: string;
   joined_at: string | null;
   verified_trader: boolean;
+  e2ee_public_key: JsonWebKey | null;
+  e2ee_key_algorithm?: string | null;
+  e2ee_key_updated_at?: string | null;
 }
 
 export interface ProfileStats {
@@ -74,6 +77,17 @@ export async function updateMyProfile(payload: {
 }): Promise<UserProfile> {
   const data = await request<{ profile: UserProfile }>('/api/profile/me', {
     method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+  return data.profile;
+}
+
+export async function updateMyE2EEPublicKey(payload: {
+  public_key: JsonWebKey;
+  algorithm?: string;
+}): Promise<UserProfile> {
+  const data = await request<{ profile: UserProfile }>('/api/profile/e2ee-key', {
+    method: 'PUT',
     body: JSON.stringify(payload),
   });
   return data.profile;

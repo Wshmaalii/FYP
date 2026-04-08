@@ -17,9 +17,10 @@ import { DirectMessagesPage } from './components/messaging/DirectMessagesPage';
 import { PrivateRoomsPage } from './components/messaging/PrivateRoomsPage';
 import { NewChatModal } from './components/messaging/NewChatModal';
 import { AuthUser, clearStoredToken, getCurrentUser, getStoredToken, login, logout, signup } from './api/auth';
-import { fetchMyProfile, type UserProfile } from './api/profile';
+import { fetchMyProfile, updateMyE2EEPublicKey, type UserProfile } from './api/profile';
 import { fetchNotifications, type NotificationRecord } from './api/notifications';
 import { fetchSettings } from './api/settings';
+import { generateAndStoreDeviceKeyPair, getStoredPublicKeyJwk, hasStoredDeviceKeyPair } from './crypto/e2ee';
 import { applyDarkModePreference, restoreStoredThemePreference } from './theme';
 import {
   createSpace,
@@ -85,6 +86,7 @@ export default function App() {
   const [joiningSpaceKey, setJoiningSpaceKey] = useState<string | null>(null);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [e2eeBootstrappedForUser, setE2eeBootstrappedForUser] = useState<string | null>(null);
 
   useEffect(() => {
     restoreStoredThemePreference();
@@ -107,6 +109,61 @@ export default function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (authStatus !== 'authed' || !currentUser || !currentProfile) {
+      return;
+    }
+    if (e2eeBootstrappedForUser === currentUser.id) {
+      return;
+    }
+
+    let isMounted = true;
+    const bootstrapEncryption = async () => {
+      try {
+        const hasLocalKeyPair = await hasStoredDeviceKeyPair(currentUser.id);
+
+        if (hasLocalKeyPair) {
+          if (!currentProfile.e2ee_public_key) {
+            const publicKey = await getStoredPublicKeyJwk(currentUser.id);
+            if (publicKey) {
+              const updatedProfile = await updateMyE2EEPublicKey({ public_key: publicKey, algorithm: 'RSA-OAEP' });
+              if (isMounted) {
+                setCurrentProfile(updatedProfile);
+              }
+            }
+          }
+          return;
+        }
+
+        if (currentProfile.e2ee_public_key) {
+          const shouldReset = window.confirm(
+            'This device does not have your private encryption key. Generate a new one for this device? Older encrypted messages will stay unreadable here.',
+          );
+          if (!shouldReset) {
+            return;
+          }
+        }
+
+        const publicKey = await generateAndStoreDeviceKeyPair(currentUser.id);
+        const updatedProfile = await updateMyE2EEPublicKey({ public_key: publicKey, algorithm: 'RSA-OAEP' });
+        if (isMounted) {
+          setCurrentProfile(updatedProfile);
+        }
+      } catch (error) {
+        console.error('Failed to initialize end-to-end encryption', error);
+      } finally {
+        if (isMounted) {
+          setE2eeBootstrappedForUser(currentUser.id);
+        }
+      }
+    };
+
+    void bootstrapEncryption();
+    return () => {
+      isMounted = false;
+    };
+  }, [authStatus, currentUser, currentProfile, e2eeBootstrappedForUser]);
 
   const refreshMessagingState = async () => {
     const [sidebar, publicSpaces] = await Promise.all([fetchMessagingSidebar(), fetchSpaces()]);
@@ -228,6 +285,7 @@ export default function App() {
     setAuthView('login');
     setCurrentView('Explore Spaces');
     setMobileSidebarOpen(false);
+    setE2eeBootstrappedForUser(null);
   };
 
   const handleProfileUpdated = (profile: UserProfile) => {
@@ -462,6 +520,7 @@ export default function App() {
         return selectedConversation ? (
           <ConversationPage
             conversation={selectedConversation}
+            currentUserId={currentUser?.id || ''}
             selectedChannelKey={selectedChannelKey}
             onChannelSelect={setSelectedChannelKey}
             prefilledMessage={conversationDraft}

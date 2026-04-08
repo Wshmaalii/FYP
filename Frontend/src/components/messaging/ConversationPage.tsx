@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Hash } from 'lucide-react';
+import { Hash, Lock } from 'lucide-react';
 import type { ConversationSummary, ConversationMessage } from '../../api/messaging';
 import { fetchConversationMessages, sendConversationMessage } from '../../api/messaging';
+import { decryptConversationMessage } from '../../crypto/e2ee';
 import { ChatMessage } from '../ChatMessage';
 import { MessageInput } from '../MessageInput';
 import { ChannelPrivacyCard } from '../channels/ChannelPrivacyCard';
 
 interface ConversationPageProps {
   conversation: ConversationSummary;
+  currentUserId: string;
   selectedChannelKey: string | null;
   onChannelSelect: (channelKey: string) => void;
   prefilledMessage?: string | null;
@@ -57,6 +59,7 @@ function buildPrivacyCopy(conversation: ConversationSummary) {
 
 export function ConversationPage({
   conversation,
+  currentUserId,
   selectedChannelKey,
   onChannelSelect,
   prefilledMessage = null,
@@ -72,8 +75,25 @@ export function ConversationPage({
     typeof window !== 'undefined' ? window.innerWidth < 768 : false,
   );
   const privacy = buildPrivacyCopy(conversation);
+  const isEncryptedConversation = conversation.kind === 'direct_message' || conversation.kind === 'private_group';
   const activeChannelKey = selectedChannelKey || conversation.channels[0]?.channel_key || null;
   const activeChannel = conversation.channels.find((channel) => channel.channel_key === activeChannelKey) || conversation.channels[0] || null;
+
+  const resolveMessageContent = async (message: ConversationMessage) => {
+    if (!isEncryptedConversation) {
+      return message;
+    }
+
+    try {
+      const content = await decryptConversationMessage(message, currentUserId);
+      return { ...message, content };
+    } catch (err) {
+      return {
+        ...message,
+        content: err instanceof Error ? `[Unable to decrypt: ${err.message}]` : '[Unable to decrypt on this device]',
+      };
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -95,8 +115,11 @@ export function ConversationPage({
       setError(null);
       try {
         const data = await fetchConversationMessages(activeChannelKey, highlightedMessageId ? 100 : 50);
+        const resolvedMessages = isEncryptedConversation
+          ? await Promise.all(data.map((message) => resolveMessageContent(message)))
+          : data;
         if (isMounted) {
-          setMessages(data);
+          setMessages(resolvedMessages);
         }
       } catch (err) {
         if (isMounted) {
@@ -113,7 +136,7 @@ export function ConversationPage({
     return () => {
       isMounted = false;
     };
-  }, [activeChannelKey, highlightedMessageId]);
+  }, [activeChannelKey, highlightedMessageId, currentUserId, isEncryptedConversation]);
 
   useEffect(() => {
     if (loading || !highlightedMessageId) {
@@ -140,8 +163,12 @@ export function ConversationPage({
     setIsSending(true);
     setError(null);
     try {
-      const createdMessage = await sendConversationMessage(activeChannelKey, content);
-      setMessages((current) => [...current, createdMessage]);
+      const createdMessage = await sendConversationMessage(activeChannelKey, content, {
+        enabled: isEncryptedConversation,
+        members: conversation.members || [],
+      });
+      const resolvedMessage = await resolveMessageContent(createdMessage);
+      setMessages((current) => [...current, resolvedMessage]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
       throw err;
@@ -205,6 +232,28 @@ export function ConversationPage({
             {memberText}
           </div>
         </div>
+
+        {isEncryptedConversation ? (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginTop: '12px',
+              borderRadius: '999px',
+              padding: '6px 11px',
+              background: 'var(--accent-teal-bg)',
+              border: '1px solid var(--accent-teal-border)',
+              color: 'var(--accent-teal)',
+              fontSize: '11px',
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            <Lock className="w-3 h-3" />
+            End-to-end encrypted
+          </div>
+        ) : null}
 
         {conversation.kind === 'public_space' && conversation.channels.length > 0 ? (
           <div
@@ -277,7 +326,13 @@ export function ConversationPage({
       <MessageInput
         onSend={handleSend}
         isSending={isSending}
-        placeholder={conversation.kind === 'direct_message' ? 'Send a direct message...' : 'Type a message... Use @ to mention, # for tickers'}
+        placeholder={
+          isEncryptedConversation
+            ? 'Type a secure message...'
+            : conversation.kind === 'direct_message'
+              ? 'Send a direct message...'
+              : 'Type a message... Use @ to mention, # for tickers'
+        }
         privacyMode={privacy.privacyMode}
         contextLabel={privacy.contextLabel}
         externalDraft={prefilledMessage}

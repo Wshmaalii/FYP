@@ -68,6 +68,9 @@ class UserProfile(db.Model):
     avatar_seed = db.Column(String(64), nullable=False, default="TL")
     joined_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     verified_trader = db.Column(Boolean, nullable=False, default=False)
+    e2ee_public_key = db.Column(Text, nullable=True)
+    e2ee_key_algorithm = db.Column(String(32), nullable=False, default="RSA-OAEP")
+    e2ee_key_updated_at = db.Column(DateTime(timezone=True), nullable=True)
     trust_score = db.Column(Integer, nullable=False, default=50)
     messages_sent_count = db.Column(Integer, nullable=False, default=0)
     tickers_shared_count = db.Column(Integer, nullable=False, default=0)
@@ -77,6 +80,12 @@ class UserProfile(db.Model):
     user = db.relationship("User", back_populates="profile")
 
     def to_dict(self):
+        public_key_payload = None
+        if self.e2ee_public_key:
+            try:
+                public_key_payload = json.loads(self.e2ee_public_key)
+            except (TypeError, ValueError):
+                public_key_payload = None
         return {
             "full_name": self.full_name,
             "username": self.username,
@@ -85,6 +94,9 @@ class UserProfile(db.Model):
             "avatar_seed": self.avatar_seed,
             "joined_at": self.joined_at.isoformat() if self.joined_at else None,
             "verified_trader": self.verified_trader,
+            "e2ee_public_key": public_key_payload,
+            "e2ee_key_algorithm": self.e2ee_key_algorithm,
+            "e2ee_key_updated_at": self.e2ee_key_updated_at.isoformat() if self.e2ee_key_updated_at else None,
         }
 
 
@@ -120,6 +132,7 @@ class ChatMessage(db.Model):
     user_id = db.Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     channel = db.Column(String(32), nullable=False, index=True)
     content = db.Column(Text, nullable=False)
+    message_format = db.Column(String(32), nullable=False, default="plaintext")
     ticker_symbols = db.Column(Text, nullable=False, default="")
     created_at = db.Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
 
@@ -132,12 +145,21 @@ class ChatMessage(db.Model):
         profile = self.user.profile if self.user else None
         display_name = profile.full_name if profile else (self.user.name if self.user else "Trader")
         verified = profile.verified_trader if profile else False
+        encrypted_payload = None
+        if self.message_format == "encrypted":
+            try:
+                encrypted_payload = json.loads(self.content)
+            except (TypeError, ValueError):
+                encrypted_payload = None
         return {
             "id": str(self.id),
             "user_id": str(self.user_id),
             "user": display_name,
             "verified": verified,
-            "content": self.content,
+            "content": self.content if self.message_format != "encrypted" else "",
+            "message_format": self.message_format,
+            "is_encrypted": self.message_format == "encrypted",
+            "encrypted_payload": encrypted_payload,
             "timestamp": self.created_at.isoformat() if self.created_at else None,
             "tickers": self.ticker_list(),
             "channel": self.channel,

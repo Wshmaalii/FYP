@@ -13,7 +13,7 @@ try:
 except ImportError:
     def load_dotenv(*args, **kwargs):
         return False
-from sqlalchemy import and_, or_, text
+from sqlalchemy import and_, inspect, or_, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -228,6 +228,23 @@ def ensure_database_schema():
         return
 
     db.create_all()
+    inspector = inspect(db.engine)
+
+    user_profile_columns = {column["name"] for column in inspector.get_columns("user_profiles")}
+    chat_message_columns = {column["name"] for column in inspector.get_columns("chat_messages")}
+
+    with db.engine.begin() as connection:
+        if "e2ee_public_key" not in user_profile_columns:
+            connection.execute(text("ALTER TABLE user_profiles ADD COLUMN e2ee_public_key TEXT"))
+        if "e2ee_key_algorithm" not in user_profile_columns:
+            connection.execute(text("ALTER TABLE user_profiles ADD COLUMN e2ee_key_algorithm VARCHAR(32) DEFAULT 'RSA-OAEP'"))
+        if "e2ee_key_updated_at" not in user_profile_columns:
+            connection.execute(text("ALTER TABLE user_profiles ADD COLUMN e2ee_key_updated_at DATETIME"))
+        if "message_format" not in chat_message_columns:
+            connection.execute(text("ALTER TABLE chat_messages ADD COLUMN message_format VARCHAR(32) DEFAULT 'plaintext'"))
+        connection.execute(text("UPDATE user_profiles SET e2ee_key_algorithm = COALESCE(e2ee_key_algorithm, 'RSA-OAEP')"))
+        connection.execute(text("UPDATE chat_messages SET message_format = COALESCE(message_format, 'plaintext')"))
+
     ensure_messaging_seed_data()
     schema_initialized = True
 
@@ -468,6 +485,44 @@ def _latest_conversation_message(conversation: Conversation):
     )
 
 
+def _message_preview_from_record(message: ChatMessage | None, default_preview: str = "") -> str:
+    if message is None:
+        return default_preview
+    if getattr(message, "message_format", "plaintext") == "encrypted":
+        return "Encrypted message"
+    return _message_preview(message.content)
+
+
+def _normalize_encrypted_payload(payload):
+    if not isinstance(payload, dict):
+        return None
+
+    ciphertext = (payload.get("ciphertext") or "").strip()
+    iv = (payload.get("iv") or "").strip()
+    wrapped_keys = payload.get("wrapped_keys")
+    algorithm = (payload.get("algorithm") or "AES-GCM").strip() or "AES-GCM"
+    key_wrapping = (payload.get("key_wrapping") or "RSA-OAEP").strip() or "RSA-OAEP"
+
+    if not ciphertext or not iv or not isinstance(wrapped_keys, dict) or not wrapped_keys:
+        return None
+
+    normalized_wrapped_keys = {
+        str(user_id): str(value)
+        for user_id, value in wrapped_keys.items()
+        if str(user_id).strip() and str(value).strip()
+    }
+    if not normalized_wrapped_keys:
+        return None
+
+    return {
+        "ciphertext": ciphertext,
+        "iv": iv,
+        "wrapped_keys": normalized_wrapped_keys,
+        "algorithm": algorithm,
+        "key_wrapping": key_wrapping,
+    }
+
+
 def _build_dm_list_item(current_user: User, other_user: User, conversation: Conversation | None, *, request_kind: str | None = None):
     other_profile = ensure_user_profile(other_user)
     status, request_record = _connection_status(current_user.id, other_user.id)
@@ -482,7 +537,7 @@ def _build_dm_list_item(current_user: User, other_user: User, conversation: Conv
         "user_id": str(other_user.id),
         "username": other_profile.username,
         "display_name": other_profile.full_name,
-        "preview": _message_preview(latest_message.content) if latest_message else default_preview,
+        "preview": _message_preview_from_record(latest_message, default_preview),
         "timestamp": latest_message.created_at.isoformat() if latest_message and latest_message.created_at else (
             request_record.created_at.isoformat() if request_record and request_record.created_at else None
         ),
@@ -762,6 +817,14 @@ def _conversation_members(conversation: Conversation):
             "username": membership.user.profile.username if membership.user and membership.user.profile else membership.user.name,
             "display_name": membership.user.profile.full_name if membership.user and membership.user.profile else membership.user.name,
             "role": membership.role,
+            "e2ee_public_key": (
+                membership.user.profile.to_dict().get("e2ee_public_key")
+                if membership.user and membership.user.profile else None
+            ),
+            "e2ee_key_algorithm": (
+                membership.user.profile.e2ee_key_algorithm
+                if membership.user and membership.user.profile else "RSA-OAEP"
+            ),
         }
         for membership in memberships
     ]
@@ -798,7 +861,7 @@ def _conversation_payload(conversation: Conversation, user: User | None = None):
             if other_user:
                 payload.update(_connection_status_payload(user, other_user))
         latest_message = _latest_conversation_message(conversation)
-        payload["last_message_preview"] = _message_preview(latest_message.content) if latest_message else ""
+        payload["last_message_preview"] = _message_preview_from_record(latest_message)
         payload["last_message_at"] = latest_message.created_at.isoformat() if latest_message and latest_message.created_at else None
     return payload
 
@@ -1508,6 +1571,28 @@ def profile_me():
     return jsonify({"profile": build_profile_payload(user)})
 
 
+@app.route("/api/profile/e2ee-key", methods=["PUT"])
+def profile_e2ee_key():
+    user, error_response = get_authenticated_user()
+    if error_response:
+        return error_response
+
+    data = request.get_json(silent=True) or {}
+    public_key = data.get("public_key")
+    algorithm = (data.get("algorithm") or "RSA-OAEP").strip().upper() or "RSA-OAEP"
+
+    if not isinstance(public_key, dict):
+        return json_error("A valid public key is required", 400)
+
+    profile = ensure_user_profile(user)
+    profile.e2ee_public_key = json.dumps(public_key)
+    profile.e2ee_key_algorithm = algorithm[:32]
+    profile.e2ee_key_updated_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    return jsonify({"profile": build_profile_payload(user)})
+
+
 @app.route("/api/profile/stats", methods=["GET"])
 def profile_stats():
     user, error_response = get_authenticated_user()
@@ -2163,15 +2248,27 @@ def conversation_messages(channel_key):
         return jsonify({"messages": [message.to_dict() for message in messages_query]})
 
     data = request.get_json(silent=True) or {}
-    content = (data.get("content") or "").strip()
-    if not content:
-        return json_error("Message content is required", 400)
+    is_encrypted_conversation = conversation.kind in {"direct_message", "private_group"}
+    tickers = []
 
-    tickers = _extract_tickers(content)
+    if is_encrypted_conversation:
+        encrypted_payload = _normalize_encrypted_payload(data.get("encrypted_payload"))
+        if encrypted_payload is None:
+            return json_error("Encrypted payload is required for end-to-end encrypted conversations", 400)
+        content = json.dumps(encrypted_payload)
+        message_format = "encrypted"
+    else:
+        content = (data.get("content") or "").strip()
+        if not content:
+            return json_error("Message content is required", 400)
+        tickers = _extract_tickers(content)
+        message_format = "plaintext"
+
     message = ChatMessage(
         user_id=user.id,
         channel=channel.channel_key,
         content=content,
+        message_format=message_format,
         ticker_symbols=",".join(tickers),
     )
     db.session.add(message)
@@ -2180,10 +2277,15 @@ def conversation_messages(channel_key):
     profile = ensure_user_profile(user)
     profile.messages_sent_count += 1
     profile.tickers_shared_count += len(tickers)
-    _create_mention_notifications(user, conversation, channel, message)
+    if conversation.kind == "public_space":
+        _create_mention_notifications(user, conversation, channel, message)
 
     activity_type = "message_sent"
-    activity_description = f"Sent a message in {conversation.name}"
+    activity_description = (
+        f"Sent an encrypted message in {conversation.name}"
+        if is_encrypted_conversation
+        else f"Sent a message in {conversation.name}"
+    )
     activity_ticker = tickers[0] if tickers else None
     if tickers:
         activity_type = "ticker_shared"

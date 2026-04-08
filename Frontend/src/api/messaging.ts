@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from './config';
 import { getStoredToken } from './auth';
+import { encryptMessageForMembers, type EncryptedConversationPayload } from '../crypto/e2ee';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -7,6 +8,8 @@ export interface MessagingUser {
   user_id: string;
   username: string;
   display_name: string;
+  e2ee_public_key?: JsonWebKey | null;
+  e2ee_key_algorithm?: string | null;
   connection_status?: 'connected' | 'incoming_pending' | 'outgoing_pending' | 'none';
   request_id?: string | null;
   conversation_key?: string | null;
@@ -47,6 +50,9 @@ export interface ConversationMessage {
   user: string;
   verified: boolean;
   content: string;
+  message_format?: 'plaintext' | 'encrypted';
+  is_encrypted?: boolean;
+  encrypted_payload?: EncryptedConversationPayload | null;
   timestamp: string | null;
   tickers: string[];
   channel: string;
@@ -131,10 +137,22 @@ export async function fetchConversationMessages(channelKey: string, limit = 50) 
   return data.messages;
 }
 
-export async function sendConversationMessage(channelKey: string, content: string) {
+export async function sendConversationMessage(
+  channelKey: string,
+  content: string,
+  encryption?: {
+    enabled: boolean;
+    members: Array<Pick<MessagingUser, 'user_id'> & { e2ee_public_key?: JsonWebKey | null }>;
+  },
+) {
+  const body = encryption?.enabled
+    ? {
+        encrypted_payload: await encryptMessageForMembers(content, encryption.members),
+      }
+    : { content };
   const data = await request<{ message: ConversationMessage }>(`/api/conversations/${channelKey}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ content }),
+    body: JSON.stringify(body),
   });
   return data.message;
 }
