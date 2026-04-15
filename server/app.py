@@ -26,6 +26,7 @@ try:
         bootstrap_market_snapshots,
         fetch_bulk_quotes,
         fetch_history,
+        fetch_market_snapshots,
         fetch_market_overview,
         fetch_quote,
         fetch_top_movers,
@@ -64,6 +65,7 @@ except ImportError:
         bootstrap_market_snapshots,
         fetch_bulk_quotes,
         fetch_history,
+        fetch_market_snapshots,
         fetch_market_overview,
         fetch_quote,
         fetch_top_movers,
@@ -1275,6 +1277,27 @@ def stock_history(symbol):
         "points": [{"time": point["time"], "price": point["price"]} for point in history["points"]],
         "marketDataStatus": history.get("marketDataStatus"),
     })
+
+
+@app.route("/api/market/snapshots/<symbol>", methods=["GET"])
+def market_snapshots(symbol):
+    ensure_database_schema()
+    cleanup_legacy_hru_data()
+    normalized_symbol = (symbol or "").strip().upper()
+    if not normalized_symbol:
+        return json_error("symbol is required", 400)
+
+    try:
+        snapshots = fetch_market_snapshots(
+            normalized_symbol,
+            snapshot_loader=load_market_snapshot,
+        )
+    except ValueError as exc:
+        return json_error(str(exc), 400)
+    except Exception:
+        return json_error(MARKET_DATA_UNAVAILABLE_MESSAGE, 502)
+
+    return jsonify(snapshots)
 
 
 @app.route("/api/market/quotes", methods=["GET"])

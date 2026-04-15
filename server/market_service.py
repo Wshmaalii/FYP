@@ -1,3 +1,4 @@
+import logging
 import json
 import time
 from datetime import datetime, timezone
@@ -74,6 +75,7 @@ provider_budget_state = {
 }
 provider_failure_state = {}
 provider_diagnostic_history = []
+logger = logging.getLogger(__name__)
 
 
 class RateLimitError(RuntimeError):
@@ -675,7 +677,15 @@ def _normalize_history_points(points):
         price = _to_float(point.get("price"), None)
         if not timestamp or price is None:
             continue
-        normalized.append({"time": str(timestamp), "price": price})
+        normalized.append(
+            {
+                "time": str(timestamp),
+                "price": price,
+                "open": _to_float(point.get("open"), price),
+                "high": _to_float(point.get("high"), price),
+                "low": _to_float(point.get("low"), price),
+            }
+        )
     normalized.sort(key=lambda point: point["time"])
     return normalized
 
@@ -691,14 +701,28 @@ def _history_points_from_quote_snapshot(quote_snapshot):
     timestamp = quote_snapshot.get("captured_at")
     if not timestamp or price is None:
         return []
-    return [{"time": str(timestamp), "price": price}]
+    return [
+        {
+            "time": str(timestamp),
+            "price": price,
+            "open": _to_float(quote_snapshot.get("open"), price),
+            "high": _to_float(quote_snapshot.get("high"), price),
+            "low": _to_float(quote_snapshot.get("low"), price),
+        }
+    ]
 
 
-def _append_quote_history_point(existing_quote_snapshot, price, captured_at):
+def _append_quote_history_point(existing_quote_snapshot, quote_payload, captured_at):
     points = _history_points_from_quote_snapshot(existing_quote_snapshot)
+    price = _to_float((quote_payload or {}).get("price"), None)
+    if price is None:
+        return points[-SNAPSHOT_HISTORY_LIMIT:]
     next_point = {
         "time": _isoformat_timestamp(captured_at),
         "price": price,
+        "open": _to_float((quote_payload or {}).get("open"), price),
+        "high": _to_float((quote_payload or {}).get("high"), price),
+        "low": _to_float((quote_payload or {}).get("low"), price),
     }
 
     if points and points[-1]["time"] == next_point["time"]:
@@ -791,6 +815,20 @@ def fetch_history(api_key: str, symbol: str, snapshot_loader=None, snapshot_save
         "points": points,
         "marketDataStatus": _snapshot_status(updated_at, bool(points), message="Showing most recent available data." if points else None),
     }
+
+
+def fetch_market_snapshots(symbol: str, snapshot_loader=None):
+    points, _ = get_snapshot_history(symbol, snapshot_loader=snapshot_loader)
+    return [
+        {
+            "time": point["time"],
+            "price": point["price"],
+            "open": _to_float(point.get("open"), point["price"]),
+            "high": _to_float(point.get("high"), point["price"]),
+            "low": _to_float(point.get("low"), point["price"]),
+        }
+        for point in points
+    ]
 
 
 def fetch_bulk_quotes(api_key: str, tickers, snapshot_loader=None, snapshot_saver=None):
@@ -985,9 +1023,15 @@ def refresh_quote_snapshot(api_key: str, symbol: str, snapshot_loader=None, snap
         parsed_daily = _parse_daily_time_series(payload)
         quote_payload = _build_quote_payload(normalized, parsed_daily)
         quote_payload["captured_at"] = _isoformat_timestamp(now)
-        quote_payload["history"] = _append_quote_history_point(existing_quote_snapshot, quote_payload["price"], now)
+        quote_payload["history"] = _append_quote_history_point(existing_quote_snapshot, quote_payload, now)
         _store_cache_entry(stock_quote_cache, normalized, quote_payload, now + STOCK_QUOTE_CACHE_TTL_SECONDS, now)
         _persist_snapshot(snapshot_saver, _build_quote_snapshot_key(normalized), quote_payload, now)
+        logger.info(
+            "Stored quote snapshot for %s with %s history points at %s",
+            normalized,
+            len(quote_payload["history"]),
+            quote_payload["captured_at"],
+        )
         _record_refresh_state(f"quote:{normalized}", "stock_quote_cache", now + STOCK_QUOTE_CACHE_TTL_SECONDS)
 
         result.update(
@@ -1099,6 +1143,12 @@ def refresh_history_snapshot(api_key: str, symbol: str, snapshot_loader=None, sn
 
         _store_cache_entry(stock_history_cache, normalized, history_payload, now + STOCK_HISTORY_CACHE_TTL_SECONDS, now)
         _persist_snapshot(snapshot_saver, _build_history_snapshot_key(normalized), history_payload, now)
+        logger.info(
+            "Stored history snapshot for %s with %s chart points at %s",
+            normalized,
+            len(history_payload),
+            _isoformat_timestamp(now),
+        )
         _record_refresh_state(f"history:{normalized}", "stock_history_cache", now + STOCK_HISTORY_CACHE_TTL_SECONDS)
         result.update(
             {
